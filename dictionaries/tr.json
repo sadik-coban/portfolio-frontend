@@ -1,0 +1,35 @@
+{
+    "common": {
+        "theme_dark": "Karanlık Mod",
+        "theme_light": "Aydınlık Mod",
+        "back_home": "Ana Sayfaya Dön"
+    },
+    "home": {
+        "title": "Yapay Zeka & Veri Bilimi Portfolyosu",
+        "subtitle": "Gerçek dünya MLOps senaryoları ve veri analiz projeleri.",
+        "view_project": "Projeyi İncele",
+        "projects": {
+            "car-price": {
+                "title": "Araba Fiyat Tahmini & MLOps",
+                "description": "CatBoost, Sürüklenme Tespiti ve SHAP analizi ile Uçtan Uca MLOps ardışık düzeni."
+            },
+            "food-env": {
+                "title": "Gıda Çevresi Analizi",
+                "description": "Sağlık metriklerine karşı fast food yoğunluğunu gösteren coğrafi veri analizi."
+            },
+            "time-series": {
+                "title": "Borsa Tahmini",
+                "description": "Etkileşimli ticaret grafikleri ile LSTM tabanlı zaman serisi tahmini."
+            }
+        }
+    },
+    "car_price": {
+        "sidebar": {
+            "dashboard": "Panel",
+            "predict": "Fiyat Tahmini",
+            "mlops": "MLOps & Drift",
+            "shap": "SHAP Analizi",
+            "blog": "Proje Günlüğü"
+        }
+    }
+}

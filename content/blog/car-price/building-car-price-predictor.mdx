@@ -1,0 +1,93 @@
+---
+title: "Uçtan Uca Araç Fiyat Tahmin Sistemi ve MLOps Mimarisi"
+date: "2026-01-28"
+description: "CatBoost ile geliştirdiğim, Quantile Regression kullanarak güven aralığı sunan ve canlı veri kaymasını (Drift) izleyen sistemin teknik detayları."
+readTime: "7"
+tags: ["Machine Learning", "MLOps", "CatBoost", "System Design"]
+project: "car-price"
+---
+
+İkinci el araç piyasası, "asimetrik bilgi" probleminin en yoğun yaşandığı yerlerden biridir. Satıcı aracın geçmişini bilirken, alıcı genellikle sadece ilandaki beyana güvenmek zorundadır. Bir Veri Bilimcisi olarak bu problemi çözmek için sadece "fiyat tahmin eden" bir model değil, **karar destek sistemi** sunan bir mimari kurguladım.
+
+Bu yazıda, verinin ham halden canlı bir MLOps sistemine dönüşüm yolculuğunu anlatacağım.
+
+## 1. Neden CatBoost? (Model Seçimi)
+
+Araç veri setleri doğası gereği yoğun **Kategorik (Categorical)** değişkenler içerir: *Marka, Model, Vites Tipi, Yakıt, Renk, Şehir...*
+
+Geleneksel yöntemlerde (XGBoost veya Random Forest) bu verileri işlemek için **One-Hot Encoding** yapmak gerekir. Ancak 50 farklı marka ve 500 farklı model olduğunda veri seti matrisi inanılmaz şişer (Curse of Dimensionality) ve model performansı düşer.
+
+**CatBoost (Categorical Boosting)** ise bu değişkenleri yerel olarak işleyebilir (Target Encoding benzeri bir teknikle).
+
+```python
+# Model Parametreleri
+model = CatBoostRegressor(
+    iterations=2000,
+    learning_rate=0.1,
+    depth=6,
+    loss_function="MultiQuantile:alpha=0.05,0.5,0.95", # Kritik nokta burası!
+    cat_features=['brand', 'model', 'fuel', 'transmission'],
+    verbose=200
+)
+
+```
+
+> **Not:** Modelde `RMSE` yerine `MultiQuantile` loss fonksiyonunu kullandım. Bu sayede model tek bir fiyat vermek yerine, fiyatın olabileceği **%5 (En düşük), %50 (Medyan) ve %95 (En yüksek)** aralığını tahmin ediyor.
+
+## 2. Feature Engineering: "Ekspertiz Risk Skoru"
+
+Sadece Yıl ve KM bilgisi fiyatı tahmin etmek için yeterli değildir. Bir aracın **Tavanının boyalı olması** ile **Tamponunun boyalı olması** fiyata aynı etkiyi yapmaz.
+
+Bu alan bilgisini (Domain Knowledge) modele yedirmek için özel bir **Risk Skoru Algoritması** geliştirdim:
+
+```python
+def calculate_expert_risk_score(row):
+    score = 0
+    
+    # Kritik Parçalar (Ağır kusur)
+    if row['tavan_degisen'] == 1: score += 150
+    elif row['tavan_boyali'] == 1: score += 75
+    
+    # Şasi ve Podye işlemleri
+    if row['is_heavy_damaged'] == 1: score += 200
+    
+    # Önemsiz Parçalar (Tampon vb.)
+    # Daha düşük katsayılar...
+    
+    return score
+
+```
+
+Bu skor sayesinde model, aynı model/yıl/km'deki iki araçtan hangisinin "temiz", hangisinin "işlemli" olduğunu ayırt edebiliyor.
+
+## 3. MLOps: Modelin Yaşayan Bir Varlık Olması
+
+Modeli bir kez eğitip kenara atmak, yapılan en büyük hatadır. Piyasa değişir, enflasyon artar, insanların tercihleri SUV'ye kayabilir. Bu duruma **Data Drift (Veri Kayması)** denir.
+
+Bu projede kurduğum sistem:
+
+1. **Versiyonlama:** Her model eğitimi (`v1`, `v2`) `metrics.json` ve model dosyasıyla birlikte saklanır.
+2. **Drift Detection:** Yeni gelen verinin dağılımı (Distribution), eğitim verisiyle karşılaştırılır.
+3. **Otomatik Uyarı:** Eğer fiyat dağılımında istatistiksel bir sapma (KS Test p-value < 0.05) varsa, sistem "Modeli yeniden eğit" uyarısı verir.
+
+### Dashboard Üzerinden İzleme
+
+Frontend tarafında (Next.js) geliştirdiğim **MLOps Paneli**, referans model ile güncel verinin dağılımını görselleştirir.
+
+*(Dağılım grafiğinde turuncu alanın sağa kayması, piyasadaki fiyatların yükseldiğini ve modelin güncellenmesi gerektiğini gösterir.)*
+
+## 4. Teknoloji Yığını (Tech Stack)
+
+Bu proje "Full Stack Data Science" prensibiyle geliştirildi:
+
+* **Model Training:** Python, Pandas, CatBoost, SHAP
+* **Backend API:** FastAPI (Asenkron mimari, Pydantic validasyonları)
+* **Frontend:** Next.js 14 (App Router), TypeScript, Tailwind CSS, Shadcn/UI
+* **Visualization:** ECharts (Performanslı interaktif grafikler)
+* **Database:** PostgreSQL (Veri saklama)
+
+## Sonuç
+
+Bu proje, bir makine öğrenmesi modelinin "Jupyter Notebook"tan çıkıp, gerçek kullanıcıya değer sağlayan, yaşayan ve izlenebilir bir ürüne nasıl dönüştüğünün kanıtıdır.
+
+Sistemi canlı denemek için [Dashboard](https://www.google.com/search?q=/tr/projects/car-price/dashboard) sayfasına gidebilirsiniz.
