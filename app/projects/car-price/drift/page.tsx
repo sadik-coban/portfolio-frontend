@@ -286,7 +286,7 @@ export default function DriftPage() {
                                                 <Tooltip
                                                     contentStyle={{ backgroundColor: '#0f172a', borderColor: '#1e293b', color: '#fff', fontSize: '12px', borderRadius: '8px' }}
                                                     itemStyle={{ padding: 0 }}
-                                                    formatter={(val: number) => val.toFixed(4)}
+                                                    formatter={(val: any) => val.toFixed(4)}
                                                     labelStyle={{ color: '#94a3b8', marginBottom: '4px' }}
                                                 />
                                                 <Area type="monotone" dataKey="ref_density" stroke="#3b82f6" strokeWidth={2} fill={`url(#gradRef${item.feature})`} name="Old Data" />
