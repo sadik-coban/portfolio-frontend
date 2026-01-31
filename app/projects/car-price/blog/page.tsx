@@ -17,18 +17,6 @@ export default function CarPriceBlogList() {
                 {/* --- HEADER --- */}
                 {/* Başlık ile liste arasına mesafe kondu (mb-16) ve ortalandı */}
                 <div className="max-w-2xl mx-auto text-center mb-16 space-y-6">
-
-                    {/* Geri Dön Linki (Opsiyonel ama önerilir) */}
-                    <div className="flex justify-center mb-6">
-                        <Link
-                            href="/projects"
-                            className="inline-flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-blue-600 transition-colors"
-                        >
-                            <ArrowLeft size={16} />
-                            Back to Projects
-                        </Link>
-                    </div>
-
                     <div className="inline-flex items-center justify-center p-3 bg-blue-100 dark:bg-blue-900/20 rounded-2xl mb-2">
                         <BookOpen className="text-blue-600 dark:text-blue-400" size={32} />
                     </div>
