@@ -146,8 +146,13 @@ export const carService = {
     // --- PREDICTION & VERSIONS ---
 
     getVersions: async (): Promise<ModelVersion[]> => {
-        const response = await carApi.get('/versions');
-        return response.data;
+        try {
+            const response = await carApi.get('/versions');
+            return response.data || [];
+        } catch (error) {
+            console.error("Versiyonlar alınamadı:", error);
+            return [];
+        }
     },
 
     getDriftAnalysis: async (refVer: string, currVer: string) => {
@@ -156,23 +161,20 @@ export const carService = {
     },
 
     // Fiyat Tahmini Yap (Mapping Uygulanmış Hali)
-    predictPrice: async (data: PredictionInput): Promise<PredictionResult> => {
-        // 1. En güncel versiyonu bul
-        const versions = await carService.getVersions();
-        if (!versions || versions.length === 0) {
-            throw new Error("Aktif model versiyonu bulunamadı.");
-        }
-        const latestVersionId = versions[0].version_id;
+    predictPrice: async (versionId: string, data: any) => {
 
-        // 2. VERİYİ TÜRKÇEYE ÇEVİR (Mapping)
-        const mappedData: PredictionInput = {
+        // Eğer versionId gelmezse hata fırlatabilir veya varsayılan bir işlem yapabiliriz
+        if (!versionId) throw new Error("Versiyon ID zorunludur.");
+
+        // Veriyi Türkçeye Çevir (Mapping)
+        const mappedData = {
             ...data,
             fuel: MAPPINGS.fuel[data.fuel] || data.fuel,
             transmission: MAPPINGS.transmission[data.transmission] || data.transmission,
             body_type: MAPPINGS.body_type[data.body_type] || data.body_type,
-            gb_warranty_status: MAPPINGS.warranty[data.gb_warranty_status] || data.gb_warranty_status,
             kb_drivetrain: MAPPINGS.drivetrain[data.kb_drivetrain] || data.kb_drivetrain,
-            // Hasar Detaylarını Çevir
+            gb_warranty_status: MAPPINGS.warranty[data.gb_warranty_status] || data.gb_warranty_status,
+            // Hasar detayları
             damage_details: {
                 ...data.damage_details,
                 roof_status: MAPPINGS.damage[data.damage_details.roof_status] || data.damage_details.roof_status,
@@ -181,8 +183,8 @@ export const carService = {
             }
         };
 
-        // 3. Çevrilmiş veriyi gönder
-        const response = await carApi.post(`/predict/${latestVersionId}`, mappedData);
+        // İsteği seçilen versiyona gönder
+        const response = await carApi.post(`/predict/${versionId}`, mappedData);
         return response.data;
     }
 };

@@ -38,8 +38,6 @@ export default function GlobalBlogPage() {
                                             <Calendar size={14} />
                                             {post.meta.date}
                                         </div>
-                                        <span>•</span>
-                                        <span>{post.meta.readTime} min read</span>
                                     </div>
 
                                     {post.meta.project && (

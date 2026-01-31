@@ -19,6 +19,9 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
+// Define the base URL for the API, falling back to localhost for development
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
 export default function ShapPage() {
     const [versions, setVersions] = useState<ModelVersion[]>([]);
     const [selectedVersion, setSelectedVersion] = useState<string>('');
@@ -44,9 +47,9 @@ export default function ShapPage() {
         }
     }, [selectedVersion]);
 
-    // Image URL
+    // Image URL using the environment variable
     const shapImageUrl = selectedVersion
-        ? `http://localhost:8000/api/shap/${selectedVersion}`
+        ? `${API_BASE_URL}/api/shap/${selectedVersion}`
         : '';
 
     return (
