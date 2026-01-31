@@ -3,11 +3,8 @@
 import Link from 'next/link';
 import Navbar from '@/components/layout/Navbar';
 import {
-    TrendingUp,
     ArrowRight,
-    LayoutDashboard,
     BrainCircuit,
-    Activity,
     Code2,
     Database,
     Cloud,
@@ -16,6 +13,8 @@ import {
     Calendar
 } from 'lucide-react';
 import { GithubIcon, LinkedinIcon } from '@/components/ui/social-icons';
+import { ALL_PROJECTS } from '@/lib/data';
+import { ProjectCard } from '../ProjectCard';
 
 // Gelen verinin tipi (Basitçe any diyebiliriz veya tip tanımlayabiliriz)
 interface PortfolioProps {
@@ -23,7 +22,7 @@ interface PortfolioProps {
 }
 
 export default function PortfolioHome({ recentPosts }: PortfolioProps) {
-
+    const featuredProjects = ALL_PROJECTS.filter(p => p.featured).slice(0, 3);
     // --- SMOOTH SCROLL FONKSİYONU ---
     const handleScroll = (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>, id: string) => {
         e.preventDefault(); // URL'e # eklenmesini engelle
@@ -41,26 +40,31 @@ export default function PortfolioHome({ recentPosts }: PortfolioProps) {
         }
     };
 
-    const projects = [
-        {
-            id: 'car-price',
-            title: 'Car Price Prediction & MLOps',
-            description: 'End-to-end machine learning system using CatBoost and MultiQuantile loss. This project is not just a model; it covers a complete MLOps cycle including data collection, cleaning, modeling, and real-time monitoring (Drift Detection). Users can examine the model\'s confidence intervals and Shapley values via the dashboard.',
-            color: 'bg-blue-600',
-            textAccent: 'text-blue-600 dark:text-blue-400',
-            bgAccent: 'bg-blue-50 dark:bg-blue-900/20',
-            borderAccent: 'group-hover:border-blue-500/50',
-            href: '/projects/car-price/dashboard',
-            status: 'Live Demo',
-            features: [
-                { label: 'Analytics Dashboard', icon: LayoutDashboard },
-                { label: 'Price Prediction', icon: BrainCircuit },
-                { label: 'Drift Monitoring', icon: Activity },
-                { label: 'SHAP Explainability', icon: Code2 }
-            ]
-        }
-    ];
-
+    const getPostStyle = (tag: string = 'General') => {
+        const styles = {
+            'Engineering': {
+                bgAccent: 'bg-blue-500',
+                textAccent: 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800',
+                borderAccent: 'group-hover:border-blue-500/50 dark:group-hover:border-blue-400/50'
+            },
+            'AI & ML': {
+                bgAccent: 'bg-purple-500',
+                textAccent: 'text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800',
+                borderAccent: 'group-hover:border-purple-500/50 dark:group-hover:border-purple-400/50'
+            },
+            'Tutorial': {
+                bgAccent: 'bg-emerald-500',
+                textAccent: 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800',
+                borderAccent: 'group-hover:border-emerald-500/50 dark:group-hover:border-emerald-400/50'
+            }
+        };
+        // Eşleşme yoksa varsayılan (Slate) döndür
+        return styles[tag as keyof typeof styles] || {
+            bgAccent: 'bg-slate-500',
+            textAccent: 'text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700',
+            borderAccent: 'group-hover:border-slate-500/50'
+        };
+    };
     const techStack = [
         {
             category: "Machine Learning & AI",
@@ -139,7 +143,6 @@ export default function PortfolioHome({ recentPosts }: PortfolioProps) {
                         <h3 className="text-3xl md:text-4xl font-bold text-slate-900 dark:text-white">Technologies I Use</h3>
                     </div>
 
-                    {/* DEĞİŞİKLİK BURADA: grid-cols-2 yerine grid-cols-1 yazıldı */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
                         {techStack.map((stack, idx) => (
                             <div key={idx} className="p-6 bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-md transition-shadow">
@@ -161,101 +164,114 @@ export default function PortfolioHome({ recentPosts }: PortfolioProps) {
             </section>
 
             {/* --- PROJECTS SECTION --- */}
-            <section id="projects" className="py-24 px-6 max-w-6xl mx-auto scroll-mt-20">
-                <div className="mb-16">
-                    <h2 className="text-sm font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest mb-2">Portfolio</h2>
-                    <h3 className="text-3xl md:text-4xl font-bold text-slate-900 dark:text-white">Featured Projects</h3>
-                </div>
+            <section id="projects" className="py-24 px-6 md:px-12 bg-slate-50 dark:bg-black">
+                <div className="max-w-7xl mx-auto">
 
-                <div className="flex flex-col gap-12">
-                    {projects.map((project) => {
-                        return (
-                            <Link key={project.id} href={project.href} className="group block">
-                                <div className={`relative bg-white dark:bg-slate-900 rounded-[2rem] border border-slate-200 dark:border-slate-800 p-8 md:p-12 shadow-sm hover:shadow-2xl transition-all duration-500 hover:-translate-y-1 overflow-hidden ${project.borderAccent}`}>
-                                    <div className={`absolute right-0 top-0 w-96 h-96 ${project.bgAccent} rounded-full blur-[100px] transition-opacity opacity-20 group-hover:opacity-40`} />
-                                    <div className="relative z-10 flex flex-col gap-6 items-start">
-                                        <span className={`inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-bold border ${project.textAccent} border-current opacity-80 w-fit`}>
-                                            {project.status}
-                                        </span>
-                                        <div className="flex-grow w-full">
-                                            <h3 className="text-3xl font-bold mb-4 text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                                                {project.title}
-                                            </h3>
-                                            <p className="text-lg text-slate-600 dark:text-slate-400 leading-relaxed mb-8 max-w-3xl">
-                                                {project.description}
-                                            </p>
-                                            <div className="flex flex-wrap gap-3 mb-8">
-                                                {project.features.map((feat) => (
-                                                    <div key={feat.label} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-sm font-semibold border border-slate-100 dark:border-slate-700">
-                                                        <feat.icon size={14} />
-                                                        {feat.label}
-                                                    </div>
-                                                ))}
-                                            </div>
-                                            <div className={`flex items-center gap-2 text-base font-bold ${project.textAccent}`}>
-                                                <span>EXPLORE PROJECT</span>
-                                                <ArrowRight size={20} className="group-hover:translate-x-2 transition-transform" />
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </Link>
-                        );
-                    })}
+                    <div className="flex justify-between items-end mb-12">
+                        <h2 className="text-4xl font-bold text-slate-900 dark:text-white">
+                            Selected Work
+                        </h2>
+                        <Link href="/projects" className="group flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-black dark:hover:text-white transition-colors">
+                            View All Projects
+                            <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
+                        </Link>
+                    </div>
+                    {/* col : in one row how many projects to show */}
+                    <div className="grid grid-cols-1 lg:grid-cols-1 gap-8">
+                        {featuredProjects.map((project) => (
+                            <ProjectCard key={project.id} data={project} />
+                        ))}
+                    </div>
+
                 </div>
             </section>
 
             {/* --- BLOG SECTION --- */}
-            <section id="blog" className="py-24 px-6 bg-slate-100 dark:bg-slate-900/50 border-t border-slate-200 dark:border-slate-800 scroll-mt-20">
+            <section id="blog" className="py-24 px-6 bg-white/50 dark:bg-slate-900/50 border-t border-slate-200 dark:border-slate-800 scroll-mt-20">
                 <div className="max-w-6xl mx-auto">
-                    <div className="flex justify-between items-end mb-12">
+                    {/* Header Bölümü */}
+                    <div className="flex justify-between items-end mb-16">
                         <div>
-                            <h2 className="text-sm font-bold text-purple-600 dark:text-purple-400 uppercase tracking-widest mb-2">Knowledge Base</h2>
-                            <h3 className="text-3xl md:text-4xl font-bold text-slate-900 dark:text-white">Latest Writings</h3>
+                            <h2 className="text-sm font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest mb-3">
+                                Knowledge Base
+                            </h2>
+                            <h3 className="text-4xl md:text-5xl font-bold text-slate-900 dark:text-white tracking-tight">
+                                Latest Writings.
+                            </h3>
                         </div>
-                        <Link href="/blog" className="hidden md:flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-purple-600 dark:hover:text-purple-400 font-bold transition-colors cursor-pointer">
+                        <Link
+                            href="/blog"
+                            className="hidden md:flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 font-bold transition-colors cursor-pointer"
+                        >
                             View all posts <ArrowRight size={18} />
                         </Link>
                     </div>
 
+                    {/* Blog Grid */}
                     <div className="grid md:grid-cols-3 gap-8">
                         {recentPosts.length > 0 ? (
-                            recentPosts.map((post) => (
-                                <Link key={post.slug} href={`/blog/${post.slug}`} className="group flex flex-col h-full cursor-pointer">
-                                    <article className="flex flex-col h-full bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-                                        <div className="flex justify-between items-center mb-4">
-                                            <div className="flex items-center gap-2 text-xs font-bold text-slate-400">
-                                                <Calendar size={14} />
-                                                {post.meta.date}
+                            recentPosts.map((post) => {
+                                // Her post için stil belirle (post.meta.project veya post.meta.tag kullanabilirsin)
+                                const style = getPostStyle(post.meta.tag || 'General');
+
+                                return (
+                                    <Link key={post.slug} href={`/blog/${post.slug}`} className="group flex flex-col h-full cursor-pointer">
+                                        <article className={`relative flex flex-col h-full bg-white dark:bg-slate-900/50 p-8 rounded-[2rem] border border-slate-200 dark:border-slate-800 overflow-hidden hover:shadow-2xl transition-all duration-500 hover:-translate-y-1 ${style.borderAccent}`}>
+
+                                            {/* Arka Plan Blur Efekti (Project Style) */}
+                                            <div className={`absolute right-0 top-0 w-64 h-64 ${style.bgAccent} rounded-full blur-[80px] transition-opacity opacity-0 group-hover:opacity-10`} />
+
+                                            <div className="relative z-10 flex flex-col h-full">
+                                                {/* Üst Bilgi (Tarih ve Etiket) */}
+                                                <div className="flex justify-between items-start mb-6">
+                                                    <div className="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-wider">
+                                                        <Calendar size={14} />
+                                                        {post.meta.date}
+                                                    </div>
+
+                                                    {post.meta.project && (
+                                                        <span className={`text-[10px] uppercase font-bold px-3 py-1 rounded-full border ${style.textAccent}`}>
+                                                            {post.meta.project}
+                                                        </span>
+                                                    )}
+                                                </div>
+
+                                                {/* Başlık */}
+                                                <h4 className="text-2xl font-bold text-slate-900 dark:text-white mb-4 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                                                    {post.meta.title}
+                                                </h4>
+
+                                                {/* Açıklama */}
+                                                <p className="text-slate-600 dark:text-slate-400 text-base leading-relaxed mb-8 line-clamp-3 flex-grow">
+                                                    {post.meta.description}
+                                                </p>
+
+                                                {/* Alt Buton */}
+                                                <div className={`flex items-center gap-2 text-sm font-bold ${style.textAccent.split(' ')[0]} mt-auto`}>
+                                                    <BookOpen size={16} />
+                                                    <span>READ ARTICLE</span>
+                                                    <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
+                                                </div>
                                             </div>
-                                            {post.meta.project && (
-                                                <span className="text-[10px] uppercase font-bold text-blue-600 bg-blue-50 dark:bg-blue-900/30 px-2 py-1 rounded">
-                                                    {post.meta.project}
-                                                </span>
-                                            )}
-                                        </div>
-                                        <h4 className="text-xl font-bold text-slate-900 dark:text-white mb-3 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors line-clamp-2">
-                                            {post.meta.title}
-                                        </h4>
-                                        <p className="text-slate-600 dark:text-slate-400 text-sm leading-relaxed mb-6 line-clamp-3 flex-grow">
-                                            {post.meta.description}
-                                        </p>
-                                        <div className="flex items-center gap-2 text-sm font-bold text-slate-500 group-hover:text-purple-600 transition-colors mt-auto">
-                                            <BookOpen size={16} /> Read Article
-                                        </div>
-                                    </article>
-                                </Link>
-                            ))
+                                        </article>
+                                    </Link>
+                                );
+                            })
                         ) : (
-                            <div className="col-span-3 text-center py-12 text-slate-500 bg-white dark:bg-slate-900 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800">
-                                No blog posts available yet.
+                            <div className="col-span-3 text-center py-20">
+                                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-slate-100 dark:bg-slate-800 mb-4">
+                                    <BookOpen className="text-slate-400" size={24} />
+                                </div>
+                                <h3 className="text-lg font-bold text-slate-900 dark:text-white">No posts found</h3>
+                                <p className="text-slate-500">Check back later for new updates.</p>
                             </div>
                         )}
                     </div>
 
-                    <div className="mt-8 text-center md:hidden">
-                        <Link href="/blog" className="inline-flex items-center gap-2 text-purple-600 font-bold">
-                            View all posts <ArrowRight size={18} />
+                    {/* Mobil için 'View All' butonu */}
+                    <div className="mt-12 text-center md:hidden">
+                        <Link href="/blog" className="inline-flex px-6 py-3 rounded-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 items-center gap-2 text-slate-900 dark:text-white font-bold text-sm shadow-sm">
+                            View all posts <ArrowRight size={16} />
                         </Link>
                     </div>
                 </div>
@@ -265,7 +281,7 @@ export default function PortfolioHome({ recentPosts }: PortfolioProps) {
             <footer className="bg-white dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 py-12">
                 <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6">
                     <div className="text-center md:text-left">
-                        <h4 className="text-lg font-bold text-slate-900 dark:text-white mb-1">sadikc.dev</h4>
+                        <h4 className="text-lg font-bold text-slate-900 dark:text-white mb-1">sadikcoban.com</h4>
                         <p className="text-slate-500 dark:text-slate-400 text-sm">Building the future with Data & AI.</p>
                     </div>
                     <div className="flex gap-6">
