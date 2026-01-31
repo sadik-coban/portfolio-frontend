@@ -139,7 +139,8 @@ export default function PortfolioHome({ recentPosts }: PortfolioProps) {
                         <h3 className="text-3xl md:text-4xl font-bold text-slate-900 dark:text-white">Technologies I Use</h3>
                     </div>
 
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                    {/* DEĞİŞİKLİK BURADA: grid-cols-2 yerine grid-cols-1 yazıldı */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
                         {techStack.map((stack, idx) => (
                             <div key={idx} className="p-6 bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-md transition-shadow">
                                 <div className="w-10 h-10 bg-slate-50 dark:bg-slate-800 rounded-lg flex items-center justify-center text-slate-900 dark:text-white mb-3">

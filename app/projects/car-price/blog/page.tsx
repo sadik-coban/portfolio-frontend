@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { getPostsByProject } from '@/lib/mdx';
+import { ArrowLeft, BookOpen } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
 import { Calendar, ArrowRight } from 'lucide-react';
 
@@ -9,21 +10,44 @@ export default function CarPriceBlogList() {
 
     return (
         <div className="min-h-screen bg-slate-50 dark:bg-slate-950 font-sans selection:bg-blue-100 dark:selection:bg-blue-900">
-            <main className="max-w-5xl mx-auto px-6 py-32">
+
+            {/* Sayfa üstü ve altı boşlukları (padding) düzenlendi: py-24 */}
+            <main className="max-w-4xl mx-auto px-6 py-24 lg:py-32">
+
                 {/* --- HEADER --- */}
-                <div className="text-center mb-16">
-                    <h1 className="text-4xl md:text-5xl font-black text-slate-900 dark:text-white mb-6 tracking-tight">
-                        Writing & Thoughts
+                {/* Başlık ile liste arasına mesafe kondu (mb-16) ve ortalandı */}
+                <div className="max-w-2xl mx-auto text-center mb-16 space-y-6">
+
+                    {/* Geri Dön Linki (Opsiyonel ama önerilir) */}
+                    <div className="flex justify-center mb-6">
+                        <Link
+                            href="/projects"
+                            className="inline-flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-blue-600 transition-colors"
+                        >
+                            <ArrowLeft size={16} />
+                            Back to Projects
+                        </Link>
+                    </div>
+
+                    <div className="inline-flex items-center justify-center p-3 bg-blue-100 dark:bg-blue-900/20 rounded-2xl mb-2">
+                        <BookOpen className="text-blue-600 dark:text-blue-400" size={32} />
+                    </div>
+
+                    <h1 className="text-4xl md:text-5xl font-black text-slate-900 dark:text-white tracking-tight">
+                        Project Journal
                     </h1>
-                    <p className="text-xl text-slate-600 dark:text-slate-400 max-w-2xl mx-auto leading-relaxed">
-                        Deep dives into software architecture, MLOps pipelines, data science, and the modern tech stack.
+
+                    <p className="text-lg md:text-xl text-slate-600 dark:text-slate-400 leading-relaxed">
+                        Development notes, technical challenges, and case studies for the <span className="font-semibold text-slate-900 dark:text-slate-200">Car Price Prediction</span> project.
                     </p>
                 </div>
 
-                {/* --- BLOG LIST (SINGLE COLUMN) --- */}
-                <div className="flex flex-col gap-6 max-w-3xl mx-auto">
+                {/* --- BLOG LIST --- */}
+                {/* Liste genişliği ana konteyner ile uyumlu hale getirildi ve gap arttırıldı */}
+                <div className="flex flex-col gap-8">
                     {posts.map((post) => (
                         <Link key={post.slug} href={`/blog/${post.slug}`} className="group block">
+                            {/* KART STİLİ (Dokunulmadı - Senin Kodun) */}
                             <article className="relative bg-white dark:bg-slate-900 p-8 rounded-2xl border border-slate-200 dark:border-slate-800 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden">
 
                                 {/* Sol Kenar Çizgisi (Hover Efekti için) */}
