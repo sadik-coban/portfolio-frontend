@@ -1,4 +1,9 @@
 import CarSidebar from '@/components/car-price/CarSidebar';
+import type { Metadata } from 'next'
+export const metadata: Metadata = {
+    title: 'Car Price Prediction Project',
+    description: 'A machine learning model to predict car prices using XGBoost and Python. View the source code and demo.',
+}
 
 export default function CarPriceLayout({
     children,

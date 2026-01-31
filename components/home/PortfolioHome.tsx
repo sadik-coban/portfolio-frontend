@@ -112,7 +112,7 @@ export default function PortfolioHome({ recentPosts }: PortfolioProps) {
                     </h1>
 
                     <p className="text-xl md:text-2xl text-slate-600 dark:text-slate-400 max-w-2xl mx-auto leading-relaxed font-medium mb-10">
-                        Data Scientist & MLOps Engineer bridging the gap between <span className="text-slate-900 dark:text-white font-bold">Data Science</span> and <span className="text-slate-900 dark:text-white font-bold">Production</span>.
+                        Data Scientist bridging the gap between <span className="text-slate-900 dark:text-white font-bold">Data Science</span> and <span className="text-slate-900 dark:text-white font-bold">Production</span>.
                     </p>
 
                     <div className="flex flex-wrap justify-center gap-4">

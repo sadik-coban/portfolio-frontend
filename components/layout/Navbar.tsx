@@ -10,7 +10,7 @@ export default function Navbar() {
                     href="/"
                     className="font-black text-xl text-slate-900 dark:text-white tracking-tighter flex items-center gap-2 hover:opacity-80 transition-opacity"
                 >
-                    sadikc.dev
+                    sadikcoban
                 </Link>
 
                 {/* Right: Theme Icon*/}
