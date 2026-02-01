@@ -87,9 +87,7 @@ export default function ObservableCharts({ data }: ChartProps) {
                 tickFormat: (d) => `${d / 1000000}M`,
                 nice: true,
                 tickSize: 0,
-                tickPadding: 10,
-                gridColor: "var(--border)",
-                gridOpacity: 0.3
+                tickPadding: 10
             },
             marks: [
                 Plot.dot(scatterPoints, {
@@ -139,8 +137,6 @@ export default function ObservableCharts({ data }: ChartProps) {
                 grid: true,
                 tickSize: 0,
                 tickPadding: 10,
-                gridColor: "var(--border)",
-                gridOpacity: 0.3,
                 gridDasharray: "4,4"
             },
             marks: [
@@ -241,8 +237,7 @@ export default function ObservableCharts({ data }: ChartProps) {
                     y: "brand",
                     stroke: "var(--muted-foreground)",
                     strokeWidth: 2,
-                    strokeOpacity: 0.3,
-                    strokeCap: "round"
+                    strokeOpacity: 0.3
                 }),
                 Plot.tickX(rangeData, { x: "min", y: "brand", stroke: "var(--muted-foreground)", strokeWidth: 2, height: 12 }),
                 Plot.tickX(rangeData, { x: "max", y: "brand", stroke: "var(--muted-foreground)", strokeWidth: 2, height: 12 }),
