@@ -106,13 +106,10 @@ export default function CarPriceLandingPage() {
                             <div className="relative mt-4 md:mt-0">
                                 <div className="absolute inset-0 bg-gradient-to-tr from-blue-500 to-purple-500 blur-2xl opacity-20" />
                                 <div className="relative bg-white dark:bg-slate-900 p-6 md:p-8 rounded-2xl border border-blue-100 dark:border-blue-900 text-center">
-                                    <p className="text-slate-500 font-medium mb-2 text-sm">Predicted Price Range (90% CI)</p>
+                                    <p className="text-slate-500 font-medium mb-2 text-sm">Predicted Price Range</p>
                                     {/* Fiyat boyutu mobilde küçültüldü */}
                                     <div className="text-3xl md:text-4xl font-bold text-slate-900 dark:text-white mb-2">
                                         ₺1.180k - ₺1.320k
-                                    </div>
-                                    <div className="text-sm text-slate-400 mb-4">
-                                        Inference via FastAPI: 45ms
                                     </div>
                                     <div className="inline-flex items-center gap-2 text-blue-600 bg-blue-50 dark:bg-blue-900/20 px-3 py-1 rounded-full text-[10px] md:text-xs font-bold uppercase tracking-wider">
                                         Quantile Regression
@@ -161,7 +158,7 @@ export default function CarPriceLandingPage() {
 
                         <ul className="space-y-3">
                             {[
-                                "Custom Web Scraping Pipeline (Selenium/Bs4)",
+                                "Custom Web Scraping Pipeline (Bs4)",
                                 "MultiQuantile Loss for Interval Prediction",
                                 "FastAPI for Real-Time Inference",
                                 "Hugging Face for Model Registry",
