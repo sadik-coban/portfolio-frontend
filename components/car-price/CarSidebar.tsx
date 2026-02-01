@@ -40,6 +40,11 @@ export default function CarSidebar() {
             icon: LayoutDashboard
         },
         {
+            href: "/projects/car-price/observable-dash",
+            label: "Observable Dashboard",
+            icon: LayoutDashboard
+        },
+        {
             href: "/projects/car-price/predict",
             label: "Price Prediction",
             icon: BrainCircuit

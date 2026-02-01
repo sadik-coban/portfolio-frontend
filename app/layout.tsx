@@ -19,8 +19,11 @@ export const metadata: Metadata = {
   alternates: {
     canonical: baseUrl,
   },
+  appleWebApp: {
+    title: "Sadık's DS Portfolio",
+  },
   openGraph: {
-    title: "Sadık Çoban Portfolio",
+    title: "Sadık Çoban | Data Scientist Portfolio",
     description: "Explore my Artificial Intelligence and Data Science projects.",
     url: baseUrl,
     siteName: "Sadık Çoban",
@@ -31,7 +34,6 @@ export const metadata: Metadata = {
     index: true,
     follow: true,
   },
-  // İleride Google Search Console doğrulaması için burayı kullanabilirsin
   verification: {
     google: "google-site-verification-kodu-buraya-gelecek",
   },

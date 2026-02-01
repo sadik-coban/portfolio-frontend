@@ -5,28 +5,52 @@ export default function sitemap(): MetadataRoute.Sitemap {
 
     return [
         {
-            url: baseUrl, // Ana Sayfa
+            url: baseUrl,
             lastModified: new Date(),
             changeFrequency: 'monthly',
             priority: 1,
         },
         {
-            url: `${baseUrl}/projects/car-price/blog`,
+            url: `${baseUrl}/projects`,
             lastModified: new Date(),
-            changeFrequency: 'monthly',
+            changeFrequency: 'weekly',
             priority: 0.9,
         },
+        {
+            url: `${baseUrl}/blog`,
+            lastModified: new Date(),
+            changeFrequency: 'weekly',
+            priority: 0.8,
+        },
+
+        // --- CAR PRICE PREDICTION PROJECT ---
+
         {
             url: `${baseUrl}/projects/car-price/predict`,
             lastModified: new Date(),
             changeFrequency: 'monthly',
             priority: 0.8,
         },
+
         {
-            url: `${baseUrl}/blog`,
+            url: `${baseUrl}/projects/car-price/dashboard`,
+            lastModified: new Date(),
+            changeFrequency: 'weekly',
+            priority: 0.8,
+        },
+
+        {
+            url: `${baseUrl}/projects/car-price/observable-dash`,
             lastModified: new Date(),
             changeFrequency: 'weekly',
             priority: 0.7,
+        },
+
+        {
+            url: `${baseUrl}/projects/car-price/blog`,
+            lastModified: new Date(),
+            changeFrequency: 'monthly',
+            priority: 0.6,
         },
     ];
 }
