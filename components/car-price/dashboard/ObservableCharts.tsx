@@ -136,8 +136,7 @@ export default function ObservableCharts({ data }: ChartProps) {
                 tickFormat: (d) => `${d / 1000000}M`,
                 grid: true,
                 tickSize: 0,
-                tickPadding: 10,
-                gridDasharray: "4,4"
+                tickPadding: 10
             },
             marks: [
                 Plot.areaY(lineData, {
@@ -175,7 +174,7 @@ export default function ObservableCharts({ data }: ChartProps) {
                     x: "year",
                     y: "price",
                     fill: primaryColor,
-                    stroke: "var(--background)", // Kart rengine göre çerçeve
+                    stroke: "var(--background)",
                     strokeWidth: 3,
                     r: 5,
                 }),
@@ -183,9 +182,9 @@ export default function ObservableCharts({ data }: ChartProps) {
                 Plot.tip(lineData, Plot.pointerX({
                     x: "year",
                     y: "price",
-                    fill: "var(--popover)",         // Tooltip arkaplanı
-                    stroke: "var(--border)",        // Tooltip çerçevesi
-                    color: "var(--popover-foreground)", // Tooltip yazısı
+                    fill: "var(--popover)",
+                    stroke: "var(--border)",
+                    color: "var(--popover-foreground)",
                     title: (d) => `${d.year}\nMean: ${d.price.toLocaleString()} ₺`
                 })),
                 // Hover Noktası
@@ -220,9 +219,7 @@ export default function ObservableCharts({ data }: ChartProps) {
                 grid: true,
                 tickPadding: 10,
                 labelAnchor: "center",
-                labelOffset: 45,
-                gridColor: "var(--border)",
-                gridOpacity: 0.3
+                labelOffset: 45
             },
             y: {
                 label: null,
@@ -239,8 +236,8 @@ export default function ObservableCharts({ data }: ChartProps) {
                     strokeWidth: 2,
                     strokeOpacity: 0.3
                 }),
-                Plot.tickX(rangeData, { x: "min", y: "brand", stroke: "var(--muted-foreground)", strokeWidth: 2, height: 12 }),
-                Plot.tickX(rangeData, { x: "max", y: "brand", stroke: "var(--muted-foreground)", strokeWidth: 2, height: 12 }),
+                Plot.tickX(rangeData, { x: "min", y: "brand", stroke: "var(--muted-foreground)", strokeWidth: 2 }),
+                Plot.tickX(rangeData, { x: "max", y: "brand", stroke: "var(--muted-foreground)", strokeWidth: 2 }),
                 Plot.ruleY(rangeData, {
                     x1: "q1",
                     x2: "q3",
