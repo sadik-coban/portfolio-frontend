@@ -5,11 +5,9 @@ import {
     Zap,
     LayoutDashboard,
     CheckCircle2,
-    BarChart3,
     ShieldCheck,
     Container,
     Server,
-    Database
 } from "lucide-react";
 import { GithubIcon } from "@/components/ui/social-icons";
 

@@ -3,16 +3,24 @@ import { getBlogPosts } from '@/lib/mdx';
 import { Badge } from "@/components/ui/badge";
 import Navbar from '@/components/layout/Navbar';
 import { Calendar, ArrowRight } from 'lucide-react';
+// Footer importunun doğru olduğundan emin ol (örn: @/components/SiteFooter ise ona göre düzelt)
+import Footer from '@/components/Footer';
 
 export default function GlobalBlogPage() {
     // Filtreleme yapmadan TÜM yazıları çekiyoruz
     const posts = getBlogPosts();
 
     return (
-        <div className="min-h-screen bg-slate-50 dark:bg-slate-950 font-sans selection:bg-blue-100 dark:selection:bg-blue-900">
+        // 1. DEĞİŞİKLİK: 'flex flex-col' ekledik.
+        // Böylece Navbar, Main ve Footer dikeyde sıralanır ve yönetilebilir olur.
+        <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 font-sans selection:bg-blue-100 dark:selection:bg-blue-900">
             <Navbar />
 
-            <main className="max-w-5xl mx-auto px-6 py-32">
+            {/* 2. DEĞİŞİKLİK: 'flex-1' ve 'w-full' ekledik.
+                'flex-1': Footer'ı en alta iter.
+                'w-full': Flex yapısında genişliğin tam oturmasını sağlar. */}
+            <main className="flex-1 w-full max-w-5xl mx-auto px-6 py-32">
+
                 {/* --- HEADER --- */}
                 <div className="text-center mb-16">
                     <h1 className="text-4xl md:text-5xl font-black text-slate-900 dark:text-white mb-6 tracking-tight">
@@ -73,6 +81,8 @@ export default function GlobalBlogPage() {
                     ))}
                 </div>
             </main>
+
+            <Footer />
         </div>
     );
 }

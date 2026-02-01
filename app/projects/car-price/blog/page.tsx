@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { getPostsByProject } from '@/lib/mdx';
-import { ArrowLeft, BookOpen } from 'lucide-react';
+import { BookOpen } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
 import { Calendar, ArrowRight } from 'lucide-react';
 
@@ -82,6 +82,7 @@ export default function CarPriceBlogList() {
                     ))}
                 </div>
             </main>
+
         </div>
     );
 }

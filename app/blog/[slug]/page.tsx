@@ -5,7 +5,7 @@ import { ArrowLeft, BookOpen } from 'lucide-react';
 import Navbar from '@/components/layout/Navbar';
 import { notFound } from 'next/navigation';
 import rehypePrettyCode from 'rehype-pretty-code';
-
+import Footer from "@/components/Footer";
 type Props = {
     params: Promise<{ slug: string }>;
 };
@@ -149,6 +149,7 @@ export default async function BlogPost(props: Props) {
                     />
                 </div>
             </article>
+            <Footer />
         </div>
     );
 }

@@ -1,4 +1,5 @@
 import CarSidebar from '@/components/car-price/CarSidebar';
+import DashboardFooter from '@/components/car-price/dashboard/DashboardFooter';
 import type { Metadata } from 'next'
 export const metadata: Metadata = {
     title: 'Car Price Prediction Project',
@@ -14,10 +15,28 @@ export default function CarPriceLayout({
         <div className="flex min-h-screen bg-slate-50 dark:bg-slate-950">
             <CarSidebar />
 
-            {/* pt-16 md:pt-6 eklendi: Mobilde header altında kalmasın diye padding */}
-            <main className="flex-1 p-6 pt-20 md:pt-6 md:ml-64 transition-all">
-                {children}
-            </main>
+            {/* SAĞ TARAFA KAPSAYICI (WRAPPER) EKLEDİK
+                - md:ml-64: Sidebar genişliği kadar sağdan başlar.
+                - flex flex-col: İçerik ve Footer'ı alt alta dizer.
+                - min-h-screen: Sayfa boyunu garanti eder.
+            */}
+            <div className="flex-1 flex flex-col md:ml-64 transition-all min-h-screen">
+
+                {/* MAIN (ANA İÇERİK)
+                   - flex-1: Boş alanın tamamını kaplar, böylece içerik az olsa bile 
+                     Footer en alta yapışır (Sticky Footer mantığı).
+                */}
+                <main className="flex-1 p-6 pt-20 md:pt-6">
+                    {children}
+                </main>
+
+                {/* FOOTER
+                   - px-6 pb-6: Main ile aynı hizalama boşlukları.
+                */}
+                <div className="px-6 pb-6">
+                    <DashboardFooter />
+                </div>
+            </div>
         </div>
     );
 }
