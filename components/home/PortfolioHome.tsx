@@ -167,20 +167,30 @@ export default function PortfolioHome({ recentPosts }: PortfolioProps) {
             <section id="projects" className="py-24 px-6 md:px-12 bg-slate-50 dark:bg-black">
                 <div className="max-w-7xl mx-auto">
 
+                    {/* Header (Masaüstü için Buton Var, Mobilde Gizli) */}
                     <div className="flex justify-between items-end mb-12">
                         <h2 className="text-4xl font-bold text-slate-900 dark:text-white">
                             Selected Work
                         </h2>
-                        <Link href="/projects" className="group flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-black dark:hover:text-white transition-colors">
+                        {/* 'hidden md:flex' ile mobilde gizledik */}
+                        <Link href="/projects" className="hidden md:flex group items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-black dark:hover:text-white transition-colors">
                             View All Projects
                             <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
                         </Link>
                     </div>
-                    {/* col : in one row how many projects to show */}
+
+                    {/* Proje Grid */}
                     <div className="grid grid-cols-1 lg:grid-cols-1 gap-8">
                         {featuredProjects.map((project) => (
                             <ProjectCard key={project.id} data={project} />
                         ))}
+                    </div>
+
+                    {/* Mobil İçin Alt Buton (Sadece Mobilde Görünür) */}
+                    <div className="mt-12 text-center md:hidden">
+                        <Link href="/projects" className="inline-flex px-6 py-3 rounded-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 items-center gap-2 text-slate-900 dark:text-white font-bold text-sm shadow-sm">
+                            View All Projects <ArrowRight size={16} />
+                        </Link>
                     </div>
 
                 </div>

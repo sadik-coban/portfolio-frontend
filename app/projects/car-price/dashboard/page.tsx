@@ -125,7 +125,7 @@ export default function DashboardPage() {
             </div>
 
             {/* Filter Panel */}
-            <div className="sticky top-4 z-30">
+            <div className="top-4 z-30">
                 <FilterPanel
                     initialFilters={appliedFilters}
                     onApply={handleApplyFilters}
