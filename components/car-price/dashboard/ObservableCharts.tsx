@@ -52,8 +52,8 @@ function ChartPieDonut({ data, config }: { data: any[], config: ChartConfig }) {
                             strokeWidth={5}
                         />
                         <ChartLegend
-                            content={<ChartLegendContent nameKey="name" payload={undefined} />}
-                            className="-translate-y-2 flex-wrap gap-2 [&>*]:basis-1/4 [&>*]:justify-center"
+                            content={<ChartLegendContent nameKey="name" />}
+                            className="-translate-y-2 flex-wrap gap-2 [&>button]:basis-1/4 [&>button]:justify-center"
                         />
                     </PieChart>
                 </ChartContainer>
@@ -120,24 +120,44 @@ export default function ObservableCharts({ data }: ChartProps) {
     }
 
     // D) Donut / Pie Data
-    let color = ["red", "blue", "green", "yellow", "purple", "orange", "pink", "brown", "gray", "black"];
     const donutData = useMemo(() => {
+        // High Contrast Palette
+        const colors = [
+            "#9333ea", // Blue 600
+            "#e11d48", // Rose 600
+            "#16a34a", // Green 600
+            "#d97706", // Amber 600
+            "#2563eb", // Purple 600
+            "#0891b2", // Cyan 600
+            "#db2777", // Pink 600
+            "#ea580c"  // Orange 600
+        ];
+
         return (data.donutChartData || []).map((d: any, i: number) => ({
             ...d,
-            fill: color[i % color.length]
+            fill: colors[i % colors.length]
         }));
     }, [data.donutChartData]);
-    useEffect(() => {
-        console.log(donutData);
-    }, [donutData]);
+
     const donutConfig = useMemo(() => {
+        const colors = [
+            "#9333ea", // Blue 600
+            "#e11d48", // Rose 600
+            "#16a34a", // Green 600
+            "#d97706", // Amber 600
+            "#2563eb", // Purple 600
+            "#0891b2", // Cyan 600
+            "#db2777", // Pink 600
+            "#ea580c"  // Orange 600
+        ];
+
         const config: ChartConfig = {
             value: { label: "Count" }
         };
         (data.donutChartData || []).forEach((d: any, i: number) => {
             config[d.name] = {
                 label: d.name,
-                color: color[i % color.length]
+                color: colors[i % colors.length]
             };
         });
         return config;
@@ -173,51 +193,44 @@ export default function ObservableCharts({ data }: ChartProps) {
     useEffect(() => {
         if (!scatterPoints.length || !scatterRef.current) return;
 
-        const plot = Plot.plot({
-            style: commonPlotStyle,
-            height: 400,
-            marginTop: 20,
-            marginLeft: 50,
-            marginBottom: 50,
-            inset: 20,
-            grid: true,
-            color: { legend: true, scheme: "Tableau10" },
-            x: {
-                label: "Mileage (KM)",
-                tickFormat: "s",
-                nice: true,
-                tickSize: 0,
-                tickPadding: 10,
-                labelOffset: 40,
-                labelAnchor: "center"
-            },
-            y: {
-                label: "Price (₺)",
-                tickFormat: (d) => `${d / 1000000}M`,
-                nice: true,
-                tickSize: 0,
-                tickPadding: 10
-            },
-            marks: [
-                Plot.dot(scatterPoints, {
-                    x: "km",
-                    y: "price",
-                    fill: "brand",
-                    strokeWidth: 1,
-                    fillOpacity: 0.7,
-                    r: 1,
-                    title: (d) => `${d.brand}\n${d.km.toLocaleString()} km\n${d.price.toLocaleString()} ₺`,
-                }),
-                Plot.tip(scatterPoints, Plot.pointer({
+        const plot = Plot
+            .dot(scatterPoints, Plot.hexbin({ r: "count" }, {
+                x: "km", y: "price", binWidth: 20, fill: "brand", tip: {
                     x: "km",
                     y: "price",
                     fill: "var(--popover)",
                     stroke: "var(--border)",
                     color: "var(--popover-foreground)",
                     title: (d) => `${d.brand} • ${d.km.toLocaleString()} km • ${d.price.toLocaleString()} ₺`
-                }))
-            ]
-        });
+                }
+            }))
+            .plot({
+                style: commonPlotStyle,
+                height: 400,
+                marginTop: 20,
+                marginLeft: 50,
+                marginBottom: 50,
+                inset: 20,
+                grid: true,
+
+                color: { legend: true, scheme: "Tableau10" },
+                x: {
+                    label: "Mileage (KM)",
+                    tickFormat: "s",
+                    nice: true,
+                    tickSize: 0,
+                    tickPadding: 10,
+                    labelOffset: 40,
+                    labelAnchor: "center"
+                },
+                y: {
+                    label: "Price (₺)",
+                    tickFormat: (d) => `${d / 1000000}M`,
+                    nice: true,
+                    tickSize: 0,
+                    tickPadding: 10
+                }
+            });
 
         scatterRef.current.replaceChildren(plot);
         return () => plot.remove();
@@ -294,7 +307,15 @@ export default function ObservableCharts({ data }: ChartProps) {
                     fill: "var(--popover)",
                     stroke: "var(--border)",
                     color: "var(--popover-foreground)",
-                    title: (d) => `${d.year}\nMean: ${d.price.toLocaleString()} ₺`
+                    title: (d) => {
+                        const val = d.price;
+                        // 1 Milyon ve üstü mü kontrolü
+                        const formattedPrice = val >= 1_000_000
+                            ? `${(val / 1_000_000).toFixed(2)}M`  // Örn: 1.25M
+                            : `${(val / 1_000).toFixed(2)}k`;     // Örn: 850.50k
+
+                        return `${d.year}\nOrt: ${formattedPrice} ₺`;
+                    }
                 })),
                 // Hover Noktası (Smaller: r: 5)
                 Plot.dot(lineData, Plot.pointerX({

@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { carService, DashboardFilters } from '@/lib/services/car-service';
 import FilterPanel from '@/components/car-price/dashboard/FilterPanel';
 import KPIGrid from '@/components/car-price/dashboard/KPIGrid';
-import ChartsSection from '@/components/car-price/dashboard/ChartsSection';
+import ObservableCharts from '@/components/car-price/dashboard/ObservableCharts';
 import { Loader2, ServerCrash, RefreshCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -51,7 +51,7 @@ export default function DashboardPage() {
         loadData();
     }, [appliedFilters]);
 
-    // Series Loading (Updates dropdown options only)
+    // Series Loading
     const handleBrandChange = async (selectedBrand: string) => {
         setLoadingSeries(true);
         try {
@@ -120,7 +120,7 @@ export default function DashboardPage() {
                     Market Overview
                 </h1>
                 <p className="text-lg text-slate-500 dark:text-slate-400">
-                    Real-time analysis of vehicle pricing trends and market distribution.
+                    Real-time analysis powered by <strong>Observable Plot</strong>.
                 </p>
             </div>
 
@@ -139,15 +139,17 @@ export default function DashboardPage() {
             {/* Data Visualization */}
             {data && (
                 <div className="space-y-8">
+                    {/* KPI Cards (Metrics) */}
                     <section>
                         <KPIGrid data={data} />
                     </section>
-                    <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-950">
-                        <ChartsSection data={data} />
+
+                    {/* NEW: Observable Charts Section */}
+                    <section className="fade-in duration-500">
+                        <ObservableCharts data={data} />
                     </section>
                 </div>
             )}
         </div>
-
     );
 }
