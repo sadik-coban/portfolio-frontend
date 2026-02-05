@@ -120,7 +120,7 @@ export default function DashboardPage() {
                     Market Overview
                 </h1>
                 <p className="text-lg text-slate-500 dark:text-slate-400">
-                    Real-time analysis powered by <strong>Observable Plot</strong>.
+                    Real-time analysis powered by <strong>Observable Plot</strong> and <strong>Recharts-shadcn/ui</strong>.
                 </p>
             </div>
 
