@@ -1,18 +1,86 @@
 "use client";
 import * as Plot from "@observablehq/plot";
-import { useEffect, useRef } from "react";
-import { Card } from "@/components/ui/card";
-import { AlertCircle } from "lucide-react";
+import { useEffect, useRef, useMemo } from "react";
+import { AlertCircle, TrendingUp } from "lucide-react";
+import { Pie, PieChart } from "recharts";
+import { useTheme } from "next-themes";
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardFooter,
+    CardHeader,
+    CardTitle,
+} from "@/components/ui/card";
+import {
+    ChartContainer,
+    ChartTooltip,
+    ChartTooltipContent,
+    ChartLegend,
+    ChartLegendContent,
+    type ChartConfig,
+} from "@/components/ui/chart";
+
+// --- Sub-Component: Dynamic Pie Chart ---
+function ChartPieDonut({ data, config }: { data: any[], config: ChartConfig }) {
+    if (!data || data.length === 0) return null;
+
+    // Calculate total for "trending" text or summary
+    const total = data.reduce((acc, curr) => acc + (curr.value || 0), 0);
+
+    return (
+        <Card className="flex flex-col border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 shadow-sm">
+            <CardHeader className="items-center pb-0">
+                <CardTitle>Fuel Type Distribution</CardTitle>
+                <CardDescription>Market Share by Fuel</CardDescription>
+            </CardHeader>
+            <CardContent className="flex-1 pb-0">
+                <ChartContainer
+                    config={config}
+                    className="mx-auto aspect-square max-h-[300px]"
+                >
+                    <PieChart>
+                        <ChartTooltip
+                            cursor={false}
+                            content={<ChartTooltipContent hideLabel />}
+                        />
+                        <Pie
+                            data={data}
+                            dataKey="value"
+                            nameKey="name"
+                            innerRadius={60}
+                            strokeWidth={5}
+                        />
+                        <ChartLegend
+                            content={<ChartLegendContent nameKey="name" payload={undefined} />}
+                            className="-translate-y-2 flex-wrap gap-2 [&>*]:basis-1/4 [&>*]:justify-center"
+                        />
+                    </PieChart>
+                </ChartContainer>
+            </CardContent>
+            <CardFooter className="flex-col gap-2 text-sm">
+                <div className="flex items-center gap-2 leading-none font-medium">
+                    Total Vehicles: {total.toLocaleString()} <TrendingUp className="h-4 w-4" />
+                </div>
+                <div className="text-muted-foreground leading-none">
+                    Distribution of available vehicles
+                </div>
+            </CardFooter>
+        </Card>
+    )
+}
 
 interface ChartProps {
     data: any;
 }
 
 export default function ObservableCharts({ data }: ChartProps) {
+    const { theme } = useTheme();
+    const isDarkMode = theme === 'dark';
+
     const scatterRef = useRef<HTMLDivElement>(null);
     const lineRef = useRef<HTMLDivElement>(null);
     const rangeRef = useRef<HTMLDivElement>(null);
-    // DonutRef kaldırıldı
 
     // --- 1. VERİ DÖNÜŞÜMÜ (Transformation) ---
 
@@ -26,7 +94,7 @@ export default function ObservableCharts({ data }: ChartProps) {
     const scatterPoints: any[] = [];
     if (data.scatterData) {
         Object.entries(data.scatterData).forEach(([brand, points]: [string, any]) => {
-            (points as number[][]).slice(0, 100).forEach(pt => {
+            (points as number[][]).forEach(pt => {
                 scatterPoints.push({ brand, km: pt[0], price: pt[1] });
             });
         });
@@ -50,6 +118,47 @@ export default function ObservableCharts({ data }: ChartProps) {
             }
         });
     }
+
+    // D) Donut / Pie Data
+    let color = ["red", "blue", "green", "yellow", "purple", "orange", "pink", "brown", "gray", "black"];
+    const donutData = useMemo(() => {
+        return (data.donutChartData || []).map((d: any, i: number) => ({
+            ...d,
+            fill: color[i % color.length]
+        }));
+    }, [data.donutChartData]);
+    useEffect(() => {
+        console.log(donutData);
+    }, [donutData]);
+    const donutConfig = useMemo(() => {
+        const config: ChartConfig = {
+            value: { label: "Count" }
+        };
+        (data.donutChartData || []).forEach((d: any, i: number) => {
+            config[d.name] = {
+                label: d.name,
+                color: color[i % color.length]
+            };
+        });
+        return config;
+    }, [data.donutChartData]);
+
+    // E) Heatmap Data (Same Grid Logic)
+    const damageGrid = useMemo(() => {
+        if (!data.damageChartData) return [];
+        const grid = [
+            [{ part: 'Sol Ön Çamurluk', label: 'L.F. Wing' }, { part: 'Kaput', label: 'Hood' }, { part: 'Sağ Ön Çamurluk', label: 'R.F. Wing' }],
+            [{ part: 'Sol Ön Kapı', label: 'L.F. Door' }, { part: 'Tavan', label: 'Roof' }, { part: 'Sağ Ön Kapı', label: 'R.F. Door' }],
+            [{ part: 'Sol Arka Kapı', label: 'L.R. Door' }, { part: null }, { part: 'Sağ Arka Kapı', label: 'R.R. Door' }],
+            [{ part: 'Sol Arka Çamurluk', label: 'L.R. Wing' }, { part: 'Bagaj', label: 'Trunk' }, { part: 'Sağ Arka Çamurluk', label: 'R.R. Wing' }]
+        ];
+        const getValue = (partName: string) => {
+            const found = data.damageChartData.find((d: any) => d.part === partName);
+            return found ? found.value : 0;
+        };
+        return grid.map(row => row.map(cell => cell ? { ...cell, value: getValue(cell.part!) } : null));
+    }, [data.damageChartData]);
+
 
     // --- ORTAK STİL AYARLARI (Theme Config) ---
     const commonPlotStyle = {
@@ -96,7 +205,7 @@ export default function ObservableCharts({ data }: ChartProps) {
                     fill: "brand",
                     strokeWidth: 1,
                     fillOpacity: 0.7,
-                    r: 5,
+                    r: 1,
                     title: (d) => `${d.brand}\n${d.km.toLocaleString()} km\n${d.price.toLocaleString()} ₺`,
                 }),
                 Plot.tip(scatterPoints, Plot.pointer({
@@ -169,14 +278,14 @@ export default function ObservableCharts({ data }: ChartProps) {
                     strokeOpacity: 0.5,
                     strokeDasharray: "3,3"
                 })),
-                // Noktalar (Dark Mode Uyumlu)
+                // Noktalar (Smaller: r: 3)
                 Plot.dot(lineData, {
                     x: "year",
                     y: "price",
                     fill: primaryColor,
                     stroke: "var(--background)",
-                    strokeWidth: 3,
-                    r: 5,
+                    strokeWidth: 2,
+                    r: 3,
                 }),
                 // Tooltip (Dark Mode Uyumlu)
                 Plot.tip(lineData, Plot.pointerX({
@@ -187,13 +296,13 @@ export default function ObservableCharts({ data }: ChartProps) {
                     color: "var(--popover-foreground)",
                     title: (d) => `${d.year}\nMean: ${d.price.toLocaleString()} ₺`
                 })),
-                // Hover Noktası
+                // Hover Noktası (Smaller: r: 5)
                 Plot.dot(lineData, Plot.pointerX({
                     x: "year",
                     y: "price",
                     stroke: primaryColor,
                     fill: "var(--background)",
-                    r: 7,
+                    r: 5,
                     strokeWidth: 2
                 }))
             ]
@@ -310,6 +419,43 @@ export default function ObservableCharts({ data }: ChartProps) {
                 <Card className="p-6 border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 shadow-sm overflow-hidden">
                     <h3 className="text-lg font-bold mb-4 text-slate-900 dark:text-white">Price Trend by Model Year</h3>
                     <div ref={lineRef} className="w-full overflow-x-auto [&_svg]:w-full" />
+                </Card>
+            </div>
+
+            {/* 3. SATIR: Pie + Heatmap */}
+            <div className="grid gap-8 lg:grid-cols-2">
+                <ChartPieDonut data={donutData} config={donutConfig} />
+
+                <Card className="flex flex-col border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 shadow-sm">
+                    <CardHeader className="items-center pb-0">
+                        <CardTitle>Damage Heatmap (Top View)</CardTitle>
+                        <CardDescription>Damage frequency by part</CardDescription>
+                    </CardHeader>
+                    <CardContent className="flex-1 flex items-center justify-center py-6">
+                        <div className="grid grid-col-1 gap-2">
+                            {damageGrid.map((row, rIndex) => (
+                                <div key={rIndex} className="flex justify-center gap-2">
+                                    {row.map((cell, cIndex) => {
+                                        if (!cell) return <div key={cIndex} className="w-20 h-16" />;
+                                        const bgClass = cell.value > 0
+                                            ? (isDarkMode ? `bg-red-900/50 border-red-500` : `bg-red-100 border-red-300`)
+                                            : (isDarkMode ? `bg-slate-800 border-slate-700` : `bg-slate-100 border-slate-200`);
+
+                                        return (
+                                            <div
+                                                key={cIndex}
+                                                className={`w-20 h-16 rounded-lg border flex flex-col items-center justify-center p-1 text-center transition-all hover:scale-105 ${bgClass}`}
+                                                title={`${cell.part}: ${cell.value} hasarlı`}
+                                            >
+                                                <span className="text-[10px] text-slate-500 dark:text-slate-400 leading-tight">{cell.label}</span>
+                                                {cell.value > 0 && <span className="font-bold text-red-600 dark:text-red-400 text-sm">{cell.value}</span>}
+                                            </div>
+                                        )
+                                    })}
+                                </div>
+                            ))}
+                        </div>
+                    </CardContent>
                 </Card>
             </div>
         </div>
