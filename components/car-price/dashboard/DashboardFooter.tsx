@@ -21,12 +21,12 @@ export default function DashboardFooter() {
                     </span>
                     <div className="flex flex-wrap justify-center gap-x-6 gap-y-2">
                         <a
-                            href="https://echarts.apache.org/"
+                            href="https://ui.shadcn.com/"
                             target="_blank"
                             rel="noopener noreferrer"
                             className="text-xs text-slate-500 underline underline-offset-4 transition-colors hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400"
                         >
-                            Apache ECharts
+                            Recharts - shadcn/ui
                         </a>
                         <a
                             href="https://observablehq.com/plot"
@@ -44,7 +44,7 @@ export default function DashboardFooter() {
             <div className="mt-8 rounded-xl bg-slate-50 p-4 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-800/50">
                 <p className="text-center text-[10px] leading-relaxed text-slate-500 dark:text-slate-500">
                     This dashboard is powered by open-source libraries licensed under
-                    <span className="font-semibold mx-1 text-slate-700 dark:text-slate-300">Apache License 2.0</span>
+                    <span className="font-semibold mx-1 text-slate-700 dark:text-slate-300">MIT License</span>
                     and
                     <span className="font-semibold mx-1 text-slate-700 dark:text-slate-300">ISC License</span>.
                 </p>
