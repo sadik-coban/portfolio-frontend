@@ -8,7 +8,7 @@ import { ALL_PROJECTS } from "@/lib/data";
 import Navbar from "@/components/layout/Navbar";
 
 export const metadata: Metadata = {
-    title: "Projects | Sadık Çoban",
+    title: "Projects",
     description: "Showcase of my data science, machine learning, and AI engineering projects.",
 };
 

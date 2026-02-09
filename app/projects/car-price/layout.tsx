@@ -1,11 +1,11 @@
 import CarSidebar from '@/components/car-price/CarSidebar';
 import DashboardFooter from '@/components/car-price/dashboard/DashboardFooter';
-import type { Metadata } from 'next'
-export const metadata: Metadata = {
-    title: 'Car Price Prediction Project',
-    description: 'A machine learning model to predict car prices using XGBoost and Python. View the source code and demo.',
-}
+import type { Metadata } from 'next';
 
+export const metadata: Metadata = {
+    title: "Car Price Prediction & MLOps",
+    description: "End-to-end machine learning system using CatBoost, featuring drift monitoring and SHAP explainability.",
+};
 export default function CarPriceLayout({
     children,
 }: {

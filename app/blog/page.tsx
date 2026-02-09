@@ -5,7 +5,12 @@ import Navbar from '@/components/layout/Navbar';
 import { Calendar, ArrowRight } from 'lucide-react';
 // Footer importunun doğru olduğundan emin ol (örn: @/components/SiteFooter ise ona göre düzelt)
 import Footer from '@/components/Footer';
+import { Metadata } from 'next';
 
+export const metadata: Metadata = {
+    title: "Blog",
+    description: "Deep dives into software architecture, MLOps pipelines, data science, and the modern tech stack.",
+};
 export default function GlobalBlogPage() {
     // Filtreleme yapmadan TÜM yazıları çekiyoruz
     const posts = getBlogPosts();

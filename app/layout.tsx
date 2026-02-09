@@ -7,7 +7,7 @@ import { Providers } from "@/components/providers";
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
 // Base URL tanımı
-const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://sadikcoban.com";
+const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://www.sadikcoban.com";
 
 export const metadata: Metadata = {
   metadataBase: new URL(baseUrl),

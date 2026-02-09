@@ -40,13 +40,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
         },
 
         {
-            url: `${baseUrl}/projects/car-price/observable-dash`,
-            lastModified: new Date(),
-            changeFrequency: 'weekly',
-            priority: 0.7,
-        },
-
-        {
             url: `${baseUrl}/projects/car-price/blog`,
             lastModified: new Date(),
             changeFrequency: 'monthly',

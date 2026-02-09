@@ -10,6 +10,36 @@ type Props = {
     params: Promise<{ slug: string }>;
 };
 
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
+    // Next.js 15'te params artık asenkron bir yapıdır
+    const { slug } = await params;
+    const post = await getPostBySlug(slug);
+
+    if (!post) {
+        return {
+            title: "Post Not Found", //
+        };
+    }
+
+    return {
+        title: `${post.meta.title}`, //
+        description: post.meta.description || "Blog post by Sadık Çoban", //
+
+        // Sadece metin odaklı sosyal medya paylaşım verileri
+        openGraph: {
+            title: post.meta.title,
+            description: post.meta.description,
+            type: 'article',
+            url: `https://www.sadikcoban.com/blog/${slug}`, //
+        },
+        twitter: {
+            card: 'summary', // Resim olmadığı için 'summary_large_image' yerine 'summary'
+            title: post.meta.title,
+            description: post.meta.description,
+        },
+    };
+}
+
 export async function generateStaticParams() {
     const posts = getBlogPosts();
     return posts.map((post) => ({
