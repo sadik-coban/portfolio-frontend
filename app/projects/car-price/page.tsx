@@ -50,10 +50,12 @@ export default function CarPriceLandingPage() {
                             <ArrowRight size={20} />
                         </Link>
                         <Link
-                            href="/projects/car-price/blog"
+                            href="https://github.com/sadik-coban/car-price-prediction-pipeline"
+                            target="_blank"
                             className="w-full sm:w-auto px-8 py-4 rounded-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white font-bold text-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-all flex items-center justify-center gap-2"
                         >
-                            Read Engineering Case
+                            View Code on GitHub
+                            <GithubIcon size={18} />
                         </Link>
                     </div>
                 </div>
