@@ -1,6 +1,9 @@
 import type { NextConfig } from "next";
+import createMDX from '@next/mdx';
 
 const nextConfig: NextConfig = {
+  // Configure `pageExtensions` to include markdown and MDX files
+  pageExtensions: ['js', 'jsx', 'md', 'mdx', 'ts', 'tsx'],
   async redirects() {
     return [
       {
@@ -17,4 +20,23 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+
+const withMDX = createMDX({
+  options: {
+    remarkPlugins: [
+
+      'remark-frontmatter', 'remark-mdx-frontmatter'
+    ],
+    rehypePlugins: [
+      [
+        'rehype-pretty-code',
+        {
+          theme: 'one-dark-pro',
+          keepBackground: false,
+        },
+      ],
+    ],
+  },
+});
+
+export default withMDX(nextConfig);

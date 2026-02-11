@@ -3,9 +3,8 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { ALL_PROJECTS } from "@/lib/data";
 
-// 1. Import your Navbar component
-// (Adjust the path if your Navbar is in a different folder, e.g., '@/components/layout/Navbar')
 import Navbar from "@/components/layout/Navbar";
+import Footer from "@/components/Footer";
 
 export const metadata: Metadata = {
     title: "Projects",
@@ -14,12 +13,13 @@ export const metadata: Metadata = {
 
 export default function ProjectsPage() {
     return (
-        <div className="min-h-screen bg-slate-50 dark:bg-black selection:bg-blue-500 selection:text-white">
+        // 1. DEĞİŞİKLİK: 'flex flex-col' ekledik
+        <div className="flex flex-col min-h-screen bg-slate-50 dark:bg-black selection:bg-blue-500 selection:text-white">
 
-            {/* 2. Add Navbar at the top */}
             <Navbar />
 
-            <div className="pt-32 pb-20 px-6 md:px-12">
+            {/* 2. DEĞİŞİKLİK: 'flex-grow' ekledik. Bu, içeriği uzatarak footer'ı aşağı iter */}
+            <div className="flex-grow pt-32 pb-20 px-6 md:px-12">
                 <div className="max-w-5xl mx-auto">
 
                     {/* Header Section */}
@@ -85,6 +85,8 @@ export default function ProjectsPage() {
                     </div>
                 </div>
             </div>
+
+            <Footer />
         </div>
     );
 }

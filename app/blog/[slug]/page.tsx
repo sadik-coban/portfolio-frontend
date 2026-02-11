@@ -1,10 +1,7 @@
-import { getPostBySlug, getBlogPosts } from '@/lib/mdx';
-import { MDXRemote } from 'next-mdx-remote/rsc';
+import { getBlogPosts } from '@/lib/mdx';
 import Link from 'next/link';
 import { ArrowLeft, BookOpen } from 'lucide-react';
 import Navbar from '@/components/layout/Navbar';
-import { notFound } from 'next/navigation';
-import rehypePrettyCode from 'rehype-pretty-code';
 import Footer from "@/components/Footer";
 type Props = {
     params: Promise<{ slug: string }>;
@@ -13,29 +10,30 @@ type Props = {
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
     // Next.js 15'te params artık asenkron bir yapıdır
     const { slug } = await params;
-    const post = await getPostBySlug(slug);
+    const cleanSlug = decodeURIComponent(slug);
+    const { frontmatter } = await import(`@/content/${cleanSlug}.mdx`);
 
-    if (!post) {
+    if (!frontmatter) {
         return {
             title: "Post Not Found", //
         };
     }
 
     return {
-        title: `${post.meta.title}`, //
-        description: post.meta.description || "Blog post by Sadık Çoban", //
+        title: `${frontmatter.title}`, //
+        description: frontmatter.description || "Blog post by Sadık Çoban", //
 
         // Sadece metin odaklı sosyal medya paylaşım verileri
         openGraph: {
-            title: post.meta.title,
-            description: post.meta.description,
+            title: frontmatter.title,
+            description: frontmatter.description,
             type: 'article',
-            url: `https://www.sadikcoban.com/blog/${slug}`, //
+            url: `https://www.sadikcoban.com/blog/${cleanSlug}`, //
         },
         twitter: {
             card: 'summary', // Resim olmadığı için 'summary_large_image' yerine 'summary'
-            title: post.meta.title,
-            description: post.meta.description,
+            title: frontmatter.title,
+            description: frontmatter.description,
         },
     };
 }
@@ -52,86 +50,66 @@ export default async function BlogPost(props: Props) {
     const { slug } = params;
 
     const cleanSlug = decodeURIComponent(slug);
-    const post = getPostBySlug(cleanSlug);
 
-    if (!post) {
-        return notFound();
-    }
+    const { default: Post, frontmatter } = await import(`@/content/${cleanSlug}.mdx`);
 
-    const backLink = post.meta.project
-        ? `/projects/${post.meta.project}/blog`
+    const backLink = frontmatter.project
+        ? `/projects/${frontmatter.project}/blog`
         : '/blog';
 
-    const backLabel = post.meta.project
+    const backLabel = frontmatter.project
         ? 'Back to Project Journal'
         : 'Back to All Posts';
 
-    // --- 1. GARANTİ ÇALIŞAN TEMA AYARI ---
-    const mdxOptions: any = {
-        rehypePlugins: [
-            [
-                rehypePrettyCode,
-                {
-                    // Şimdilik tek tema kullanalım (En güvenli yöntem)
-                    theme: 'one-dark-pro',
-                    // Arka planı CSS ile biz vereceğiz, o yüzden false
-                    keepBackground: false,
-                    defaultLang: 'plaintext',
-                },
-            ],
-        ],
-    };
+    return (<div className="min-h-screen bg-slate-50 dark:bg-slate-950 font-sans overflow-x-hidden">
+        <Navbar />
 
-    return (
-        <div className="min-h-screen bg-slate-50 dark:bg-slate-950 font-sans overflow-x-hidden">
-            <Navbar />
+        <article className="max-w-3xl mx-auto py-32 px-6 animate-in fade-in duration-700">
 
-            <article className="max-w-3xl mx-auto py-32 px-6 animate-in fade-in duration-700">
+            {/* --- NAVIGATION --- */}
+            <div className="flex flex-wrap items-center gap-6 mb-8 border-b border-slate-200 dark:border-slate-800 pb-4">
+                <Link
+                    href={backLink}
+                    className="inline-flex items-center text-sm font-medium text-slate-500 hover:text-blue-600 transition-colors"
+                >
+                    <ArrowLeft size={16} className="mr-2" /> {backLabel}
+                </Link>
 
-                {/* --- NAVIGATION --- */}
-                <div className="flex flex-wrap items-center gap-6 mb-8 border-b border-slate-200 dark:border-slate-800 pb-4">
-                    <Link
-                        href={backLink}
-                        className="inline-flex items-center text-sm font-medium text-slate-500 hover:text-blue-600 transition-colors"
-                    >
-                        <ArrowLeft size={16} className="mr-2" /> {backLabel}
-                    </Link>
+                {frontmatter.project && (
+                    <>
+                        <span className="text-slate-300 dark:text-slate-700">|</span>
+                        <Link
+                            href="/blog"
+                            className="inline-flex items-center text-sm font-medium text-slate-500 hover:text-purple-600 transition-colors"
+                        >
+                            <BookOpen size={16} className="mr-2" /> Blog Home
+                        </Link>
+                    </>
+                )}
+            </div>
 
-                    {post.meta.project && (
-                        <>
-                            <span className="text-slate-300 dark:text-slate-700">|</span>
-                            <Link
-                                href="/blog"
-                                className="inline-flex items-center text-sm font-medium text-slate-500 hover:text-purple-600 transition-colors"
-                            >
-                                <BookOpen size={16} className="mr-2" /> Blog Home
-                            </Link>
-                        </>
+            <header className="mb-12">
+                <h1 className="text-4xl md:text-5xl font-black text-slate-900 dark:text-white mb-6 leading-tight">
+                    {frontmatter.title}
+                </h1>
+
+                <div className="flex flex-wrap items-center gap-4 text-slate-500 text-sm font-medium border-b border-slate-200 dark:border-slate-800 pb-8">
+                    <span className="bg-slate-100 dark:bg-slate-800 px-3 py-1 rounded-full text-slate-600 dark:text-slate-300">
+                        {frontmatter.date}
+                    </span>
+
+                    {frontmatter.tags && (
+                        <div className="flex gap-2 ml-auto">
+                            {frontmatter.tags?.map((tag: any) => (
+                                <span key={tag} className="text-blue-600 dark:text-blue-400">#{tag}</span>
+                            ))}
+                        </div>
                     )}
                 </div>
+            </header>
 
-                <header className="mb-12">
-                    <h1 className="text-4xl md:text-5xl font-black text-slate-900 dark:text-white mb-6 leading-tight">
-                        {post.meta.title}
-                    </h1>
-
-                    <div className="flex flex-wrap items-center gap-4 text-slate-500 text-sm font-medium border-b border-slate-200 dark:border-slate-800 pb-8">
-                        <span className="bg-slate-100 dark:bg-slate-800 px-3 py-1 rounded-full text-slate-600 dark:text-slate-300">
-                            {post.meta.date}
-                        </span>
-
-                        {post.meta.tags && (
-                            <div className="flex gap-2 ml-auto">
-                                {post.meta.tags.map(tag => (
-                                    <span key={tag} className="text-blue-600 dark:text-blue-400">#{tag}</span>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-                </header>
-
-                {/* --- 3. STİL AYARLARI (COLORS FIX) --- */}
-                <div className="
+            {/* --- 3. STİL AYARLARI (COLORS FIX) --- */}
+            <div className="
                     prose prose-lg dark:prose-invert prose-slate max-w-none
                     
                     /* Link ve Resim Stilleri */
@@ -173,13 +151,10 @@ export default async function BlogPost(props: Props) {
                     [&_:not(pre)>code]:after:content-['']
                     ">
 
-                    <MDXRemote
-                        source={post.content}
-                        options={{ mdxOptions }}
-                    />
-                </div>
-            </article>
-            <Footer />
-        </div>
-    );
+                <Post />
+            </div>
+        </article>
+        <Footer />
+    </div>)
+
 }

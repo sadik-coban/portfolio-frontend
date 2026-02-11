@@ -4,7 +4,7 @@ import matter from 'gray-matter';
 
 const root = process.cwd();
 // Klasör yolunu src dışına, ana dizine göre ayarlıyoruz
-const contentDir = path.join(root, 'content/blog');
+const contentDir = path.join(root, 'content');
 
 export interface BlogPost {
     slug: string;

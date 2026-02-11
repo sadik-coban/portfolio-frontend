@@ -10,13 +10,17 @@ The second-hand vehicle market is one of the places where the "asymmetric inform
 
 In this article, I will explain the journey of transforming raw data into a live MLOps system.
 
-## 1. Why CatBoost? (Model Selection)
+## 1. Model Selection: Why CatBoost?
 
-Vehicle datasets inherently contain dense **Categorical** variables: *Brand, Model, Gear Type, Fuel, Color, City...*
+Vehicle datasets are inherently dense with **Categorical** variables: *Brand, Model, Gear Type, Fuel, Color, City...*
 
-In traditional methods (XGBoost or Random Forest), **One-Hot Encoding** is required to process this data. However, when there are 50 different brands and 500 different models, the dataset matrix swells incredibly (Curse of Dimensionality), and model performance decreases.
+When dealing with high-cardinality categorical features, traditional approaches face a bottleneck. **One-Hot Encoding** causes the dataset matrix to swell (Curse of Dimensionality).
 
-**CatBoost (Categorical Boosting)** can process these variables natively (using a technique similar to Target Encoding).
+**Standard tree-based models (XGBoost, Random Forest) offer alternatives, but with significant tradeoffs:**
+* **Label Encoding:** Requires pruning low-frequency categories to avoid noise, leading to data loss.
+* **Target Encoding:** Replaces categories with their average price. However, for rare categories, these averages are unreliable and require manual **smoothing** with the global mean to prevent overfitting.
+
+I chose **CatBoost** because it handles these challenges natively using *Ordered Target Statistics*, eliminating the need for these complex preprocessing steps.
 
 ```python
 # Model Parameters
@@ -70,7 +74,17 @@ def calculate_expert_risk_score(row):
 
 Thanks to this score, the model can distinguish which of two vehicles with the same model/year/km is "clean" and which is "processed" (damaged/repaired).
 
-## 3. MLOps: The Model as a Living Entity
+## 3. Explainability: Opening the "Black Box" with SHAP
+
+Accuracy is not enough; users need to trust the prediction. A "Black Box" model that spits out a price without reasoning is useless for decision support.
+
+To solve this, I integrated **SHAP (SHapley Additive exPlanations)**.
+
+* **Global Interpretability:** I analyzed which features drive the market generally. Unsurprisingly, *Year* and *Engine Power* are positive drivers, while *Risk Score* and *Mileage* are negative drivers.
+
+> Model explainability plays a key role in deriving market insights.
+
+## 4. MLOps: The Model as a Living Entity
 
 Training the model once and setting it aside is the biggest mistake made. The market changes, inflation rises, or people's preferences might shift to SUVs. This situation is called **Data Drift**.
 
@@ -78,7 +92,7 @@ The system I established in this project:
 
 1. **Versioning:** Every model training (`v1`, `v2`) is stored along with `metrics.json` and the model file.
 2. **Drift Detection:** The distribution of incoming new data is compared with the training data.
-3. **Automatic Alert:** If there is a statistical deviation in price distribution (KS Test p-value < 0.05), the system gives a "Retrain Model" warning.
+3. **Automated Alerting:** If the price distribution shows statistical deviation (KS Test p-value < 0.05), the system flags the specific drifted features.
 
 ### Monitoring via Dashboard
 
@@ -92,8 +106,8 @@ This project was developed with the "Full Stack Data Science" principle:
 
 * **Model Training:** Python, Pandas, CatBoost, SHAP
 * **Backend API:** FastAPI (Asynchronous architecture, Pydantic validations)
-* **Frontend:** Next.js 14 (App Router), TypeScript, Tailwind CSS, Shadcn/UI
-* **Data Visualization:** Interactive charts are powered by **[Apache ECharts](https://echarts.apache.org/)** (Licensed under Apache 2.0) and **[Observable Plot](https://observablehq.com/plot)** (Licensed under ISC).
+* **Frontend:** Next.js 16 (App Router), TypeScript, Tailwind CSS, Shadcn/UI
+* **Data Visualization:** Interactive charts are powered by **[Recharts - shadcn/ui](https://ui.shadcn.com/)** (Licensed under MIT) and **[Observable Plot](https://observablehq.com/plot)** (Licensed under ISC).
 * **Database:** PostgreSQL (Data storage)
 
 ## Conclusion
