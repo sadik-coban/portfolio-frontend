@@ -17,7 +17,7 @@ export const metadata: Metadata = {
   },
   description: "Personal portfolio of Sadık Çoban. Showcasing projects in Artificial Intelligence, Data Science, MLOps end to end systems, and technology blog.",
   alternates: {
-    canonical: "/",
+    canonical: "./",
   },
   appleWebApp: {
     title: "Sadık's DS Portfolio",
@@ -25,7 +25,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Sadık Çoban | Data Scientist Portfolio",
     description: "Explore my Artificial Intelligence and Data Science projects.",
-    url: baseUrl,
+    url: "./",
     siteName: "Sadık Çoban",
     locale: "en_US",
     type: "website",
@@ -41,6 +41,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'Person',
+    "@id": "https://www.sadikcoban.com/#person",
     name: 'Sadık Çoban',
     url: baseUrl,
     jobTitle: 'Data Scientist',

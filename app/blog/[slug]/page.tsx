@@ -61,11 +61,33 @@ export default async function BlogPost(props: Props) {
         ? 'Back to Project Journal'
         : 'Back to All Posts';
 
+    // Blog yazısı sayfasında (örneğin: /blog/[slug]/page.tsx)
+    const jsonLd = {
+        "@context": "https://schema.org",
+        "@type": "BlogPosting",
+        "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": `https://www.sadikcoban.com/blog/${slug}` // Sayfanın benzersiz kimliği
+        },
+        "headline": frontmatter.title,
+        "datePublished": frontmatter.date,
+        "author": {
+            "@type": "Person",
+            "@id": "https://www.sadikcoban.com/#person",
+            "name": "Sadık Çoban",
+            "url": "https://www.sadikcoban.com"
+        },
+        "url": `https://www.sadikcoban.com/blog/${slug}` // Yazının kendi tam URL'si
+    };
+
     return (<div className="min-h-screen bg-slate-50 dark:bg-slate-950 font-sans overflow-x-hidden">
         <Navbar />
 
         <article className="max-w-3xl mx-auto py-32 px-6 animate-in fade-in duration-700">
-
+            <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+            />
             {/* --- NAVIGATION --- */}
             <div className="flex flex-wrap items-center gap-6 mb-8 border-b border-slate-200 dark:border-slate-800 pb-4">
                 <Link

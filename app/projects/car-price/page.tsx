@@ -12,10 +12,29 @@ import {
 import { GithubIcon } from "@/components/ui/social-icons";
 
 export default function CarPriceLandingPage() {
+    const projectJsonLd = {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "End to end Car Price Prediction and Analysis",
+        "operatingSystem": "Web-based",
+        "applicationCategory": "EducationalApplication",
+        "url": `https://www.sadikcoban.com/projects/car-price`,
+        "description": "An end-to-end Machine Learning project featuring car price prediction with SHAP analysis and model interpretability.",
+        "softwareVersion": "1.0",
+        "author": {
+            "@type": "Person",
+            "@id": "https://www.sadikcoban.com/#person",
+            "name": "Sadık Çoban"
+        },
+        "keywords": "Machine Learning, SHAP, Python, Data Science, MLOps, Drift Analysis"
+    };
     return (
         // 1. DÜZELTME: overflow-x-hidden eklendi. Bu, yatay taşmayı kesin olarak keser.
         <main className="min-h-screen w-full overflow-x-hidden bg-white dark:bg-black selection:bg-blue-500 selection:text-white">
-
+            <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{ __html: JSON.stringify(projectJsonLd) }}
+            />
             {/* --- HERO SECTION --- */}
             <section className="relative pt-32 pb-20 px-4 md:px-6 overflow-hidden">
                 {/* 2. DÜZELTME: w-[1000px] yerine w-full md:w-[1000px] yapıldı. Mobilde ekran kadar olsun. */}
