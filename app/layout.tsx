@@ -17,7 +17,7 @@ export const metadata: Metadata = {
   },
   description: "Personal portfolio of Sadık Çoban. Showcasing projects in Artificial Intelligence, Data Science, MLOps end to end systems, and technology blog.",
   alternates: {
-    canonical: baseUrl,
+    canonical: "/",
   },
   appleWebApp: {
     title: "Sadık's DS Portfolio",
@@ -33,9 +33,6 @@ export const metadata: Metadata = {
   robots: {
     index: true,
     follow: true,
-  },
-  verification: {
-    google: "google-site-verification-kodu-buraya-gelecek",
   },
 };
 
