@@ -348,7 +348,7 @@ export default function PortfolioHome({ recentPosts }: PortfolioProps) {
                                     <LinkedinIcon size={20} />
                                 </a>
                                 <a
-                                    href="s.c_2004@hotmail.com"
+                                    href="mailto:s.c_2004@hotmail.com"
                                     className="h-10 w-10 flex items-center justify-center rounded-full bg-slate-100 dark:bg-slate-900 text-slate-500 hover:bg-slate-200 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white transition-all"
                                     aria-label="Email"
                                 >
