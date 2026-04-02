@@ -9,7 +9,8 @@ import {
     Home,
     Menu,
     BookOpen,
-    Rocket // Logo/Icon önerisi
+    Rocket,
+    NotebookText
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ThemeToggle } from '../layout/ThemeToggle';
@@ -48,6 +49,11 @@ export default function CarSidebar() {
             href: "/projects/car-price/drift",
             label: "Drift",
             icon: Activity
+        },
+        {
+            href: "/projects/car-price/report",
+            label: "Report",
+            icon: NotebookText
         },
         {
             href: "/projects/car-price/shap",
