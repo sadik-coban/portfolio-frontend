@@ -2,6 +2,9 @@
 
 # dependencies
 /node_modules
+
+# pre-migration full backup snapshot (incl. node_modules/.next)
+/olds
 /.pnp
 .pnp.*
 .yarn/*
@@ -39,3 +42,21 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# ── Project-unrelated reference, notes & scratch (not part of the app) ──
+/Data Scientist Portfolyo Tasarımı
+/Data Scientist Portfolyo Tasarımı 2
+/nextjs_handoff
+/cars_feb.csv
+/yapilacaknot.txt
+/İkinci Design Ufak Revizyon.md
+/--full-page
+/home.html
+/trabout.html
+/screenshots
+/olds 
+/app/_site/DESIGN-SYSTEM.md
+
+# local tooling / agent config
+/.claude
+/.mcp.json

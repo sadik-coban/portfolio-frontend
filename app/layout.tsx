@@ -1,34 +1,37 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Inter, Geist_Mono } from "next/font/google";
 import { cn } from "@/lib/utils";
 import "./globals.css";
 import { Providers } from "@/components/providers";
+import { site, personJsonLd } from "@/app/_site/site-config";
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
+const inter = Inter({ subsets: ["latin"], variable: "--font-geist-sans" });
+const geistMono = Geist_Mono({ subsets: ["latin"], variable: "--font-geist-mono" });
 
-// Base URL tanımı
-const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://www.sadikcoban.com";
-
+// All SEO/brand text is sourced from app/_site/site-config.ts — edit it there.
 export const metadata: Metadata = {
-  metadataBase: new URL(baseUrl),
+  metadataBase: new URL(site.baseUrl),
   title: {
-    default: "Sadık Çoban | Data Scientist Portfolio",
-    template: "%s | Sadık Çoban",
+    default: site.title.default,
+    template: site.title.template,
   },
-  description: "Personal portfolio of Sadık Çoban. Showcasing projects in Artificial Intelligence, Data Science, MLOps end to end systems, and technology blog.",
-  alternates: {
-    canonical: "./",
-  },
+  description: site.description,
   appleWebApp: {
-    title: "Sadık's DS Portfolio",
+    title: site.manifest.shortName,
   },
   openGraph: {
-    title: "Sadık Çoban | Data Scientist Portfolio",
-    description: "Explore my Artificial Intelligence and Data Science projects.",
-    url: "./",
-    siteName: "Sadık Çoban",
-    locale: "en_US",
-    type: "website",
+    title: site.openGraph.title,
+    description: site.openGraph.description,
+    siteName: site.openGraph.siteName,
+    locale: site.openGraph.locale,
+    type: site.openGraph.type,
+    ...(site.openGraph.image ? { images: [site.openGraph.image] } : {}),
+  },
+  twitter: {
+    card: site.twitter.image ? "summary_large_image" : "summary",
+    title: site.twitter.title,
+    description: site.twitter.description,
+    ...(site.twitter.image ? { images: [site.twitter.image] } : {}),
   },
   robots: {
     index: true,
@@ -37,34 +40,16 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
-
-  const jsonLd = {
-    '@context': 'https://schema.org',
-    '@type': 'Person',
-    "@id": "https://www.sadikcoban.com/#person",
-    name: 'Sadık Çoban',
-    url: baseUrl,
-    jobTitle: 'Data Scientist',
-    description: 'Specializing in Artificial Intelligence, Data Science, and MLOps.',
-    worksFor: {
-      '@type': 'Organization',
-      name: 'Freelance / Open to Work'
-    },
-    sameAs: [
-      'https://github.com/sadik-coban',
-      'https://www.linkedin.com/in/sad%C4%B1k-%C3%A7oban-5239aa253',
-    ]
-  };
-
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={cn(
         "min-h-screen bg-background font-sans antialiased",
-        inter.variable
+        inter.variable,
+        geistMono.variable
       )}>
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(personJsonLd()) }}
         />
 
         <Providers>

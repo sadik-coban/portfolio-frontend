@@ -1,13 +1,12 @@
 import { MetadataRoute } from 'next';
+import { site } from '@/app/_site/site-config';
 
 export default function robots(): MetadataRoute.Robots {
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://www.sadikcoban.com';
-
     return {
         rules: {
             userAgent: '*',
             allow: '/',
         },
-        sitemap: `${baseUrl}/sitemap.xml`,
+        sitemap: `${site.baseUrl}/sitemap.xml`,
     };
 }
