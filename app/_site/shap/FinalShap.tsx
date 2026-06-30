@@ -37,7 +37,7 @@ export default function FinalShap() {
     ];
 
     return (
-        <FinalShell active="shap" kicker={t('shap.desc')} title={t('shap.title')}>
+        <FinalShell active="shap" kicker={t('shap.kicker')} title={t('shap.title')}>
             <div className="mb-6 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
                 <p className="text-[#5f5f5a] max-w-2xl">{t('shap.desc')}</p>
                 <div className="w-full sm:w-[200px]">

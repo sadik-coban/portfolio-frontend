@@ -1,17 +1,15 @@
 "use client";
 
 import { useMemo } from 'react';
-import { useTheme } from 'next-themes';
 import PlotlyChart from '@/components/charts/PlotlyChart';
 import { makeHybridTheme } from '../../_charts/types';
 import { useLang } from '../i18n';
 import { PHASES, LOFO, ABLATION, OUTLIERS, CRAMERS, FOLDS, FINAL, FINDINGS } from './reportContent';
 
 export default function FinalReportNative({ eda }: { eda: any }) {
-    const { resolvedTheme } = useTheme();
     const { lang } = useLang();
-    const dev = resolvedTheme === 'dark';
-    const theme = useMemo(() => makeHybridTheme(dev), [dev]);
+    const dev = false;
+    const theme = useMemo(() => makeHybridTheme(), []);
     const config = { displayModeBar: false, responsive: true };
 
     const base = (over: any = {}) => ({

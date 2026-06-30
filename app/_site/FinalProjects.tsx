@@ -4,6 +4,7 @@ import { useLang } from './i18n';
 import PaperShell from './PaperShell';
 import { ProjectCard } from './home/ProjectCard';
 import { HOME_PROJECTS } from './home/content';
+import { site } from './site-config';
 
 export default function FinalProjects({ priceByYear }: { priceByYear: { year: number; price: number }[] }) {
     const { t } = useLang();
@@ -18,7 +19,10 @@ export default function FinalProjects({ priceByYear }: { priceByYear: { year: nu
 
             <section className="pb-8">
                 {HOME_PROJECTS.map((p) => <ProjectCard key={p.title} project={p} priceByYear={priceByYear} />)}
-                <div className="border-t border-[#e9e7e2]" />
+                <div className="flex flex-col gap-3 border-t border-[#e9e7e2] py-7 sm:flex-row sm:items-center sm:justify-between">
+                    <p className="m-0 max-w-[440px] text-[15px] leading-[1.6] text-[#86857e]">{t('projects.more')}</p>
+                    <a href={site.social.github} target="_blank" rel="noopener noreferrer" className="shrink-0 text-[14px] font-medium text-[#1a1a1a] transition-colors hover:text-[#047857]">GitHub ↗</a>
+                </div>
             </section>
         </PaperShell>
     );

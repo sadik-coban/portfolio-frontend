@@ -73,7 +73,8 @@ export default function FinalPredict() {
     );
 
     return (
-        <FinalShell active="predict" kicker={t('pr.desc')} title={t('pr.title')}>
+        <FinalShell active="predict" kicker={t('pr.kicker')} title={t('pr.title')}>
+            <p className="mb-6 max-w-[580px] text-[15px] leading-[1.6] text-[#5f5f5a]">{t('pr.desc')}</p>
             <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
                 {/* FORM */}
                 <div className="xl:col-span-8 space-y-6">
@@ -198,7 +199,7 @@ export default function FinalPredict() {
                             </button>
                         </div>
 
-                        <Button onClick={handlePredict} disabled={loading} className="w-full mt-8 h-14 text-lg font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-[14px]">
+                        <Button onClick={handlePredict} disabled={loading} className="w-full mt-8 h-14 text-lg font-semibold bg-[#047857] hover:bg-[#065f46] text-white rounded-[10px]">
                             {loading ? <><Loader2 className="animate-spin mr-2 w-5 h-5" /> {t('pr.calculating')}</> : <><Zap className="mr-2 w-5 h-5" /> {t('pr.calculate')}</>}
                         </Button>
                         {error && (

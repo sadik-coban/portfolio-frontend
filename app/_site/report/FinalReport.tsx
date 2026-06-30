@@ -8,7 +8,7 @@ export default function FinalReport() {
     const { t } = useLang();
 
     return (
-        <FinalShell active="report" kicker={t('rep.desc')} title={t('rep.title')}>
+        <FinalShell active="report" kicker={t('rep.kicker')} title={t('rep.title')}>
             <FinalReportAnalysis />
         </FinalShell>
     );

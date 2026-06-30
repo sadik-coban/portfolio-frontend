@@ -15,7 +15,9 @@ interface Props {
     loadingSeries?: boolean;
 }
 
-const FIELD = 'h-[38px] w-full rounded-[9px] border border-[#d8d6d0] bg-[#f7f6f3] px-[13px] font-mono text-[13px] text-[#1a1a1a] outline-none transition-colors placeholder:text-[#9a9a92] focus:border-[#047857]';
+// Number inputs: hide the native spin buttons (they bleed into the narrow
+// min/max fields and clip the "Min"/"Max" placeholder) and keep padding tight.
+const FIELD = 'h-[38px] w-full rounded-[9px] border border-[#d8d6d0] bg-[#f7f6f3] px-[11px] font-mono text-[13px] text-[#1a1a1a] outline-none transition-colors placeholder:text-[#9a9a92] focus:border-[#047857] [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none';
 const LABEL = 'block font-mono text-[10px] font-medium uppercase tracking-[0.08em] text-[#86857e]';
 
 export default function FilterPanel({ initialFilters, allBrands, allSeries, onApply, onBrandChange, loadingSeries = false }: Props) {

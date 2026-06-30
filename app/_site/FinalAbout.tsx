@@ -84,7 +84,7 @@ export default function FinalAbout() {
                     </div>
                     <div className="flex items-center justify-between gap-4">
                         <span className="font-mono text-[12px] text-[#86857e]">{t('about.formNote')}</span>
-                        <button onClick={send} className="shrink-0 rounded-[9px] bg-[#1a1a1a] px-[26px] py-3 text-[14px] font-semibold text-[#f7f6f3] transition-opacity hover:opacity-90">{t('about.formSend')} →</button>
+                        <button onClick={send} className="inline-flex h-[44px] shrink-0 items-center rounded-[10px] bg-[#1a1a1a] px-[26px] text-[14px] font-semibold text-[#f7f6f3] transition-opacity hover:opacity-90">{t('about.formSend')} →</button>
                     </div>
                 </div>
             </div>

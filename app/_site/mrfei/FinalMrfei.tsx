@@ -24,7 +24,7 @@ const OPACITY = [0.05, 0.18, 0.32, 0.5, 0.68, 0.9];
 
 export default function FinalMrfei() {
     const { t, lang } = useLang();
-    const theme = useMemo(() => makeHybridTheme(false), []);
+    const theme = useMemo(() => makeHybridTheme(), []);
 
     const base = (over: any = {}) => ({
         margin: { t: 10, r: 14, b: 40, l: 48 },

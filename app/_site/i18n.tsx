@@ -59,6 +59,8 @@ const en: Dict = {
 
     'projects.title': 'Projects',
     'projects.subtitle': 'End-to-end systems where I explore AI, data science, and software engineering — from predictive models to production dashboards.',
+    'projects.more': 'More end-to-end projects are in progress — the code lives on GitHub in the meantime.',
+    'journal.more': 'More engineering notes are on the way.',
     'projects.explore': 'Explore project',
     'projects.openDashboard': 'Open dashboard',
     'projects.viewEda': 'View EDA',
@@ -85,7 +87,7 @@ const en: Dict = {
     'about.formSubject': 'Subject',
     'about.subjJob': 'Job opportunity', 'about.subjCollab': 'Collaboration', 'about.subjConsult': 'Consulting', 'about.subjHi': 'Just saying hi',
     'about.formMessage': 'Message', 'about.formMessagePh': "A line or two about what you're working on…",
-    'about.formNote': 'Replies within a day or two.',
+    'about.formNote': 'Opens your email app — replies within a day or two.',
     'about.formSend': 'Send message',
 
     'home.work.title': 'Selected Work',
@@ -121,6 +123,7 @@ const en: Dict = {
     'blog.min': 'min read',
     'blog.allPosts': 'All posts',
     'blog.articles': '{n} articles',
+    'blog.article': '{n} article',
     'blog.authorRole': 'Data Scientist · MLOps Engineer',
 
     'footer.tagline': 'Data Scientist & MLOps Engineer. Bridging complex data and real products.',
@@ -148,7 +151,7 @@ const en: Dict = {
 
     'eda.title': 'Exploratory Data Analysis',
     'eda.records': 'records',
-    'eda.note': 'Pre-aggregated dataset · {n} records',
+    'eda.note': 'How the modelling table is distributed — price, mileage, brand and body type, plus the correlations and categorical effects that shaped the model.',
     'eda.meta': 'Pre-aggregated dataset · {n} records',
 
     'sb.overview': 'Overview',
@@ -161,7 +164,6 @@ const en: Dict = {
     'sb.journal': 'Journal',
     'sb.menu': 'Menu',
     'sb.close': 'Close',
-    'sb.version': 'v2.4 · build 318',
     'sb.backPortfolio': 'Back to portfolio',
 
     // Project overview
@@ -187,6 +189,7 @@ const en: Dict = {
 
     // Predict
     'pr.title': 'ML Price Estimator',
+    'pr.kicker': 'Car Price · Prediction',
     'pr.desc': 'Estimate the true market value with ML support.',
     'pr.version': 'Model version',
     'pr.s1': 'Vehicle Identity',
@@ -212,6 +215,7 @@ const en: Dict = {
 
     // Drift
     'dr.title': 'Data Drift Analysis',
+    'dr.kicker': 'Car Price · Drift',
     'dr.desc': 'Compare the training-data distribution between two model versions using statistical tests.',
     'dr.ref': 'Reference (old)', 'dr.curr': 'Current (new)',
     'dr.compare': 'Compare', 'dr.analyzing': 'Analyzing...',
@@ -224,6 +228,7 @@ const en: Dict = {
 
     // SHAP
     'shap.title': 'SHAP Analysis',
+    'shap.kicker': 'Car Price · SHAP',
     'shap.desc': 'See how the model makes price predictions and which features push the value up or down.',
     'shap.global': 'Global Feature Importance',
     'shap.summaryFor': 'Summary plot for version',
@@ -241,6 +246,7 @@ const en: Dict = {
 
     // Report & Journal
     'rep.title': 'Analytics Report',
+    'rep.kicker': 'Car Price · Report',
     'rep.desc': 'Full EDA & training notebook for the car-price pipeline.',
     'rn.tabNotebook': 'Notebook',
     'rn.tabNative': 'Native',
@@ -263,6 +269,7 @@ const en: Dict = {
     'rn.model': 'Modelling',
     'rn.modelBody': 'A CatBoost MultiQuantile model (0.05 / 0.5 / 0.95) predicts a price interval rather than a single value. Latest version reaches R² ≈ 0.976 with 84.6% interval coverage on the test set.',
     'jr.title': 'Project Journal',
+    'jr.kicker': 'Car Price · Journal',
     'jr.desc': 'Development notes, technical challenges and case studies for the Car Price project.',
 
     'chart.priceByYear': 'Price by Year',
@@ -324,6 +331,8 @@ const tr: Dict = {
 
     'projects.title': 'Projeler',
     'projects.subtitle': 'Yapay zekâ, veri bilimi ve yazılım mühendisliğini bir araya getirdiğim uçtan uca sistemler; tahmin modellerinden üretim panolarına kadar uzanıyor.',
+    'projects.more': 'Daha fazla uçtan uca proje yolda — bu sırada kodun tamamı GitHub’da.',
+    'journal.more': 'Daha fazla mühendislik notu yolda.',
     'projects.explore': 'Projeyi incele',
     'projects.openDashboard': 'Paneli aç',
     'projects.viewEda': 'EDA’yı gör',
@@ -350,7 +359,7 @@ const tr: Dict = {
     'about.formSubject': 'Konu',
     'about.subjJob': 'İş fırsatı', 'about.subjCollab': 'İş birliği', 'about.subjConsult': 'Danışmanlık', 'about.subjHi': 'Sadece merhaba',
     'about.formMessage': 'Mesaj', 'about.formMessagePh': 'Üzerinde çalıştığın şey hakkında bir iki satır…',
-    'about.formNote': 'Bir iki gün içinde yanıtlarım.',
+    'about.formNote': 'E-posta uygulamanı açar — bir iki gün içinde yanıtlarım.',
     'about.formSend': 'Mesaj gönder',
 
     'home.work.title': 'Seçili Çalışmalar',
@@ -386,6 +395,7 @@ const tr: Dict = {
     'blog.min': 'dk okuma',
     'blog.allPosts': 'Tüm yazılar',
     'blog.articles': '{n} yazı',
+    'blog.article': '{n} yazı',
     'blog.authorRole': 'Veri Bilimci · MLOps Mühendisi',
 
     'footer.tagline': 'Veri Bilimci & MLOps Mühendisi. Karmaşık veriyi gerçek ürünlere dönüştürüyorum.',
@@ -413,7 +423,7 @@ const tr: Dict = {
 
     'eda.title': 'Keşifsel Veri Analizi',
     'eda.records': 'kayıt',
-    'eda.note': 'Önceden işlenmiş veri · {n} kayıt',
+    'eda.note': 'Modelleme tablosunun dağılımı — fiyat, kilometre, marka ve kasa tipi; ayrıca modeli şekillendiren korelasyonlar ve kategorik etkiler.',
     'eda.meta': 'Önceden işlenmiş veri · {n} kayıt',
 
     'sb.overview': 'Genel Bakış',
@@ -426,7 +436,6 @@ const tr: Dict = {
     'sb.journal': 'Günlük',
     'sb.menu': 'Menü',
     'sb.close': 'Kapat',
-    'sb.version': 'v2.4 · derleme 318',
     'sb.backPortfolio': 'Portfolyoya dön',
 
     // Project overview
@@ -452,6 +461,7 @@ const tr: Dict = {
 
     // Predict
     'pr.title': 'ML Fiyat Tahmin Aracı',
+    'pr.kicker': 'Araç Fiyatı · Tahmin',
     'pr.desc': 'ML desteğiyle gerçek piyasa değerini tahmin et.',
     'pr.version': 'Model sürümü',
     'pr.s1': 'Araç Kimliği',
@@ -477,6 +487,7 @@ const tr: Dict = {
 
     // Drift
     'dr.title': 'Veri Drift Analizi',
+    'dr.kicker': 'Araç Fiyatı · Drift',
     'dr.desc': 'İki model sürümü arasındaki eğitim verisi dağılımını istatistiksel testlerle karşılaştır.',
     'dr.ref': 'Referans (eski)', 'dr.curr': 'Güncel (yeni)',
     'dr.compare': 'Karşılaştır', 'dr.analyzing': 'Analiz ediliyor...',
@@ -489,6 +500,7 @@ const tr: Dict = {
 
     // SHAP
     'shap.title': 'SHAP Analizi',
+    'shap.kicker': 'Araç Fiyatı · SHAP',
     'shap.desc': 'Modelin fiyatı nasıl tahmin ettiğini ve hangi özelliklerin değeri artırıp azalttığını gör.',
     'shap.global': 'Genel Özellik Önemi',
     'shap.summaryFor': 'Şu sürüm için özet grafiği',
@@ -506,6 +518,7 @@ const tr: Dict = {
 
     // Report & Journal
     'rep.title': 'Analitik Rapor',
+    'rep.kicker': 'Araç Fiyatı · Rapor',
     'rep.desc': 'Araç fiyatı tahmin hattı için kapsamlı EDA ve model eğitimi defteri.',
     'rn.tabNotebook': 'Defter',
     'rn.tabNative': 'Yerel',
@@ -528,6 +541,7 @@ const tr: Dict = {
     'rn.model': 'Modelleme',
     'rn.modelBody': 'CatBoost MultiQuantile modeli (0,05 / 0,5 / 0,95) tek bir değer yerine bir fiyat aralığı tahmin eder. Son sürüm, test setinde R² ≈ 0,976 ve %84,6 aralık kapsamına ulaşır.',
     'jr.title': 'Proje Günlüğü',
+    'jr.kicker': 'Araç Fiyatı · Günlük',
     'jr.desc': 'Araç Fiyatı projesi için geliştirme notları, teknik zorluklar ve vaka çalışmaları.',
 
     'chart.priceByYear': 'Yıla Göre Fiyat',

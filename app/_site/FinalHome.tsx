@@ -21,7 +21,7 @@ export default function FinalHome({ recentPosts, priceByYear }: { recentPosts: a
                     </h1>
                     <p className="m-0 mb-9 max-w-[460px] text-[18px] leading-[1.6] text-[#5f5f5a]">{t('home.heroSub')}</p>
                     <div className="flex flex-wrap items-center gap-5 md:gap-[22px]">
-                        <Link href="#work" className="rounded-[9px] bg-[#1a1a1a] px-5 py-2.5 text-[14px] font-semibold text-[#f7f6f3] transition-opacity hover:opacity-90">{t('home.viewWork')}</Link>
+                        <Link href="#work" className="inline-flex h-[44px] items-center rounded-[10px] bg-[#1a1a1a] px-5 text-[14px] font-semibold text-[#f7f6f3] transition-opacity hover:opacity-90">{t('home.viewWork')}</Link>
                         <Link href={localize('/about', lang)} className="text-[14px] font-medium text-[#1a1a1a]">{t('home.getInTouch')}</Link>
                         <a href="https://github.com/sadik-coban" target="_blank" rel="noopener noreferrer" className="text-[14px] font-medium text-[#5f5f5a] transition-colors hover:text-[#1a1a1a]">GitHub ↗</a>
                     </div>

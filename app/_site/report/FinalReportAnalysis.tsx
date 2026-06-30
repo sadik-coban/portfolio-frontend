@@ -17,7 +17,7 @@ const pct = (n: number) => '%' + Number(n).toFixed(1);
 export default function FinalReportAnalysis() {
     const { lang } = useLang();
     const L = (tr: string, en: string) => (lang === 'tr' ? tr : en);
-    const theme = useMemo(() => makeHybridTheme(false), []);
+    const theme = useMemo(() => makeHybridTheme(), []);
     const [a, setA] = useState<any>(null);
     const [err, setErr] = useState(false);
 

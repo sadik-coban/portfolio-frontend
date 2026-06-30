@@ -64,27 +64,31 @@ export default function FinalBlog({ posts }: { posts: any[] }) {
                 </Link>
             )}
 
-            {/* list */}
+            {/* list — only when there are non-featured posts to show, so the
+                featured-only case doesn't render "1 articles" over "No posts yet". */}
+            {posts.length > 1 && (
             <div className="py-12 pb-16">
                 <div className="mb-1.5 flex items-baseline justify-between">
                     <h2 className="m-0 font-mono text-[13px] uppercase tracking-[0.16em] text-[#5f5f5a]">{t('blog.allPosts')}</h2>
-                    <span className="font-mono text-[13px] text-[#86857e]">{t('blog.articles', { n: posts.length })}</span>
+                    <span className="font-mono text-[13px] text-[#86857e]">{t(rest.length === 1 ? 'blog.article' : 'blog.articles', { n: rest.length })}</span>
                 </div>
                 {rest.length > 0 ? rest.map((p) => (
-                    <Link key={p.slug} href={href(p.slug)} className="grid grid-cols-[64px_1fr] sm:grid-cols-[86px_1fr_130px] items-start gap-5 sm:gap-7 border-t border-[#e9e7e2] py-[26px] group">
-                        <span className="pt-[3px] font-mono text-[12px] tabular-nums text-[#565650]">{p.meta.date}</span>
-                        <div>
-                            <div className="mb-2 font-mono text-[11px] uppercase tracking-[0.04em] text-[#047857]">{categoryOf(p)}</div>
-                            <h3 className="m-0 mb-2 text-[19px] font-semibold leading-[1.3] tracking-[-0.021em] text-[#1a1a1a] group-hover:text-[#047857] transition-colors">{p.meta.title}</h3>
-                            <p className="m-0 max-w-[560px] text-[15px] leading-[1.55] text-[#86857e]">{p.meta.description}</p>
+                    <Link key={p.slug} href={href(p.slug)} className="group block border-t border-[#e9e7e2] py-7">
+                        <div className="mb-2.5 font-mono text-[11px] uppercase tracking-[0.04em] text-[#047857]">{categoryOf(p)}</div>
+                        <h3 className="m-0 mb-2 text-[21px] md:text-[23px] font-semibold leading-[1.25] tracking-[-0.026em] text-[#1a1a1a] group-hover:text-[#047857] transition-colors">{p.meta.title}</h3>
+                        <p className="m-0 mb-4 max-w-[640px] text-[15px] leading-[1.6] text-[#5f5f5a]">{p.meta.description}</p>
+                        <div className="flex items-center gap-[14px] font-mono text-[13px] font-medium text-[#565650]">
+                            <span>{p.meta.date}</span>
+                            {p.meta.readTime && <><span className="h-[3px] w-[3px] rounded-full bg-[#c4c2bb]" /><span>{p.meta.readTime} {t('blog.min')}</span></>}
+                            <span className="ml-auto font-sans text-[14px] text-[#1a1a1a] group-hover:text-[#047857] transition-colors">{t('blog.readPost')} →</span>
                         </div>
-                        {p.meta.readTime && <span className="hidden sm:block pt-[3px] text-right font-mono text-[12px] text-[#86857e]">{p.meta.readTime} {t('blog.min')}</span>}
                     </Link>
                 )) : (
                     <p className="border-t border-[#e9e7e2] py-8 text-[15px] text-[#86857e]">{t('blog.empty')}</p>
                 )}
                 <div className="border-t border-[#e9e7e2]" />
             </div>
+            )}
         </PaperShell>
     );
 }

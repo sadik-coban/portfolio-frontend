@@ -1,21 +1,32 @@
 "use client";
 
 import Link from 'next/link';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, ArrowRight } from 'lucide-react';
 import PaperShell from '@/app/_site/PaperShell';
 import { useLang, localize } from '@/app/_site/i18n';
 
 export default function ArticleShell({ frontmatter, children }: { frontmatter: any; children: React.ReactNode }) {
     const { t, lang } = useLang();
-    const backHref = localize(frontmatter.project ? '/projects/car-price/journal' : '/blog', lang);
     const category = frontmatter.category || frontmatter.project || (frontmatter.tags && frontmatter.tags[0]);
 
     return (
         <PaperShell>
             <article className="mx-auto max-w-[720px] py-14">
-                <Link href={backHref} className="mb-9 inline-flex items-center gap-1.5 text-[13px] font-medium text-[#5f5f5a] hover:text-[#1a1a1a] transition-colors">
-                    <ArrowLeft size={14} /> {t('blog.allPosts')}
-                </Link>
+                {/* "All posts" always returns to the blog index; a project post also
+                    gets a second link over to that project's journal. */}
+                <div className="mb-9 flex flex-wrap items-center gap-x-3.5 gap-y-2 text-[13px] font-medium">
+                    <Link href={localize('/blog', lang)} className="inline-flex items-center gap-1.5 text-[#5f5f5a] hover:text-[#1a1a1a] transition-colors">
+                        <ArrowLeft size={14} /> {t('blog.allPosts')}
+                    </Link>
+                    {frontmatter.project && (
+                        <>
+                            <span className="h-[3px] w-[3px] rounded-full bg-[#c4c2bb]" />
+                            <Link href={localize(`/projects/${frontmatter.project}/journal`, lang)} className="inline-flex items-center gap-1.5 text-[#047857] hover:text-[#1a1a1a] transition-colors">
+                                {t('jr.title')} <ArrowRight size={14} />
+                            </Link>
+                        </>
+                    )}
+                </div>
 
                 <div className="mb-5 flex flex-wrap items-center gap-3">
                     {category && <span className="font-mono text-[11px] uppercase tracking-[0.05em] text-[#047857]">{category}</span>}

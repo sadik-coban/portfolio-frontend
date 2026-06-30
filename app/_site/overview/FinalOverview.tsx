@@ -26,20 +26,20 @@ export default function FinalOverview() {
             <p className="text-lg text-[#5f5f5a] max-w-2xl leading-relaxed">{t('ov.lead')}</p>
 
             <div className="mt-8 flex flex-wrap gap-3">
-                <Link href={localize('/projects/car-price/predict', lang)} className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[#047857] text-white font-medium hover:bg-[#065f46] transition-colors">
-                    {t('ov.tryPredict')} <ArrowRight size={18} />
+                <Link href={localize('/projects/car-price/predict', lang)} className="inline-flex h-[44px] items-center gap-2 rounded-[10px] bg-[#047857] px-5 text-[14px] font-semibold text-white hover:bg-[#065f46] transition-colors">
+                    {t('ov.tryPredict')} <ArrowRight size={17} />
                 </Link>
-                <a href="https://github.com/sadik-coban/car-price-prediction-pipeline" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-6 py-3 rounded-full border border-[#e4e2dd] font-medium text-[#5f5f5a] hover:border-[#047857]/50 transition-colors">
+                <a href="https://github.com/sadik-coban/car-price-prediction-pipeline" target="_blank" rel="noopener noreferrer" className="inline-flex h-[44px] items-center gap-2 rounded-[10px] border border-[#d8d6d0] bg-[#fdfcf9] px-5 text-[14px] font-semibold text-[#5f5f5a] hover:border-[#86857e] transition-colors">
                     <GithubIcon size={18} /> {t('ov.viewCode')}
                 </a>
             </div>
 
-            {/* metrics */}
-            <div className="mt-12 grid grid-cols-1 sm:grid-cols-3 gap-4">
-                {metrics.map((m) => (
-                    <div key={m.label} className="rounded-[14px] border border-[#e4e2dd] bg-[#fdfcf9] p-6 text-center">
-                        <div className="font-mono text-4xl font-bold tabular-nums text-[#047857] mb-1">{m.value}</div>
-                        <div className="text-sm text-[#5f5f5a]">{m.label}</div>
+            {/* metrics — editorial strip, same language as the home metric row */}
+            <div className="mt-10 grid grid-cols-3 border-t border-[#e9e7e2]">
+                {metrics.map((m, i) => (
+                    <div key={m.label} className={`pt-[18px] pb-3 pr-5 border-[#e9e7e2] ${i !== 0 ? 'border-l pl-5 sm:pl-6' : ''}`}>
+                        <div className={`font-mono text-[26px] md:text-[30px] font-medium tracking-[-0.035em] tabular-nums ${i === 0 ? 'text-[#047857]' : 'text-[#1a1a1a]'}`}>{m.value}</div>
+                        <div className="mt-1 text-[13px] text-[#86857e]">{m.label}</div>
                     </div>
                 ))}
             </div>

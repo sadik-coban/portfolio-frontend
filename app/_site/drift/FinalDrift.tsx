@@ -53,7 +53,8 @@ export default function FinalDrift() {
     );
 
     return (
-        <FinalShell active="drift" kicker={t('dr.desc')} title={t('dr.title')}>
+        <FinalShell active="drift" kicker={t('dr.kicker')} title={t('dr.title')}>
+            <p className="mb-6 max-w-[580px] text-[15px] leading-[1.6] text-[#5f5f5a]">{t('dr.desc')}</p>
             {loadingVersions ? (
                 <div className="flex flex-col items-center justify-center gap-3 py-24 text-slate-400">
                     <Loader2 className="animate-spin text-emerald-600" size={36} />
@@ -63,7 +64,7 @@ export default function FinalDrift() {
                 <div className="flex flex-col items-center justify-center gap-4 py-24 text-center">
                     <ServerCrash size={48} className="text-rose-500" />
                     <p className="text-slate-500 max-w-md">{versionError}</p>
-                    <button onClick={fetchVersions} className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-[#e4e2dd] text-sm text-[#5f5f5a] hover:border-[#047857]/50 transition-colors">
+                    <button onClick={fetchVersions} className="inline-flex items-center gap-2 px-4 py-2 rounded-[10px] border border-[#d8d6d0] text-sm text-[#5f5f5a] hover:border-[#86857e] transition-colors">
                         <RefreshCcw size={15} /> {t('dr.retry')}
                     </button>
                 </div>
@@ -87,7 +88,7 @@ export default function FinalDrift() {
                                     <SelectContent>{versions.map(verItem)}</SelectContent>
                                 </Select>
                             </div>
-                            <button onClick={runAnalysis} disabled={analyzing} className="w-full lg:w-auto h-11 px-6 rounded-full bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white text-sm font-medium inline-flex items-center justify-center gap-2 transition-colors">
+                            <button onClick={runAnalysis} disabled={analyzing} className="w-full lg:w-auto h-11 px-6 rounded-[10px] bg-[#047857] hover:bg-[#065f46] disabled:opacity-60 text-white text-sm font-semibold inline-flex items-center justify-center gap-2 transition-colors">
                                 {analyzing ? <><Loader2 className="animate-spin" size={16} /> {t('dr.analyzing')}</> : <><GitCompare size={16} /> {t('dr.compare')}</>}
                             </button>
                         </div>

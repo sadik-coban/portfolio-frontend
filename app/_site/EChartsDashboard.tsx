@@ -2,7 +2,6 @@
 
 import { useMemo } from 'react';
 import ReactECharts from 'echarts-for-react';
-import { useTheme } from 'next-themes';
 import { LayoutDashboard, Activity, Car } from 'lucide-react';
 import { ChartPanel } from '../_charts/ChartPanel';
 import EChartsCharts, { type ChartLabels } from '../_charts/EChartsCharts';
@@ -45,10 +44,8 @@ function brandAverages(raw: RawDashboardData) {
 }
 
 export default function EChartsDashboard({ data: raw }: { data: RawDashboardData }) {
-    const { resolvedTheme } = useTheme();
     const { t } = useLang();
-    const isDark = resolvedTheme === 'dark';
-    const theme = useMemo(() => makeHybridTheme(isDark), [isDark]);
+    const theme = useMemo(() => makeHybridTheme(), []);
 
     const chartLabels: ChartLabels = {
         priceByYear: [t('chart.priceByYear'), t('chart.priceByYear.s')],
@@ -79,7 +76,9 @@ export default function EChartsDashboard({ data: raw }: { data: RawDashboardData
             transitionDuration: 0,
             formatter: (p: any) => `${density.xLabels[p.value[0]]} km · ₺${density.yLabels[p.value[1]]}\n${p.value[2]} listings`,
         },
-        xAxis: { type: 'category', data: density.xLabels, ...axis, name: 'km', nameTextStyle: { color: theme.muted, fontSize: 9 }, axisLabel: { ...axis.axisLabel, rotate: 35 } },
+        // 20 bins (0k…475k) overlap badly when all are drawn — show every 100k
+        // (interval 3 → indices 0,4,8,…) so the labels read flat without rotation.
+        xAxis: { type: 'category', data: density.xLabels, ...axis, name: 'km', nameTextStyle: { color: theme.muted, fontSize: 9 }, axisLabel: { ...axis.axisLabel, interval: 3, rotate: 0 } },
         yAxis: { type: 'category', data: density.yLabels, ...axis, name: '₺', nameTextStyle: { color: theme.muted, fontSize: 9 } },
         visualMap: {
             min: 0, max: density.max, calculable: true, orient: 'horizontal', left: 'center', bottom: 0,
@@ -108,14 +107,13 @@ export default function EChartsDashboard({ data: raw }: { data: RawDashboardData
 
     return (
         <div>
-            {/* KPIs */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-[14px] mb-[18px]">
-                {kpis.map((k) => (
-                    <div key={k.label} className="rounded-[14px] border border-[#e4e2dd] bg-[#fdfcf9] p-[18px] px-5 shadow-[0_1px_3px_rgba(40,40,30,0.05)]">
-                        <div className="mb-3.5 flex items-center gap-2 text-[13px] font-medium text-[#5f5f5a]">
-                            <k.icon size={14} className="text-[#047857]" />{k.label}
-                        </div>
-                        <div className={`font-mono text-[28px] font-bold tracking-[-0.035em] tabular-nums ${k.accent ? 'text-[#047857]' : 'text-[#1a1a1a]'}`}>{k.value}</div>
+            {/* KPIs — editorial strip (same language as the home metric row): a
+                summary header band that reads cleanly above the chart-card grid. */}
+            <div className="grid grid-cols-2 md:grid-cols-4 border-t border-[#e9e7e2] mb-[22px]">
+                {kpis.map((k, i) => (
+                    <div key={k.label} className={`pt-[18px] pb-3 pr-6 border-[#e9e7e2] ${i % 2 !== 0 ? 'border-l pl-5' : ''} ${i % 4 !== 0 ? 'md:border-l md:pl-6' : 'md:border-l-0 md:pl-0'} ${i >= 2 ? 'border-t md:border-t-0' : ''}`}>
+                        <div className={`font-mono text-[24px] md:text-[26px] font-medium tracking-[-0.035em] tabular-nums ${k.accent ? 'text-[#047857]' : 'text-[#1a1a1a]'}`}>{k.value}</div>
+                        <div className="mt-1 text-[12px] text-[#86857e]">{k.label}</div>
                     </div>
                 ))}
             </div>

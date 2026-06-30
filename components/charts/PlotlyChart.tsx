@@ -95,6 +95,8 @@ export default function PlotlyChart({ data, layout, config, className, style, gu
         if (!near) return;
         let disposed = false;
         let el: HTMLDivElement | null = null;
+        let ro: ResizeObserver | null = null;
+        let resizeTimer: ReturnType<typeof setTimeout> | null = null;
 
         loadPlotly().then((Plotly) => {
             if (disposed || !ref.current) return;
@@ -105,10 +107,27 @@ export default function PlotlyChart({ data, layout, config, className, style, gu
                 scrollZoom: false, // wheel scrolls the page on desktop, not the chart
                 ...config,
             });
+
+            // Re-fit when the *container* resizes — e.g. the sidebar collapse animates
+            // the content width. Plotly's `responsive` only reacts to window resize,
+            // which a layout-only change never fires, so observe the element directly.
+            // Debounced so a long report (~22 charts) doesn't relayout every frame of
+            // the 200ms animation; it settles once the width stops changing.
+            if (typeof ResizeObserver !== 'undefined') {
+                ro = new ResizeObserver(() => {
+                    if (resizeTimer) clearTimeout(resizeTimer);
+                    resizeTimer = setTimeout(() => {
+                        if (!disposed && el && Plotly.Plots?.resize) Plotly.Plots.resize(el);
+                    }, 120);
+                });
+                ro.observe(el);
+            }
         });
 
         return () => {
             disposed = true;
+            if (resizeTimer) clearTimeout(resizeTimer);
+            if (ro) ro.disconnect();
             if (el) loadPlotly().then((Plotly) => Plotly.purge(el!));
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -12,7 +12,6 @@ export function ChartPanel({
     height?: number;
     children: React.ReactNode;
 }) {
-    const codey = theme.key === 'dev'; // only the old "dev" comparison theme keeps the terminal look
     return (
         <div
             className={full ? 'lg:col-span-2' : ''}
@@ -27,14 +26,14 @@ export function ChartPanel({
             <div style={{ marginBottom: 8 }}>
                 <h3
                     style={{
-                        fontFamily: codey ? theme.fontMono : theme.fontSans,
+                        fontFamily: theme.fontSans,
                         fontSize: 16,
                         fontWeight: 600,
                         color: theme.text,
-                        letterSpacing: codey ? 0 : '-0.018em',
+                        letterSpacing: '-0.018em',
                     }}
                 >
-                    {codey ? <span><span style={{ color: theme.accent }}>#</span> {title}</span> : title}
+                    {title}
                 </h3>
                 {subtitle && (
                     <p style={{ fontFamily: theme.fontMono, fontSize: 12, color: theme.muted, marginTop: 3 }}>

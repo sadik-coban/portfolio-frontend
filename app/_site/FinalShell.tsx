@@ -2,10 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Rocket, LayoutDashboard, BarChart3, BrainCircuit, Activity, PieChart, NotebookText, BookOpen, ArrowLeft, Menu, X } from 'lucide-react';
+import { Rocket, LayoutDashboard, BarChart3, BrainCircuit, Activity, PieChart, NotebookText, BookOpen, ArrowLeft, Menu, X, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { useLang, LangSwitch, localize } from './i18n';
 import { Monogram } from './Monogram';
 import { AppPageHeader } from './AppPageHeader';
+import { SIDEBAR_COLLAPSE_ENABLED } from './features';
+import { useSidebarCollapse } from './SidebarCollapse';
 
 type ActiveKey = 'overview' | 'dashboard' | 'eda' | 'predict' | 'drift' | 'shap' | 'report' | 'journal';
 
@@ -20,6 +22,13 @@ export default function FinalShell({
 }) {
     const { t, lang } = useLang();
     const [open, setOpen] = useState(false);
+
+    // Desktop-only icon-collapse for the sidebar — gated behind SIDEBAR_COLLAPSE_ENABLED
+    // (flip the flag off to ship without it). The preference is seeded from a cookie
+    // on the server (see car-price/layout.tsx) so the first paint already has the
+    // right width — no flash / replayed animation on refresh. Mobile always shows
+    // full labels.
+    const { collapsed, toggle: toggleCollapsed } = useSidebarCollapse();
 
     // Lock body scroll while the mobile drawer is open.
     useEffect(() => {
@@ -38,8 +47,15 @@ export default function FinalShell({
         { key: 'journal', label: t('sb.journal'), icon: BookOpen, href: '/projects/car-price/journal' },
     ];
 
-    const NavList = ({ onNavigate }: { onNavigate?: () => void }) => (
-        <nav className="flex flex-col gap-1 overflow-y-auto min-h-0">
+    // Every row is [40px icon slot][label]. The icon slot is a fixed width, so the
+    // icon never shifts as the rail animates between widths — only the label fades
+    // (and is clipped by the sidebar's overflow-hidden). In a 72px collapsed rail
+    // with px-[16px], the 40px slot is exactly centered.
+    // `flat` (mobile drawer): icon + gap + label, left-aligned at the content edge so
+    // the brand and icons share one edge. Otherwise (desktop): a fixed 40px icon slot
+    // that keeps icons static through the collapse while the label fades.
+    const NavList = ({ onNavigate, mini = false, flat = false }: { onNavigate?: () => void; mini?: boolean; flat?: boolean }) => (
+        <nav className="flex flex-col gap-1 overflow-y-auto overflow-x-hidden min-h-0">
             {nav.map((n) => {
                 const on = n.key === active;
                 return (
@@ -48,12 +64,21 @@ export default function FinalShell({
                         href={localize(n.href, lang)}
                         onClick={onNavigate}
                         aria-current={on ? 'page' : undefined}
-                        className={`flex items-center gap-[11px] rounded-[8px] px-[10px] py-[9px] text-[14px] transition-colors ${on
+                        title={mini ? n.label : undefined}
+                        className={`flex items-center rounded-[8px] py-[9px] text-[14px] transition-colors ${flat ? 'gap-[11px] px-[10px]' : ''} ${on
                             ? 'bg-[#e7f3ec] font-semibold text-[#047857]'
                             : 'font-medium text-[#5f5f5a] hover:bg-[#f1efe9]'}`}
                     >
-                        <n.icon size={17} className={on ? 'text-[#047857]' : 'text-[#86857e]'} strokeWidth={2} />
-                        {n.label}
+                        {flat ? (
+                            <n.icon size={17} className={on ? 'text-[#047857]' : 'text-[#86857e]'} strokeWidth={2} />
+                        ) : (
+                            <span className="flex w-[40px] shrink-0 items-center justify-center">
+                                <n.icon size={17} className={on ? 'text-[#047857]' : 'text-[#86857e]'} strokeWidth={2} />
+                            </span>
+                        )}
+                        {flat
+                            ? n.label
+                            : <span className={`whitespace-nowrap transition-opacity duration-200 ${mini ? 'opacity-0' : 'opacity-100'}`}>{n.label}</span>}
                     </Link>
                 );
             })}
@@ -85,7 +110,7 @@ export default function FinalShell({
                     <div className="absolute inset-0 bg-black/30" onClick={() => setOpen(false)} aria-hidden="true" />
                     <aside className="absolute inset-y-0 left-0 flex w-[78%] max-w-[300px] flex-col border-r border-[#e9e7e2] bg-[#fdfcf9] px-6 py-7 shadow-xl">
                         <div className="flex items-center justify-between mb-1">
-                            <Monogram />
+                            <div className="px-[10px]"><Monogram /></div>
                             <button
                                 onClick={() => setOpen(false)}
                                 className="flex items-center justify-center h-9 w-9 -mr-1 rounded-lg text-[#5f5f5a] hover:bg-[#f3f1ec] transition-colors"
@@ -94,10 +119,14 @@ export default function FinalShell({
                                 <X size={20} />
                             </button>
                         </div>
-                        <Link href={localize('/', lang)} onClick={() => setOpen(false)} className="inline-flex items-center gap-1.5 text-xs text-[#86857e] hover:text-[#1a1a1a] transition-colors mb-8">
-                            <ArrowLeft size={12} /> {t('footer.home')}
+                        <Link
+                            href={localize('/projects', lang)}
+                            onClick={() => setOpen(false)}
+                            className="mb-4 flex items-center gap-[11px] rounded-[8px] px-[10px] py-[9px] text-[13px] font-medium text-[#86857e] transition-colors hover:bg-[#f1efe9] hover:text-[#5f5f5a]"
+                        >
+                            <ArrowLeft size={16} className="shrink-0" /> {t('nav.projects')}
                         </Link>
-                        <NavList onNavigate={() => setOpen(false)} />
+                        <NavList onNavigate={() => setOpen(false)} flat />
                         <div className="mt-auto pt-6">
                             <LangSwitch />
                         </div>
@@ -106,20 +135,47 @@ export default function FinalShell({
             )}
 
             <div className="relative z-10 flex">
-                {/* Desktop sidebar */}
-                <aside className="hidden md:flex flex-col w-[232px] shrink-0 fixed inset-y-0 border-r border-[#e9e7e2] bg-[#fdfcf9] px-[18px] py-[26px]">
-                    <div className="px-[10px]"><Monogram /></div>
-                    <Link href={localize('/', lang)} className="mb-[30px] mt-2 inline-flex items-center gap-1.5 px-[10px] text-[13px] font-medium text-[#86857e] hover:text-[#5f5f5a] transition-colors">
-                        <ArrowLeft size={14} /> {t('footer.home')}
+                {/* Desktop sidebar — collapses to a 72px icon rail. Only the width
+                    animates; the horizontal padding stays constant (px-[16px]) and every
+                    icon lives in a fixed 40px slot, so nothing shifts horizontally while
+                    the rail resizes. Labels just fade (and are clipped by overflow-hidden). */}
+                <aside className={`hidden md:flex flex-col shrink-0 fixed inset-y-0 overflow-hidden border-r border-[#e9e7e2] bg-[#fdfcf9] px-[16px] py-[26px] transition-[width] duration-200 ease-in-out ${collapsed ? 'w-[72px]' : 'w-[232px]'}`}>
+                    {/* Brand mark in the same 40px slot → stays put as the rail animates. */}
+                    <div className={collapsed ? 'flex w-[40px] shrink-0 items-center justify-center' : 'pl-3'}><Monogram /></div>
+
+                    {/* Up one level → projects list. Same row shape as the nav, so it
+                        animates identically (no special-casing of the "Projects" button). */}
+                    <Link
+                        href={localize('/projects', lang)}
+                        title={collapsed ? t('nav.projects') : undefined}
+                        aria-label={t('nav.projects')}
+                        className="mt-3 flex items-center rounded-[8px] py-[9px] text-[13px] font-medium text-[#86857e] transition-colors hover:bg-[#f1efe9] hover:text-[#5f5f5a]"
+                    >
+                        <span className="flex w-[40px] shrink-0 items-center justify-center"><ArrowLeft size={16} /></span>
+                        <span className={`whitespace-nowrap transition-opacity duration-200 ${collapsed ? 'opacity-0' : 'opacity-100'}`}>{t('nav.projects')}</span>
                     </Link>
-                    <NavList />
-                    <div className="mt-auto flex flex-col items-start gap-4 px-[10px]">
-                        <LangSwitch />
-                        <span className="font-mono text-[11px] font-medium text-[#a8a7a0]">{t('sb.version')}</span>
+
+                    {/* Hairline that frames the header zone — fades in only while collapsed. */}
+                    <div className={`mx-auto my-2 h-px w-8 bg-[#e9e7e2] transition-opacity duration-200 ${collapsed ? 'opacity-100' : 'opacity-0'}`} />
+
+                    <NavList mini={collapsed} />
+
+                    <div className="mt-auto flex flex-col gap-3">
+                        {!collapsed && <LangSwitch />}
+                        {SIDEBAR_COLLAPSE_ENABLED && (
+                            <button
+                                onClick={toggleCollapsed}
+                                aria-label={collapsed ? 'Kenar çubuğunu genişlet' : 'Kenar çubuğunu daralt'}
+                                title={collapsed ? 'Genişlet' : 'Daralt'}
+                                className="flex h-9 w-[40px] items-center justify-center rounded-lg text-[#86857e] hover:bg-[#f1efe9] hover:text-[#5f5f5a] transition-colors"
+                            >
+                                {collapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
+                            </button>
+                        )}
                     </div>
                 </aside>
 
-                <main className="flex-1 min-w-0 md:ml-[232px] px-5 md:px-12 py-8 md:pt-[42px] md:pb-16 max-w-[1180px]">
+                <main className={`flex-1 min-w-0 px-5 md:px-12 py-8 md:pt-[42px] md:pb-16 max-w-[1180px] transition-[margin] duration-200 ${collapsed ? 'md:ml-[72px]' : 'md:ml-[232px]'}`}>
                     <AppPageHeader eyebrow={kicker} title={title} meta={meta} />
                     {children}
                 </main>

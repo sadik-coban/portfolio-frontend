@@ -1,16 +1,14 @@
 "use client";
 
 import { useMemo } from 'react';
-import { useTheme } from 'next-themes';
 import FinalShell from './FinalShell';
 import EChartsEdaPlots, { type EdaLabels } from '../_charts/EChartsEdaPlots';
 import { makeHybridTheme } from '../_charts/types';
 import { useLang } from './i18n';
 
 export default function FinalEda({ eda }: { eda: any }) {
-    const { resolvedTheme } = useTheme();
     const { t } = useLang();
-    const theme = useMemo(() => makeHybridTheme(resolvedTheme === 'dark'), [resolvedTheme]);
+    const theme = useMemo(() => makeHybridTheme(), []);
 
     const labels: EdaLabels = {
         priceDist: [t('eda.priceDist'), t('eda.priceDist.s')],

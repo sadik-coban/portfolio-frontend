@@ -2,7 +2,6 @@
 
 import { useMemo } from 'react';
 import ReactECharts from 'echarts-for-react';
-import { useTheme } from 'next-themes';
 
 const ACCENT = '#059669';
 const ACCENT_DARK = '#10b981';
@@ -14,8 +13,7 @@ export function AreaFigure({
     data: { year: number; price: number }[]; // price in ₺ millions
     variant?: 'hero' | 'thumb';
 }) {
-    const { resolvedTheme } = useTheme();
-    const dark = resolvedTheme === 'dark';
+    const dark = false;
     const isThumb = variant === 'thumb';
     const accent = dark ? ACCENT_DARK : ACCENT;
 
