@@ -1,85 +1,108 @@
-# Site Audit — current production vs. final redesign
+# Site Audit — post-migration status
 
-_Prepared 2026-06-28, before promoting the `/preview/final` redesign onto the root routes._
+_Prepared 2026-06-28 (before promoting the redesign to root). **Updated 2026-07-01** — the
+migration is done, so this now tracks the live root site and what's left before/around launch._
 
-This audit lists deficiencies in **two** trees:
+There is now **one tree**: the warm "paper-editorial" redesign lives at the root
+(`app/[lang]/**` routes + `app/_site/**` components). The old cool slate/blue production site,
+the `app/preview/**` sandboxes, and their dead components are gone. The site is **English-only**
+(Turkish is built but deactivated behind `I18N_ENABLED`).
 
-- **Current production site** — `app/` root routes (`app/page.tsx`, `app/projects/car-price/**`, `app/blog/**`) + `components/`. Cool slate/blue theme, English-only.
-- **Final redesign** — `app/preview/final/**`. Warm "paper" theme, EN + TR, the version intended to replace the live site.
-
-Items already handled in the pre-migration pass are marked **[done]**.
+**Legend:** **[done]** resolved · **[open]** still needs work · **[watch]** ongoing/verify.
 
 ---
 
-## 1. SEO & metadata (mostly redesign; blocks a clean migration)
+## 1. SEO & metadata
 
-| # | Where | Issue | Action |
-|---|-------|-------|--------|
-| 1.1 | redesign, all pages | **Placeholder titles** `Final — Home/Report/About/…` (in each `page.tsx` `metadata`). Not SEO-grade; brand template (`%s \| Sadık Çoban`) applies inconsistently. | At migration, write real per-page titles. |
-| 1.2 | redesign, all pages | **No per-page descriptions** — every page inherits the generic root description. | Add a unique `description` per route (home, projects, dashboard, eda, report, predict, drift, shap, about, blog, blog/[slug]). |
-| 1.3 | site-wide | **No `og:image`**; twitter card is `summary` (not `summary_large_image`). Poor link previews. | Add a default OG image + per-page `opengraph-image.tsx` (can reuse the `ImageResponse` pattern from `app/apple-icon.tsx`). |
-| 1.4 | `app/sitemap.ts` | Lists **old paths** (`/projects/car-price/predict`, `/projects/car-price/dashboard`, `/projects/car-price/blog`, `/blog/building-car-price-predictor`). No `/eda`, `/drift`, `/shap`, `/report`, no `/tr` alternates. | Rebuild for the migrated routes incl. TR alternates; verify every entry resolves (200). |
-| 1.5 | redesign | **noindex** on the whole `/preview` tree. **[done]** (`app/preview/layout.tsx`). | Remove at migration once content lives at root with real SEO. |
-| 1.6 | redesign | Canonical/hreflang point at `/preview/final/...`. | At migration, repoint canonical to root; keep `en`/`tr`/`x-default` (logic in `app/preview/final/seo.ts` — only `BASE` changes). |
+| # | Where | Status | Notes |
+|---|-------|--------|-------|
+| 1.1 | all pages | **[done]** | Real per-page titles now come from `site.pages` in [`site-config.ts`](../app/_site/site-config.ts); the `%s \| Sadık Çoban` template applies via `app/layout.tsx`. |
+| 1.2 | all pages | **[done]** | Each route has a unique `description` in `site.pages`. |
+| 1.3 | site-wide | **[open]** | **No OG image.** `site.openGraph.image` and `twitter.image` are empty, so the Twitter card falls back to `summary` (no rich preview). Add `/public/og.png` (or an `opengraph-image` route) and set both in `site-config.ts`. |
+| 1.4 | [`app/sitemap.ts`](../app/sitemap.ts) | **[done]** | Rebuilt — derives from `site.pages` + `BLOG_POSTS`; emits `tr` alternates only when `I18N_ENABLED`. Verify every entry resolves 200 at launch. |
+| 1.5 | indexing | **[done]** | No `/preview` tree left; root is indexable (`robots: index/follow` in `app/layout.tsx`). |
+| 1.6 | canonical/hreflang | **[done]** | Handled at root in [`app/_site/seo.ts`](../app/_site/seo.ts); hreflang is `en`-only while `I18N_ENABLED` is false. |
 
 ---
 
 ## 2. Content
 
-- **2.1 — Sparse blog.** Only one post exists (`content/building-car-price-predictor.mdx`). The blog index's category chips + "featured + all posts" layout are built for many posts and look thin with one. Add 2–4 real posts before launch, or simplify the layout until content exists.
-- **2.2 — mRFEI case study deactivated. [done]** Hidden from listings + route 404s; source kept in `app/preview/final/mrfei/`. Its figures were always **illustrative** (`mrfei/content.ts` header) — if reactivated for a portfolio, consider a note that data is illustrative, or wire real data.
-- **2.3 — Backend-dependent pages.** Dashboard / Predict / Drift / SHAP call the Railway API; they render clean error/empty states when it's down, but the live experience depends on that service being up. Confirm the backend is reachable from the production domain before launch.
+- **2.1 — Sparse blog. [open]** Still one post (`content/building-car-price-predictor.mdx`). The
+  blog index's category chips + "featured + all posts" layout is built for many posts; it hides
+  the "all posts" section gracefully with one, but add 2–4 real posts before launch to fill it out.
+- **2.2 — mRFEI case study deactivated. [done]** Hidden from listings + route 404s; source kept
+  in [`app/_site/mrfei/`](../app/_site/mrfei/). Figures were always illustrative — if reactivated,
+  note that or wire real data.
+- **2.3 — Backend-dependent pages. [done]** Dashboard / Predict / Drift / SHAP call the Railway
+  API; the site reaches the backend from production (confirmed). They still render clean
+  error/empty states if it goes down, so the pages degrade gracefully.
 
 ---
 
 ## 3. Internationalization
 
-- **3.1 — Current site is English-only.** `app/page.tsx`, `app/projects/car-price/**`, `app/blog/**` have no Turkish. The redesign adds EN + TR.
-- **3.2 — Redesign TR copy upgraded to native quality. [done]** Full pass over `app/preview/final/i18n.tsx` TR table (282 keys, EN/TR parity verified) + `home/content.ts` + `mrfei/content.ts` (terminology, loanwords, awkward phrasing fixed).
-- **3.3 — Blog content is not localized.** MDX posts are English only; `localize()` switches chrome but not article bodies. Decide whether TR blog content is in scope at launch (likely defer).
+- **3.1 — English-only for now. [done, by decision]** The site ships EN + TR dictionaries, but
+  Turkish is deactivated via `I18N_ENABLED = false` ([`app/_site/i18n-config.ts`](../app/_site/i18n-config.ts)),
+  so only English renders and no `/tr` routes are advertised. TR strings stay in place to switch back on.
+- **3.2 — TR copy is native-quality. [done]** Full pass over the `i18n.tsx` TR table (EN/TR parity)
+  + `home/content.ts` — ready for whenever Turkish is re-enabled.
+- **3.3 — Blog bodies aren't localized. [watch]** MDX posts are English only; `localize()` switches
+  chrome, not article bodies. Fine while EN-only; revisit if TR is turned on.
 
 ---
 
 ## 4. Accessibility
 
-- **4.1 — Contact form labels.** In `app/preview/final/FinalAbout.tsx`, fields use a `FieldLabel` **div**, not a `<label htmlFor>`/`id` pair — labels aren't programmatically associated. Wire `htmlFor`/`id` (or wrap inputs in `<label>`) for screen-reader/clickable-label support.
-- **4.2 — Icon-only / symbol controls.** Spot-check `aria-label`s on icon buttons (mobile menu, theme toggle, lang switch) — most have them; verify none regressed.
-- **4.3 — Color contrast.** The warm palette uses muted greys (`#86857e`, `#9a9a92`) on paper for secondary text — check small captions meet WCAG AA (4.5:1); some `faint` tokens may fall short at 11–12px.
-- Positive: no raw `<img>` without `alt`; figures are inline SVG.
+- **4.1 — Contact form labels. [open]** In [`FinalAbout.tsx`](../app/_site/FinalAbout.tsx) fields
+  still use a `FieldLabel` **div**, not a `<label htmlFor>`/`id` pair — labels aren't
+  programmatically associated. Wire `htmlFor`/`id` (or wrap inputs in `<label>`).
+- **4.2 — Icon-only controls. [done]** The theme toggle is gone (light-only); the sidebar collapse
+  toggle and lang switch carry `aria-label`s. Spot-check nothing regressed.
+- **4.3 — Colour contrast. [open]** Muted greys (`#86857e`, `#9a9a92`) on paper for small captions
+  (11–12px) may fall short of WCAG AA (4.5:1). Spot-check and darken where needed.
+- **Positive:** no raw `<img>` without `alt` (figures are inline SVG); a global `:focus-visible`
+  ring and `prefers-reduced-motion` reset were added in [`app/globals.css`](../app/globals.css).
 
 ---
 
 ## 5. Performance
 
-- **5.1 — Plotly trimmed. [done]** Report uses the `cartesian` partial bundle (~460 kB gzip vs ~1.2 MB) + IntersectionObserver lazy-mount + idle background loading.
-- **5.2 — ECharts on dashboard/EDA.** `echarts-for-react` loads the full ECharts; acceptable, but a custom build (only the used chart/coord/renderer modules) would shrink it if bundle size matters at launch.
-- **5.3 — No `next/image`.** Site avoids raster images (SVG figures), so no image-optimization gap today — but the future OG images (1.3) should be static/edge-generated, not shipped large.
+- **5.1 — Plotly trimmed. [done]** Report uses the `cartesian` partial bundle (~460 kB gzip vs
+  ~1.2 MB) + IntersectionObserver lazy-mount + debounced `ResizeObserver` re-fit.
+- **5.2 — ECharts full bundle. [open, optional]** `echarts-for-react` loads the full ECharts on
+  the dashboard, EDA, and the marketing hero/thumbnail figures. Acceptable; a custom ECharts build
+  (only the used chart/coord/renderer modules) would shrink it if bundle size matters at launch.
+- **5.3 — No `next/image`. [done/n-a]** The site avoids raster images (SVG figures), so no
+  image-optimization gap — but the future OG image (1.3) should be static/edge-generated, not large.
 
 ---
 
 ## 6. Dead / unused code
 
-- **6.1 — `app/preview/final/SiteFrame.tsx`** is not imported anywhere (old cool-theme navbar/footer). Safe to delete; left in place for now.
-- **6.2 — Old preview variants** `app/preview/a/**`, `app/preview/b/**`, `app/preview/charts/**` are dev sandboxes (cool themes, old Plotly). Not part of the final site; consider removing before launch to cut build surface (the email change already touched a/b).
-- **6.3 — mRFEI source** (`app/preview/final/mrfei/**`) is intentionally retained but currently unreferenced — keep per the deactivation decision.
+- **6.1 — Old shells removed. [done]** `SiteFrame`, `Navbar`, `ThemeToggle`, and the old
+  `PortfolioHome` are deleted; marketing pages use [`PaperShell`](../app/_site/PaperShell.tsx).
+- **6.2 — Preview sandboxes removed. [done]** `app/preview/**` (a / b / charts / final) is gone —
+  the redesign is the root.
+- **6.3 — mRFEI source retained. [watch]** [`app/_site/mrfei/**`](../app/_site/mrfei/) is kept but
+  unreferenced per the deactivation decision.
 
 ---
 
 ## 7. Branding / consistency
 
-- **7.1 — Favicon = `sc.` monogram. [done]** White-circle `sc.` (`app/icon.svg` + `app/apple-icon.tsx`); old chart-glyph icons removed.
-- **7.2 — Contact email = `s.c_2004@hotmail.com`. [done]** Gmail removed from the redesign; matches the old site.
-- **7.3 — Lowercase `sc.` wordmark** is consistent across the redesign (Monogram). The current production site still uses the old "Sadık Çoban" text mark + chart-glyph icon — unified once the redesign goes live.
+- **7.1 — Favicon = `sc.` monogram, "ink" variant. [done]** Dark tile, cream `S`, emerald dot —
+  `app/favicon.ico` + `app/icon0.svg` + `app/apple-icon.png` + maskable PWA icons in `/public`.
+  The previous icon set is backed up (gitignored `favicon-backup/`).
+- **7.2 — Contact email = `s.c_2004@hotmail.com`. [done]** Single source in `site.social.email`.
+- **7.3 — Lowercase `sc.` wordmark. [done]** Consistent everywhere via
+  [`Monogram.tsx`](../app/_site/Monogram.tsx); the old text mark + chart-glyph icon are gone.
 
 ---
 
-## 8. Prioritized action list for migration
+## 8. Remaining before launch
 
-1. Move `/preview/final/**` content onto the root routes (`/`, `/projects/car-price/**`, `/blog/**`, `/about`).
-2. Remove the interim **noindex** (`app/preview/layout.tsx`) and repoint **canonical** to root.
-3. Write real **titles + descriptions** per page; add **OG images** (1.1–1.3).
-4. Rebuild **`app/sitemap.ts`** for the new routes + TR alternates; verify all 200 (1.4).
-5. Fix **contact-form label association** (4.1).
-6. Add **blog content** or simplify the index for one post (2.1).
-7. Delete **dead code** (SiteFrame, preview a/b/charts) (6.1–6.2).
-8. Verify the **backend** is reachable from production (2.3).
+1. Add an **OG image** + set `openGraph.image` / `twitter.image` → `summary_large_image` (1.3).
+2. Add **blog content** (2–4 posts) or accept the one-post index (2.1).
+3. Fix **contact-form label association** (4.1).
+4. **Contrast** spot-check on small muted captions (4.3).
+5. _(optional)_ Custom **ECharts** build to trim bundle (5.2).
