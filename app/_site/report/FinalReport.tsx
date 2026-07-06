@@ -1,7 +1,7 @@
 "use client";
 
 import FinalShell from '../FinalShell';
-import FinalReportAnalysis from './FinalReportAnalysis';
+import FinalReportSiteData from './FinalReportSiteData';
 import { useLang } from '../i18n';
 
 export default function FinalReport() {
@@ -9,7 +9,7 @@ export default function FinalReport() {
 
     return (
         <FinalShell active="report" kicker={t('rep.kicker')} title={t('rep.title')}>
-            <FinalReportAnalysis />
+            <FinalReportSiteData />
         </FinalShell>
     );
 }
