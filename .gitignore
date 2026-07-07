@@ -45,7 +45,22 @@ next-env.d.ts
 
 # ── Project-unrelated reference, notes & scratch (not part of the app) ──
 /_archive
+/api
+
+# Local analytics DB — source for scripts/build-bi-data.mjs (public/bi_data.json is the committed artifact)
+/cars.duckdb
+
+# Full report data drops — source for scripts/shrink-site-data.mjs (public/site_data.json is the committed, downsampled artifact)
+/site_data*.json
+
+# Raw row-level BI export — the dashboard now fetches aggregates from the API backend
+# (privacy). scripts/build-bi-rows.mjs still emits this for reference; never serve/commit it.
+/public/bi_rows.json
 
 # local tooling / agent config
 /.claude
 /.mcp.json
+# Serving model artifacts — NOT on GitHub (on S3, downloaded by the backend on startup)
+/final_model*.pkl
+/serve*.zip
+/shap_plots*.zip

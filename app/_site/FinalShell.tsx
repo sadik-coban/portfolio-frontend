@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Rocket, LayoutDashboard, BarChart3, BrainCircuit, Activity, PieChart, NotebookText, BookOpen, ArrowLeft, Menu, X, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { Rocket, LayoutDashboard, BrainCircuit, Activity, PieChart, NotebookText, BookOpen, ArrowLeft, Menu, X, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { useLang, LangSwitch, localize } from './i18n';
 import { Monogram } from './Monogram';
 import { AppPageHeader } from './AppPageHeader';
@@ -39,7 +39,10 @@ export default function FinalShell({
     const nav = [
         { key: 'overview', label: t('sb.overview'), icon: Rocket, href: '/projects/car-price' },
         { key: 'dashboard', label: t('sb.dashboard'), icon: LayoutDashboard, href: '/projects/car-price/dashboard' },
-        { key: 'eda', label: t('sb.eda'), icon: BarChart3, href: '/projects/car-price/eda' },
+        // EDA tab DEACTIVATED 2026-07-07 (per request): hidden from the sidebar but the
+        // route + component are kept (app/[lang]/projects/car-price/eda + app/_charts/EChartsEdaPlots).
+        // To re-enable, restore this entry + re-import BarChart3.
+        // { key: 'eda', label: t('sb.eda'), icon: BarChart3, href: '/projects/car-price/eda' },
         { key: 'predict', label: t('sb.predict'), icon: BrainCircuit, href: '/projects/car-price/predict' },
         { key: 'drift', label: t('sb.drift'), icon: Activity, href: '/projects/car-price/drift' },
         { key: 'shap', label: t('sb.shap'), icon: PieChart, href: '/projects/car-price/shap' },

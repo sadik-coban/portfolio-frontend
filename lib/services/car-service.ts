@@ -1,4 +1,14 @@
 import { carApi } from '@/lib/api';
+import type { Filters, Agg, Rows } from '@/app/_site/bi/compute';
+
+// --- BI DASHBOARD (backend-fed; raw rows never leave the server) ---
+
+export interface BiMeta { meta: Rows['meta']; dict: Rows['dict']; }
+export interface BiAggResponse {
+    agg: Agg;
+    districts: { name: string; n: number; median: number }[];
+    damage: { parts: number[]; max: number; typeTotals: number[] };
+}
 
 // --- 1. TİP TANIMLARI ---
 
@@ -108,6 +118,29 @@ const MAPPINGS: Record<string, Record<string, string>> = {
 
 export const carService = {
 
+    // --- BI DASHBOARD (backend aggregation; privacy) ---
+    getBiMeta: async (): Promise<BiMeta> => {
+        const response = await carApi.get('/api/bi/meta');
+        return response.data;
+    },
+
+    getBiAgg: async (filters: Filters, dmgType: number, province: string | null): Promise<BiAggResponse> => {
+        const params = new URLSearchParams();
+        // index filters: -1 = "any" → omit (backend defaults to -1)
+        ([['brand', filters.brand], ['series', filters.series], ['fuel', filters.fuel],
+          ['seg', filters.seg], ['damage', filters.damage]] as const)
+            .forEach(([k, v]) => { if (v >= 0) params.set(k, String(v)); });
+        // numeric ranges: null = unset → omit
+        ([['yearMin', filters.yearMin], ['yearMax', filters.yearMax],
+          ['priceMin', filters.priceMin], ['priceMax', filters.priceMax],
+          ['kmMin', filters.kmMin], ['kmMax', filters.kmMax]] as const)
+            .forEach(([k, v]) => { if (v != null) params.set(k, String(v)); });
+        params.set('dmgType', String(dmgType));
+        if (province) params.set('province', province);
+        const response = await carApi.get(`/api/bi/agg?${params.toString()}`);
+        return response.data as BiAggResponse;
+    },
+
     // --- DASHBOARD (Ağır Veri) ---
     getDashboardData: async (filters: DashboardFilters) => {
         // Dashboard filtrelerinde 'Tümü' yerine 'All' gelirse veya tam tersi durumlar için temizlik
@@ -157,6 +190,25 @@ export const carService = {
 
     getDriftAnalysis: async (refVer: string, currVer: string) => {
         const response = await carApi.get(`/drift/${refVer}/${currVer}`);
+        return response.data.results;
+    },
+
+    // --- SNAPSHOT-BASED DRIFT (data snapshots, not model versions) ---
+    // --- PRICE PREDICTION (best model: LightGBM · TF-IDF+SVD, served from memory) ---
+    predictBest: async (input: Record<string, any>) => {
+        const response = await carApi.post('/api/predict', input);
+        return response.data;
+    },
+
+    getSnapshots: async (): Promise<{ date: string; specific_count: number; until_count: number }[]> => {
+        const response = await carApi.get('/api/snapshots');
+        return response.data.snapshots || [];
+    },
+
+    getDataDrift: async (ref: string, curr: string, mode: 'specific' | 'until' = 'specific', brand?: string) => {
+        const params = new URLSearchParams({ ref, curr, mode });
+        if (brand) params.set('brand', brand);
+        const response = await carApi.get(`/api/data-drift?${params.toString()}`);
         return response.data.results;
     },
 

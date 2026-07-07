@@ -1,6 +1,6 @@
-import FinalDashboard from '@/app/_site/FinalDashboard';
+import FinalBiDashboard from '@/app/_site/bi/FinalBiDashboard';
 
 
 export default function Page() {
-    return <FinalDashboard />;
+    return <FinalBiDashboard />;
 }

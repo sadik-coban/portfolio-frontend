@@ -14,6 +14,42 @@ import { useLang } from '../i18n';
 
 type Tab = 'all' | 'market' | 'model' | 'method';
 
+// ---- 30K-scatter downsamplers (SCATTER_RENDERING.md) ----
+// Deterministic, outlier-PRESERVING downsample for a [x,y] point cloud: force-keep
+// the worst-|dev| points (the extreme cases the reader must see) + axis extremes,
+// then stratified-fill the body by x-bin so the sample mirrors the real
+// distribution. No RNG → reproducible. Returns { body, outliers } so the extremes
+// can be drawn as an always-on overlay in both render modes.
+function sampleRepresentative(pts: number[][], devOf: (p: number[]) => number, target = 1200, nOut = 80) {
+    if (pts.length <= target) return { body: pts, outliers: [] as number[][] };
+    const forced = new Set<number>(
+        pts.map((p, i) => [devOf(p), i] as [number, number]).sort((a, b) => b[0] - a[0]).slice(0, nOut).map((w) => w[1]),
+    );
+    let xmin = 0, xmax = 0, ymin = 0, ymax = 0;
+    pts.forEach((p, i) => { if (p[0] < pts[xmin][0]) xmin = i; if (p[0] > pts[xmax][0]) xmax = i; if (p[1] < pts[ymin][1]) ymin = i; if (p[1] > pts[ymax][1]) ymax = i; });
+    [xmin, xmax, ymin, ymax].forEach((i) => forced.add(i));
+    const rest = pts.map((_, i) => i).filter((i) => !forced.has(i));
+    let lo = Infinity, hi = -Infinity;
+    for (const i of rest) { const x = pts[i][0]; if (x < lo) lo = x; if (x > hi) hi = x; }
+    const span = hi - lo || 1, BINS = 50;
+    const buckets: number[][] = Array.from({ length: BINS }, () => []);
+    rest.forEach((i) => buckets[Math.min(BINS - 1, Math.floor((pts[i][0] - lo) / span * BINS))].push(i));
+    const keep = new Set<number>();
+    buckets.forEach((b) => { if (!b.length) return; const per = Math.max(1, Math.round(target * b.length / rest.length)); const step = b.length / per; for (let k = 0; k < per; k++) keep.add(b[Math.floor(k * step)]); });
+    return { body: [...keep].map((i) => pts[i]), outliers: [...forced].map((i) => pts[i]) };
+}
+
+// deterministic stratified-by-cluster sample for the colored PCA scatter (keeps
+// each cluster's share so the separation reads true).
+function sampleByCluster(pts: number[][], target = 2500) {
+    if (pts.length <= target) return pts;
+    const byC: Record<string, number[]> = {};
+    pts.forEach((p, i) => { (byC[p[2]] ||= []).push(i); });
+    const keep: number[] = [];
+    for (const c of Object.keys(byC)) { const b = byC[c]; const per = Math.max(1, Math.round(target * b.length / pts.length)); const step = b.length / per; for (let k = 0; k < per; k++) keep.push(b[Math.floor(k * step)]); }
+    return keep.map((i) => pts[i]);
+}
+
 export default function FinalReportSiteData() {
     const { lang } = useLang();
     const L = (tr: string, en: string) => (lang === 'tr' ? tr : en);
@@ -22,6 +58,20 @@ export default function FinalReportSiteData() {
     const [d, setD] = useState<any>(null);
     const [err, setErr] = useState(false);
     const [tab, setTab] = useState<Tab>('all');
+    const [scMode, setScMode] = useState<'density' | 'points'>('density'); // OOF diagnostics render toggle
+
+    // Downsample the 30K OOF/PCA point clouds once per data load (not per render),
+    // preserving outliers + cluster shares. See sampleRepresentative/sampleByCluster.
+    const diag = useMemo(() => {
+        const dm = d?.domain;
+        if (!dm) return null;
+        return {
+            pvt: dm.pred_vs_true ? sampleRepresentative(dm.pred_vs_true.points, (p: number[]) => Math.abs(p[0] - p[1])) : null,
+            res: dm.residual_scatter ? sampleRepresentative(dm.residual_scatter.points, (p: number[]) => Math.abs(p[1])) : null,
+            pca: dm.pca_scatter ? sampleByCluster(dm.pca_scatter) : null,
+            pca13: dm.pca_scatter_13 ? sampleByCluster(dm.pca_scatter_13) : null,
+        };
+    }, [d]);
 
     useEffect(() => {
         fetch('/site_data.json')
@@ -74,7 +124,18 @@ export default function FinalReportSiteData() {
     const g = dom.hedonic;
     const fr = dom.final_results;
     const frMk = fr?.model_karsilastirma;
-    const frWin = frMk?.kazanan === 'catboost' ? 'CatBoost' : 'LightGBM';
+    // model comparison is data-driven: the export may carry 2 models ({catboost,lightgbm})
+    // or N labelled variants ({lightgbm_tfidf_svd, catboost_tfidf_svd, catboost_native, …}).
+    const MODEL_LABELS: Record<string, string> = { lightgbm_tfidf_svd: 'LightGBM · TF-IDF+SVD', catboost_tfidf_svd: 'CatBoost · TF-IDF+SVD', catboost_native: 'CatBoost · native', lightgbm: 'LightGBM', catboost: 'CatBoost' };
+    const mLabel = (k: string) => MODEL_LABELS[k] || k.replace(/_/g, ' ');
+    const frModels: any[] = frMk
+        ? Object.entries(frMk).filter(([, v]: any) => v && typeof v === 'object' && v.MAPE != null).map(([key, v]: any) => ({ key, label: mLabel(key), ...v }))
+        : [];
+    const frWinM = frModels.length ? frModels.reduce((a, b) => (b.MAPE < a.MAPE ? b : a)) : null;
+    const frWin = frWinM?.label ?? '';
+    const frBestMAE = frModels.length ? Math.min(...frModels.map((m) => m.MAE)) : 0;
+    const frBestMedAE = frModels.length ? Math.min(...frModels.map((m) => m.MedAE)) : 0;
+    const frBestRMSE = frModels.length ? Math.min(...frModels.map((m) => m.RMSE)) : 0;
     const hr = dom.hedonic_reliability;
     const hedoTerm = (t: string): string => (({ 'yaş': L('yaş', 'age'), 'yaş²': L('yaş²', 'age²'), 'yaş×km': L('yaş×km', 'age×km'), 'ağır hasar': L('ağır hasar', 'heavy damage'), 'boyalı': L('boyalı', 'painted'), 'değişen': L('değişen', 'changed') }) as Record<string, string>)[t] || t;
     // feature-drop reasons come from the data as Turkish — English rendering for the EN site
@@ -96,7 +157,8 @@ export default function FinalReportSiteData() {
     const seg = [...dom.segment_ladder].sort((a: any, b: any) => a[1] - b[1]);
     const segData = [{ type: 'bar', x: seg.map((r: any) => r[0]), y: seg.map((r: any) => r[1]), marker: { color: green }, text: seg.map((r: any) => fmtM(r[1])), textposition: 'outside', hovertemplate: '%{x}: %{text} · %{customdata} ' + L('ilan', 'listings') + '<extra></extra>', customdata: seg.map((r: any) => fmtN(r[2])) }];
 
-    const body = [...dom.body_median].sort((a: any, b: any) => a[1] - b[1]);
+    // drop the unlabelled "missing" body-style bucket (no real class) from the chart
+    const body = [...dom.body_median].filter((r: any) => r[0] && r[0] !== 'missing').sort((a: any, b: any) => a[1] - b[1]);
     const bodyData = [{ type: 'bar', orientation: 'h', y: body.map((r: any) => r[0]), x: body.map((r: any) => r[1]), marker: { color: green }, hovertemplate: '%{y}: %{customdata}<extra></extra>', customdata: body.map((r: any) => fmtM(r[1])) }];
 
     // median curve + optional mean curve (renders when rows carry a 4th element = mean, in a different colour)
@@ -125,10 +187,18 @@ export default function FinalReportSiteData() {
     const ssmData = [{ type: 'heatmap', z: ssmZ, x: segCols, y: serRows, colorscale: ramp, showscale: false, hoverongaps: false, xgap: 1, ygap: 1, hovertemplate: '%{y} · %{x}: %{customdata}<extra></extra>', customdata: ssmZ.map((row) => row.map((v) => (v == null ? '—' : fmtM(v)))) }];
 
     const km = dom.kmeans;
-    const pca = dom.pca_scatter;
-    const pcaData = [{ type: 'scatter', mode: 'markers', x: pca.map((r: any) => r[0]), y: pca.map((r: any) => r[1]), marker: { size: 5, opacity: 0.6, color: pca.map((r: any) => CATEGORICAL_LIST[r[2] % CATEGORICAL_LIST.length]) }, hoverinfo: 'skip' }];
-    const pca13 = dom.pca_scatter_13;
-    const pca13Data = pca13 ? [{ type: 'scatter', mode: 'markers', x: pca13.map((r: any) => r[0]), y: pca13.map((r: any) => r[1]), marker: { size: 5, opacity: 0.6, color: pca13.map((r: any) => CATEGORICAL_LIST[r[2] % CATEGORICAL_LIST.length]) }, hoverinfo: 'skip' }] : null;
+    // English labels for the (Turkish) cluster names in the data; falls back to the raw name.
+    const CLUSTER_EN: Record<string, string> = {
+        'Genç & temiz premium': 'Young & clean premium',
+        'Yaşlı & yüksek-km ekonomik': 'Old & high-mileage economy',
+        'Hasarlı': 'Damaged',
+    };
+    const clusterName = (ad: string) => L(ad, CLUSTER_EN[ad] ?? ad);
+    // 30K → ~2.5K stratified-by-cluster (colors must survive → density can't be used here)
+    const pca = diag?.pca ?? dom.pca_scatter;
+    const pcaData = [{ type: 'scatter', mode: 'markers', x: pca.map((r: any) => r[0]), y: pca.map((r: any) => r[1]), marker: { size: 4, opacity: 0.5, color: pca.map((r: any) => CATEGORICAL_LIST[r[2] % CATEGORICAL_LIST.length]) }, hoverinfo: 'skip' }];
+    const pca13 = diag?.pca13 ?? dom.pca_scatter_13;
+    const pca13Data = pca13 ? [{ type: 'scatter', mode: 'markers', x: pca13.map((r: any) => r[0]), y: pca13.map((r: any) => r[1]), marker: { size: 4, opacity: 0.5, color: pca13.map((r: any) => CATEGORICAL_LIST[r[2] % CATEGORICAL_LIST.length]) }, hoverinfo: 'skip' }] : null;
     const axes = met.pca_axes || [];
     const axPct = (i: number) => (axes[i] ? pct(axes[i].var_pct) : '');
 
@@ -146,16 +216,41 @@ export default function FinalReportSiteData() {
     const rvn = dom.residual_vs_n;
     const residData = [{ type: 'scatter', mode: 'markers', x: rvn.map((r: any) => r[0]), y: rvn.map((r: any) => r[1]), marker: { size: 6, color: green, opacity: 0.5 }, hovertemplate: '%{x} ' + L('ilan', 'listings') + ' · %{y:.1f}<extra></extra>' }];
 
+    // ---- OOF diagnostics: predicted-vs-actual + residuals (toggle: density ↔ points) ----
+    // Two views of the same 30K OOF cloud. The extreme points (biggest |error| /
+    // |residual%|) are ALWAYS drawn as red rings on top, in both modes, so the worst
+    // cases stay visible regardless of density-binning or sampling.
+    const pvtObj = dom.pred_vs_true, resObj = dom.residual_scatter;
+    const outMarker = { size: 6, color: '#b91c1c', symbol: 'circle-open' as const, line: { width: 1.5, color: '#b91c1c' } };
+    const hb2d = (pts: number[][]) => ({ type: 'histogram2d', x: pts.map((p) => p[0]), y: pts.map((p) => p[1]), colorscale: ramp, nbinsx: 48, nbinsy: 48, zsmooth: 'best', showscale: false, hoverinfo: 'skip' });
+    const scBody = (pts: number[][]) => ({ type: 'scatter', mode: 'markers', x: pts.map((p) => p[0]), y: pts.map((p) => p[1]), marker: { size: 4, opacity: 0.4, color: green }, hoverinfo: 'skip' });
+    const scOut = (pts: number[][]) => ({ type: 'scatter', mode: 'markers', x: pts.map((p) => p[0]), y: pts.map((p) => p[1]), marker: outMarker, hoverinfo: 'skip' });
+    const idealTrace = pvtObj ? { type: 'scatter', mode: 'lines', x: pvtObj.ideal_line, y: pvtObj.ideal_line, line: { dash: 'dash' as const, color: '#86857e', width: 1 }, hoverinfo: 'skip' } : null;
+    const pvtTraces = (pvtObj && diag?.pvt) ? (scMode === 'density'
+        ? [hb2d(pvtObj.points), scOut(diag.pvt.outliers), idealTrace]
+        : [scBody(diag.pvt.body), scOut(diag.pvt.outliers), idealTrace]) : null;
+    const resTraces = (resObj && diag?.res) ? (scMode === 'density'
+        ? [hb2d(resObj.points), scOut(diag.res.outliers)]
+        : [scBody(diag.res.body), scOut(diag.res.outliers)]) : null;
+
     // raw price distribution across snapshots — two styles to compare:
     //  • angular / no-KDE (drift.hist) — matches the last-committed report's line chart
     //  • smooth / KDE (drift.kde_raw)
     const driftSnapLine = (src: any, xs: number[], shape: 'linear' | 'spline') =>
         src ? snaps.filter((s) => src[s]).map((s, i) => ({ type: 'scatter', mode: 'lines', x: xs, y: src[s], name: shortDate(s), line: { color: CATEGORICAL_LIST[i % CATEGORICAL_LIST.length], width: 2, shape }, hovertemplate: shortDate(s) + ' · %{x:,.0f} ₺<extra></extra>' })) : [];
     const dhist = dom.drift?.hist;
-    const dbinW = dhist ? dhist.edges[1] - dhist.edges[0] : 0; // uniform bins
-    const dhistCenters = dhist ? dhist.edges.slice(0, -1).map((e: number, i: number) => (e + dhist.edges[i + 1]) / 2) : [];
+    const dsnapKeys = dhist ? snaps.filter((s) => Array.isArray(dhist[s])) : [];
+    const dnbins = dsnapKeys.length ? dhist[dsnapKeys[0]].length : 0;
+    // bin edges: prefer explicit edges; newer exports omit them → synthesize a uniform
+    // grid across the KDE x-range so the angular (no-KDE) histogram still renders.
+    const dkx = dom.drift?.kde_raw?.x;
+    const dedges: number[] | null = dhist?.edges
+        ? dhist.edges
+        : (dkx && dnbins ? Array.from({ length: dnbins + 1 }, (_, i) => dkx[0] + (dkx[dkx.length - 1] - dkx[0]) * i / dnbins) : null);
+    const dbinW = dedges ? dedges[1] - dedges[0] : 0; // uniform bins
+    const dhistCenters = dedges ? dedges.slice(0, -1).map((e: number, i: number) => (e + dedges[i + 1]) / 2) : [];
     // no-KDE: density → relative frequency % per bin (density × binWidth × 100, sums to ~100)
-    const driftHistData = dhist ? snaps.filter((s) => dhist[s]).map((s, i) => ({
+    const driftHistData = (dhist && dedges) ? dsnapKeys.map((s, i) => ({
         type: 'scatter', mode: 'lines', x: dhistCenters, y: dhist[s].map((v: number) => v * dbinW * 100), name: shortDate(s),
         line: { color: CATEGORICAL_LIST[i % CATEGORICAL_LIST.length], width: 2, shape: 'linear' as const },
         hovertemplate: shortDate(s) + ' · %{x:,.0f} ₺ · ' + L('frekans', 'freq') + ' %{y:.1f}%<extra></extra>',
@@ -171,7 +266,7 @@ export default function FinalReportSiteData() {
     const oofClipped = [...dom.oof_outliers, ...(dom.oof_best || [])].some((r: any) => r[4] >= 4e7);
 
     // ---------- methodology ----------
-    const assoc = met.assoc_model || [];
+    const assoc = Array.isArray(met.assoc_model) ? met.assoc_model : [];
     // Order the identity hierarchy (brand → series → model) first so it groups at the
     // bottom-left origin, then the remaining categorical attributes.
     const HEAT_ORDER = ['brand', 'series', 'model', 'segment', 'kb_body_type', 'kb_drivetrain', 'kb_transmission', 'kb_fuel'];
@@ -250,13 +345,13 @@ export default function FinalReportSiteData() {
             </div>
 
             {/* model performance KPIs (final 5-fold OOF results) */}
-            {frMk && (
+            {frWinM && (
                 <div className="mb-6 grid grid-cols-2 md:grid-cols-4 overflow-hidden rounded-[14px] border border-[#e4e2dd] bg-[#fdfcf9]">
                     {[
-                        { k: 'CatBoost MAPE', v: pct(frMk.catboost.MAPE, 2), accent: true, sub: `R² ${frMk.catboost.R2.toFixed(3)} · ★ ${L('kazanan', 'winner')}` },
-                        { k: 'LightGBM MAPE', v: pct(frMk.lightgbm.MAPE, 2), sub: `R² ${frMk.lightgbm.R2.toFixed(3)}` },
-                        { k: L('En iyi MAE', 'Best MAE'), v: fmtK(Math.min(frMk.catboost.MAE, frMk.lightgbm.MAE)), sub: `MedAE ${fmtK(Math.min(frMk.catboost.MedAE, frMk.lightgbm.MedAE))}` },
-                        { k: L('En iyi RMSE', 'Best RMSE'), v: fmtK(Math.min(frMk.catboost.RMSE, frMk.lightgbm.RMSE)), sub: L('5-fold OOF', '5-fold OOF') },
+                        { k: L('Kazanan MAPE', 'Winner MAPE'), v: pct(frWinM.MAPE, 2), accent: true, sub: `${frWinM.label} · R² ${frWinM.R2.toFixed(3)} ★` },
+                        { k: L('En iyi MAE', 'Best MAE'), v: fmtK(frBestMAE), sub: `MedAE ${fmtK(frBestMedAE)}` },
+                        { k: L('En iyi RMSE', 'Best RMSE'), v: fmtK(frBestRMSE), sub: L('5-fold OOF', '5-fold OOF') },
+                        { k: L('Model varyantı', 'Model variants'), v: String(frModels.length), sub: L('sızıntısız OOF', 'leak-free OOF') },
                     ].map((m, i) => (
                         <div key={m.k} className={`p-4 sm:p-[18px] sm:px-5 border-[#e9e7e2] ${i >= 2 ? 'border-t md:border-t-0' : ''} ${i % 2 !== 0 ? 'border-l' : ''} ${i % 4 !== 0 ? 'md:border-l' : ''}`}>
                             <div className="mb-1.5 font-mono text-[10px] uppercase tracking-[0.05em] text-[#86857e]">{m.k}</div>
@@ -372,7 +467,7 @@ export default function FinalReportSiteData() {
                                 <div key={p.cluster} className="rounded-[12px] border border-[#e4e2dd] bg-[#fdfcf9] p-4">
                                     <div className="mb-2 flex items-center gap-2">
                                         <span className="h-2.5 w-2.5 rounded-full" style={{ background: CATEGORICAL_LIST[p.cluster % CATEGORICAL_LIST.length] }} />
-                                        <span className="font-mono text-[12px] font-semibold text-[#1a1a1a]">{p.ad}</span>
+                                        <span className="font-mono text-[12px] font-semibold text-[#1a1a1a]">{clusterName(p.ad)}</span>
                                         <span className="ml-auto font-mono text-[11px] text-[#86857e]">{fmtN(p.n)}</span>
                                     </div>
                                     <div className="font-mono text-[15px] font-bold text-[#047857]">{fmtM(p.medyan)}</div>
@@ -426,25 +521,41 @@ export default function FinalReportSiteData() {
                     {(() => { let sn = 0; const N = () => String(++sn).padStart(2, '0'); return (
                     <>
 
-                    {frMk && (
+                    {frWinM && (
                         <Section n={N()} title={L('Model karşılaştırması', 'Model comparison')}
-                            lead={L(`İki gradyan-artırma modeli 5-fold OOF (sızıntısız) ile karşılaştırıldı; final modeller tüm veriyle eğitildi. Kazanan ${frWin} — MAPE ${pct(frMk.catboost.MAPE, 2)} (CatBoost) vs ${pct(frMk.lightgbm.MAPE, 2)} (LightGBM); ikisi de %6.5 civarı, başa baş.`, `Two gradient-boosting models compared with 5-fold OOF (leak-free); final models trained on all data. Winner ${frWin} — MAPE ${pct(frMk.catboost.MAPE, 2)} (CatBoost) vs ${pct(frMk.lightgbm.MAPE, 2)} (LightGBM); both ~6.5%, neck and neck.`)}>
-                            <Table head={[L('Model', 'Model'), 'MAPE', 'R²', 'MAE', 'MedAE', 'RMSE']} rows={[
-                                [`CatBoost${frMk.kazanan === 'catboost' ? ' ★' : ''}`, pct(frMk.catboost.MAPE, 2), frMk.catboost.R2.toFixed(4), fmtN(frMk.catboost.MAE), fmtN(frMk.catboost.MedAE), fmtN(frMk.catboost.RMSE)],
-                                [`LightGBM${frMk.kazanan === 'lightgbm' ? ' ★' : ''}`, pct(frMk.lightgbm.MAPE, 2), frMk.lightgbm.R2.toFixed(4), fmtN(frMk.lightgbm.MAE), fmtN(frMk.lightgbm.MedAE), fmtN(frMk.lightgbm.RMSE)],
-                            ]} />
+                            lead={L(`${frModels.length} model varyantı 5-fold OOF (sızıntısız) ile karşılaştırıldı; final modeller tüm veriyle eğitildi. Kazanan ${frWin} — MAPE ${pct(frWinM.MAPE, 2)}.`, `${frModels.length} model variants compared with 5-fold OOF (leak-free); final models trained on all data. Winner ${frWin} — MAPE ${pct(frWinM.MAPE, 2)}.`)}>
+                            <Table head={[L('Model', 'Model'), 'MAPE', 'R²', 'MAE', 'MedAE', 'RMSE']} rows={frModels.map((m) => [
+                                `${m.label}${m === frWinM ? ' ★' : ''}`, pct(m.MAPE, 2), m.R2.toFixed(4), fmtN(m.MAE), fmtN(m.MedAE), fmtN(m.RMSE),
+                            ])} />
                             {fr.ornek_tahmin && (
                                 <div className="mt-4 rounded-[12px] border border-[#e4e2dd] bg-[#fdfcf9] p-4">
                                     <div className="mb-3 font-mono text-[11px] uppercase tracking-[0.05em] text-[#86857e]">{L('Örnek tahmin', 'Sample prediction')} · {fr.ornek_tahmin.arac}</div>
-                                    <div className="grid grid-cols-3 gap-3">
+                                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                                         <div><div className="font-mono text-[10px] uppercase tracking-[0.05em] text-[#86857e]">{L('Gerçek', 'Actual')}</div><div className="mt-1 font-mono text-[15px] sm:text-[16px] font-bold tabular-nums text-[#1a1a1a]">{fmtM(fr.ornek_tahmin.gercek)}</div></div>
-                                        <div><div className="font-mono text-[10px] uppercase tracking-[0.05em] text-[#86857e]">CatBoost</div><div className="mt-1 font-mono text-[15px] sm:text-[16px] font-bold tabular-nums text-[#047857]">{fmtM(fr.ornek_tahmin.catboost_tahmin)}</div></div>
-                                        <div><div className="font-mono text-[10px] uppercase tracking-[0.05em] text-[#86857e]">LightGBM</div><div className="mt-1 font-mono text-[15px] sm:text-[16px] font-bold tabular-nums text-[#1a1a1a]">{fmtM(fr.ornek_tahmin.lightgbm_tahmin)}</div></div>
+                                        <div><div className="font-mono text-[10px] uppercase tracking-[0.05em] text-[#86857e]">LightGBM ★</div><div className="mt-1 font-mono text-[15px] sm:text-[16px] font-bold tabular-nums text-[#047857]">{fmtM(fr.ornek_tahmin.lightgbm_tahmin)}</div></div>
+                                        <div><div className="font-mono text-[10px] uppercase tracking-[0.05em] text-[#86857e]">CatBoost</div><div className="mt-1 font-mono text-[15px] sm:text-[16px] font-bold tabular-nums text-[#1a1a1a]">{fmtM(fr.ornek_tahmin.catboost_tahmin)}</div></div>
+                                        {fr.ornek_tahmin.catboost_native_tahmin != null && <div><div className="font-mono text-[10px] uppercase tracking-[0.05em] text-[#86857e]">CatBoost native</div><div className="mt-1 font-mono text-[15px] sm:text-[16px] font-bold tabular-nums text-[#1a1a1a]">{fmtM(fr.ornek_tahmin.catboost_native_tahmin)}</div></div>}
                                     </div>
                                 </div>
                             )}
-                            {fr.egitim && <p className="mt-3 font-mono text-[11px] text-[#86857e]">{L(`Hedef: ${fr.egitim.hedef} · ${fr.egitim.n_feature} öznitelik · 5-fold CV ${fr.egitim.cv_suresi_sn} sn`, `Target: ${fr.egitim.hedef} · ${fr.egitim.n_feature} features · 5-fold CV ${fr.egitim.cv_suresi_sn}s`)}</p>}
+                            {fr.egitim && <p className="mt-3 font-mono text-[11px] text-[#86857e]">{L(`Hedef: ${fr.egitim.hedef} · ${fr.egitim.n_feature} öznitelik${fr.egitim.cv_suresi_sn ? ` · 5-fold CV ${fr.egitim.cv_suresi_sn} sn` : ''}`, `Target: ${fr.egitim.hedef} · ${fr.egitim.n_feature} features${fr.egitim.cv_suresi_sn ? ` · 5-fold CV ${fr.egitim.cv_suresi_sn}s` : ''}`)}</p>}
                             {frMk.not && <Method className="mt-3">{L(frMk.not, 'Metrics are 5-fold OOF (leak-free). Final models were trained on all data.')}</Method>}
+                        </Section>
+                    )}
+
+                    {pvtTraces && resTraces && (
+                        <Section n={N()} title={L('Tahmin kalibrasyonu & artıklar', 'Prediction calibration & residuals')}
+                            lead={L(`OOF (sızıntısız) tahminler gerçek fiyata karşı — R² ${pvtObj.r2.toFixed(3)}. Artık% sıfır etrafında (ort ${pct(resObj.mean_resid_pct, 2)}, std ${pct(resObj.std_resid_pct, 2)}) → sistematik yanlılık yok.`, `OOF (leak-free) predictions vs actual — R² ${pvtObj.r2.toFixed(3)}. Residual% centers on zero (mean ${pct(resObj.mean_resid_pct, 2)}, std ${pct(resObj.std_resid_pct, 2)}) → no systematic bias.`)}>
+                            <div className="mb-3 inline-flex gap-1 rounded-[8px] border border-[#e4e2dd] bg-[#f7f6f3] p-0.5">
+                                {([['density', L('Yoğunluk', 'Density')], ['points', L('Noktalar', 'Points')]] as const).map(([m, lb]) => (
+                                    <button type="button" key={m} onClick={() => setScMode(m)} className={`rounded-[6px] px-3 py-1.5 font-mono text-[11px] transition-colors ${scMode === m ? 'bg-[#047857] text-white' : 'text-[#5f5f5a] hover:bg-[#f1efe9]'}`}>{lb}</button>
+                                ))}
+                            </div>
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                                <Fig title={L('Tahmin vs Gerçek', 'Predicted vs Actual')}><Chart h={320}><PlotlyChart data={pvtTraces} layout={base({ margin: { t: 8, r: 12, b: 34, l: 46 }, xaxis: { title: { text: L('gerçek ₺', 'actual ₺'), font: { size: 10 } }, tickformat: '~s' }, yaxis: { title: { text: L('tahmin ₺', 'pred ₺'), font: { size: 10 } }, tickformat: '~s' } })} config={config} guard={false} /></Chart></Fig>
+                                <Fig title={L('Artık% vs Tahmin', 'Residual% vs Predicted')}><Chart h={320}><PlotlyChart data={resTraces} layout={base({ margin: { t: 8, r: 12, b: 34, l: 42 }, xaxis: { title: { text: L('tahmin ₺', 'pred ₺'), font: { size: 10 } }, tickformat: '~s' }, yaxis: { ticksuffix: '%' }, shapes: [{ type: 'line', xref: 'paper', x0: 0, x1: 1, yref: 'y', y0: 0, y1: 0, line: { dash: 'dash', color: '#86857e', width: 1 } }] })} config={config} guard={false} /></Chart></Fig>
+                            </div>
+                            <Method className="mt-3">{L(`Kırmızı halkalar uç noktalar — en büyük |hata| + fiyat uçları — her iki modda da gösterilir. Sayfa hafif kalsın diye 30K OOF tahminden temsili örnek çiziliyor (fiyata göre stratified, uç noktalar garantili, deterministik): “Yoğunluk” ${pvtObj.points.length.toLocaleString(loc)}-nokta pürüzsüzleştirilmiş ısı haritası, “Noktalar” ${diag!.pvt!.body.length.toLocaleString(loc)}-nokta gövde + tüm uç noktalar.`, `Red rings are extreme points — largest |error| + price extremes — shown in both modes. To keep the page light a representative sample of the 30K OOF predictions is drawn (price-stratified, outliers guaranteed, deterministic): “Density” a ${pvtObj.points.length.toLocaleString(loc)}-pt smoothed heatmap, “Points” a ${diag!.pvt!.body.length.toLocaleString(loc)}-pt body + all extreme points.`)}</Method>
                         </Section>
                     )}
 
@@ -567,11 +678,15 @@ export default function FinalReportSiteData() {
                     {met.g_mpv && (
                         <Section n={N()} title={L('G ≡ MPV teşhisi', 'G ≡ MPV diagnosis')}
                             lead={L('Ham veride bir “G” segmenti vardı ama gerçek değil: G’lerin neredeyse tamamı MPV gövde (Active/Gran Tourer). Site kendi etiketini uydurmuş. Çözüm: segmenti seriden türet, MPV bilgisini kb_body_type’ta tut. Bir veri kalitesi teşhisi.', 'The raw feed had a “G” segment, but it isn’t real: nearly all G rows are MPV bodies (Active/Gran Tourer). The source invented its own label. Fix: derive segment from the series, keep the MPV signal in kb_body_type. A data-quality diagnosis.')}>
-                            <div className="grid grid-cols-3 gap-3">
-                                <Stat k={L('G ∧ MPV', 'G ∧ MPV')} v={fmtN(met.g_mpv.mpv_and_g)} accent />
-                                <Stat k={L('Toplam G', 'Total G')} v={fmtN(met.g_mpv.g_total)} />
-                                <Stat k={L('Toplam MPV', 'Total MPV')} v={fmtN(met.g_mpv.mpv_total)} />
-                            </div>
+                            {typeof met.g_mpv === 'object' ? (
+                                <div className="grid grid-cols-3 gap-3">
+                                    <Stat k={L('G ∧ MPV', 'G ∧ MPV')} v={fmtN(met.g_mpv.mpv_and_g)} accent />
+                                    <Stat k={L('Toplam G', 'Total G')} v={fmtN(met.g_mpv.g_total)} />
+                                    <Stat k={L('Toplam MPV', 'Total MPV')} v={fmtN(met.g_mpv.mpv_total)} />
+                                </div>
+                            ) : (
+                                <Method className="mt-1">{L(String(met.g_mpv), 'Segment is derived deterministically from the series; the raw gb_segment was too dirty to use.')}</Method>
+                            )}
                         </Section>
                     )}
 
