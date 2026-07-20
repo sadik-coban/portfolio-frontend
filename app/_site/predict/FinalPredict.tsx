@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import FinalShell from '../FinalShell';
+import * as LBL from '@/lib/labels';
 import { useLang } from '../i18n';
 
 const FIELD = "w-full h-12 bg-[#f7f6f3] border-[#d8d6d0] rounded-[10px] px-4 text-base text-[#1a1a1a] focus:border-[#047857]";
@@ -21,6 +22,39 @@ const DRIVE = ['Arkadan İtiş', 'Önden Çekiş', '4WD (Sürekli)', 'AWD (Elekt
 const TRANS = ['Otomatik', 'Düz', 'Yarı Otomatik'];
 const FUEL = ['Benzin', 'Dizel', 'LPG & Benzin', 'Hibrit'];
 const SEG = ['B', 'C', 'D', 'E', 'F', 'S'];
+// Panel damage vocabulary — mirrors the served bundle's cat_maps (roof/hood/trunk_state)
+// and the group count columns (door/fender/bumper × changed·painted·local).
+const PANEL_STATES = [
+    { v: 'original', tr: 'Orijinal', en: 'Original' },
+    { v: 'local', tr: 'Lokal boya', en: 'Local paint' },
+    { v: 'painted', tr: 'Boyalı', en: 'Painted' },
+    { v: 'changed', tr: 'Değişmiş', en: 'Changed' },
+];
+// The 13 physical panels a Turkish listing reports. The user marks each one; the model's
+// inputs are DERIVED from them exactly the way training did it (single panels → state,
+// group panels → per-operation counts), so the form never asks "how many fenders are painted".
+type PanelState = 'original' | 'local' | 'painted' | 'changed';
+const DOORS = ['door_fl', 'door_fr', 'door_rl', 'door_rr'] as const;
+const FENDERS = ['fender_fl', 'fender_fr', 'fender_rl', 'fender_rr'] as const;
+const BUMPERS = ['bumper_front', 'bumper_rear'] as const;
+const PANEL_LABELS: Record<string, { tr: string; en: string }> = {
+    hood: { tr: 'Kaput', en: 'Hood' }, roof: { tr: 'Tavan', en: 'Roof' }, trunk: { tr: 'Bagaj', en: 'Trunk' },
+    door_fl: { tr: 'Sol ön kapı', en: 'Front-left door' }, door_fr: { tr: 'Sağ ön kapı', en: 'Front-right door' },
+    door_rl: { tr: 'Sol arka kapı', en: 'Rear-left door' }, door_rr: { tr: 'Sağ arka kapı', en: 'Rear-right door' },
+    fender_fl: { tr: 'Sol ön çamurluk', en: 'Front-left fender' }, fender_fr: { tr: 'Sağ ön çamurluk', en: 'Front-right fender' },
+    fender_rl: { tr: 'Sol arka çamurluk', en: 'Rear-left fender' }, fender_rr: { tr: 'Sağ arka çamurluk', en: 'Rear-right fender' },
+    bumper_front: { tr: 'Ön tampon', en: 'Front bumper' }, bumper_rear: { tr: 'Arka tampon', en: 'Rear bumper' },
+};
+const PANEL_STYLE: Record<PanelState, string> = {
+    original: 'bg-[#f3f1ec] border-[#e4e2dd] text-[#5f5f5a]',
+    local: 'bg-[#fdf3dd] border-[#e8cf9a] text-[#8a6516]',
+    painted: 'bg-[#fbe6c8] border-[#e08a1e] text-[#a4640f]',
+    changed: 'bg-[#fde2e2] border-[#ef4444] text-[#b91c1c]',
+};
+const emptyPanels = (): Record<string, PanelState> =>
+    Object.fromEntries(Object.keys(PANEL_LABELS).map((k) => [k, 'original'])) as Record<string, PanelState>;
+const countBy = (panels: Record<string, PanelState>, keys: readonly string[], s: PanelState) =>
+    keys.reduce((n, k) => n + (panels[k] === s ? 1 : 0), 0);
 
 export default function FinalPredict() {
     const { t, lang } = useLang();
@@ -35,8 +69,15 @@ export default function FinalPredict() {
         kb_body_type: 'Sedan', kb_drivetrain: 'Arkadan İtiş', segment: 'D',
         kb_transmission: 'Otomatik', kb_fuel: 'Benzin',
         year: 2020, gb_mileage: 50000, power_hp_val: 170, engine_cc_val: 1598,
-        count_painted: 0, count_changed: 0, count_local_painted: 0, is_heavy_damaged: 0,
+        is_heavy_damaged: 0,
     });
+    // Damage is held per physical panel; the model's fields are derived from this on submit.
+    const [panels, setPanels] = useState<Record<string, PanelState>>(emptyPanels);
+    const cyclePanel = (k: string) => setPanels((p) => {
+        const order: PanelState[] = ['original', 'local', 'painted', 'changed'];
+        return { ...p, [k]: order[(order.indexOf(p[k]) + 1) % order.length] };
+    });
+    const damagedCount = Object.values(panels).filter((s) => s !== 'original').length;
     const set = (patch: Partial<typeof form>) => setForm((p) => ({ ...p, ...patch }));
 
     useEffect(() => { carService.getBiMeta().then((m) => setSeriesDict(m.dict.series)).catch(() => {}); }, []);
@@ -54,8 +95,13 @@ export default function FinalPredict() {
                 kb_transmission: form.kb_transmission, kb_fuel: form.kb_fuel,
                 vehicle_age: Math.max(0, CURRENT_YEAR - Number(form.year)),
                 gb_mileage: Number(form.gb_mileage), power_hp_val: Number(form.power_hp_val),
-                engine_cc_val: Number(form.engine_cc_val), count_painted: Number(form.count_painted),
-                count_changed: Number(form.count_changed), count_local_painted: Number(form.count_local_painted),
+                engine_cc_val: Number(form.engine_cc_val),
+                // Single panels pass their state through; group panels collapse to per-operation
+                // counts — the same derivation the training pipeline used.
+                roof_state: panels.roof, hood_state: panels.hood, trunk_state: panels.trunk,
+                door_changed: countBy(panels, DOORS, 'changed'), door_painted: countBy(panels, DOORS, 'painted'), door_local: countBy(panels, DOORS, 'local'),
+                fender_changed: countBy(panels, FENDERS, 'changed'), fender_painted: countBy(panels, FENDERS, 'painted'), fender_local: countBy(panels, FENDERS, 'local'),
+                bumper_changed: countBy(panels, BUMPERS, 'changed'), bumper_painted: countBy(panels, BUMPERS, 'painted'), bumper_local: countBy(panels, BUMPERS, 'local'),
                 is_heavy_damaged: form.is_heavy_damaged,
             };
             setResult(await carService.predictBest(payload));
@@ -67,10 +113,13 @@ export default function FinalPredict() {
             <Icon size={18} className={danger ? 'text-amber-500' : 'text-[#047857]'} /> {title}
         </h3>
     );
+    // Any of the four categorical vocabularies can flow through <Opt>; try each.
+    const optLabel = (o: string) => LBL.label(LBL.fuel, LBL.label(LBL.transmission, LBL.label(LBL.drivetrain, LBL.label(LBL.bodyType, o, lang), lang), lang), lang);
     const Opt = ({ value, onChange, options }: { value: string; onChange: (v: string) => void; options: string[] }) => (
         <Select value={value} onValueChange={onChange}>
             <SelectTrigger className={FIELD}><SelectValue /></SelectTrigger>
-            <SelectContent>{options.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent>
+            {/* value stays the Turkish wire token the API expects — only the label translates. */}
+            <SelectContent>{options.map((o) => <SelectItem key={o} value={o}>{optLabel(o)}</SelectItem>)}</SelectContent>
         </Select>
     );
 
@@ -115,12 +164,50 @@ export default function FinalPredict() {
 
                         <Section title={t('pr.s3')} icon={AlertTriangle} danger />
                         <div className="rounded-[14px] bg-amber-500/[0.06] border border-amber-500/20 p-6">
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                                {([['count_painted', L('Boyalı parça', 'Painted parts')], ['count_changed', L('Değişen parça', 'Changed parts')], ['count_local_painted', L('Lokal boyalı', 'Local paint')]] as const).map(([key, label]) => (
-                                    <Field key={key} label={label}>
-                                        <Input type="number" min={0} max={13} value={(form as any)[key]} onChange={(e) => set({ [key]: Math.max(0, Number(e.target.value)) } as any)} className="w-full h-12 bg-[#fdfcf9] border-amber-500/30 text-center font-semibold rounded-[10px] text-[#1a1a1a]" />
-                                    </Field>
-                                ))}
+                            {/* Top-down car schematic: tap a panel to cycle its state. This is how a
+                                Turkish listing reports damage, and it's what the model was trained on —
+                                the 12 model fields are derived from these 13 panels on submit. */}
+                            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:gap-6">
+                                <div className="mx-auto w-full max-w-[300px] select-none">
+                                    <div className="grid grid-cols-[1fr_1.25fr_1fr] gap-1.5">
+                                        <Panel k="bumper_front" className="col-span-3" panels={panels} onCycle={cyclePanel} L={L} />
+                                        <Panel k="fender_fl" panels={panels} onCycle={cyclePanel} L={L} />
+                                        <Panel k="hood" panels={panels} onCycle={cyclePanel} L={L} />
+                                        <Panel k="fender_fr" panels={panels} onCycle={cyclePanel} L={L} />
+                                        <Panel k="door_fl" panels={panels} onCycle={cyclePanel} L={L} />
+                                        <Panel k="roof" className="row-span-2 h-full" panels={panels} onCycle={cyclePanel} L={L} />
+                                        <Panel k="door_fr" panels={panels} onCycle={cyclePanel} L={L} />
+                                        <Panel k="door_rl" panels={panels} onCycle={cyclePanel} L={L} />
+                                        <Panel k="door_rr" panels={panels} onCycle={cyclePanel} L={L} />
+                                        <Panel k="fender_rl" panels={panels} onCycle={cyclePanel} L={L} />
+                                        <Panel k="trunk" panels={panels} onCycle={cyclePanel} L={L} />
+                                        <Panel k="fender_rr" panels={panels} onCycle={cyclePanel} L={L} />
+                                        <Panel k="bumper_rear" className="col-span-3" panels={panels} onCycle={cyclePanel} L={L} />
+                                    </div>
+                                    <p className="mt-2 text-center text-[11px] text-[#9a9a92]">{L('Panele dokun → durum değişir', 'Tap a panel to cycle its state')}</p>
+                                </div>
+
+                                <div className="flex-1">
+                                    <div className="flex flex-wrap gap-2">
+                                        {PANEL_STATES.map((s) => (
+                                            <span key={s.v} className={cn('rounded-[8px] border px-2.5 py-1 text-[11px] font-medium', PANEL_STYLE[s.v as PanelState])}>
+                                                {L(s.tr, s.en)}
+                                            </span>
+                                        ))}
+                                    </div>
+                                    <div className="mt-4 flex items-center gap-3">
+                                        <span className="font-mono text-[13px] text-[#5f5f5a]">
+                                            {damagedCount > 0
+                                                ? L(`${damagedCount} panel işaretli`, `${damagedCount} panel${damagedCount > 1 ? 's' : ''} marked`)
+                                                : L('Tüm paneller orijinal', 'All panels original')}
+                                        </span>
+                                        {damagedCount > 0 && (
+                                            <button type="button" onClick={() => setPanels(emptyPanels())} className="text-[12px] font-medium text-[#047857] hover:underline">
+                                                {L('sıfırla', 'reset')}
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
                             </div>
                             <button onClick={() => set({ is_heavy_damaged: form.is_heavy_damaged ? 0 : 1 })} className={cn("mt-6 w-full flex items-center justify-center gap-3 rounded-[10px] border h-12 text-sm font-medium transition-all", form.is_heavy_damaged ? "bg-[#ef4444]/10 border-[#ef4444]/30 text-[#ef4444]" : "bg-[#f7f6f3] border-[#e4e2dd] text-[#5f5f5a]")}>
                                 <span className={cn("w-5 h-5 rounded-md border grid place-items-center", form.is_heavy_damaged ? "bg-[#ef4444] border-[#ef4444]" : "border-[#c4c2bb]")}>
@@ -172,6 +259,30 @@ export default function FinalPredict() {
                 </div>
             </div>
         </FinalShell>
+    );
+}
+
+function Panel({ k, panels, onCycle, L, className }: {
+    k: string; panels: Record<string, PanelState>; onCycle: (k: string) => void;
+    L: (tr: string, en: string) => string; className?: string;
+}) {
+    const state = panels[k];
+    const label = L(PANEL_LABELS[k].tr, PANEL_LABELS[k].en);
+    const stateLabel = (() => { const s = PANEL_STATES.find((x) => x.v === state)!; return L(s.tr, s.en); })();
+    return (
+        <button
+            type="button"
+            onClick={() => onCycle(k)}
+            title={`${label} — ${stateLabel}`}
+            aria-label={`${label}: ${stateLabel}`}
+            className={cn(
+                'flex min-h-[42px] items-center justify-center rounded-[8px] border px-1 py-1.5 text-center text-[10px] font-medium leading-tight transition-colors',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#047857] focus-visible:ring-offset-1',
+                PANEL_STYLE[state], className,
+            )}
+        >
+            {label}
+        </button>
     );
 }
 

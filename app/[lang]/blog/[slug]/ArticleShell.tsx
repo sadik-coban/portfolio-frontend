@@ -56,6 +56,9 @@ export default function ArticleShell({ frontmatter, children }: { frontmatter: a
                     prose-a:text-[#047857] hover:prose-a:underline
                     prose-blockquote:border-l-[3px] prose-blockquote:border-[#059669] prose-blockquote:pl-6 prose-blockquote:not-italic prose-blockquote:font-medium prose-blockquote:text-[#1a1a1a]
                     prose-img:rounded-[12px] prose-img:shadow-sm
+                    prose-th:font-mono prose-th:text-[11px] prose-th:font-medium prose-th:uppercase prose-th:tracking-[0.06em] prose-th:text-[#86857e]
+                    prose-td:text-[#33332f] prose-thead:border-[#e9e7e2] [&_tbody_tr]:border-[#f0eee9] [&_td]:tabular-nums
+                    [&_table]:block [&_table]:w-[calc(100vw-3rem)] md:[&_table]:w-full [&_table]:overflow-x-auto [&_table]:whitespace-nowrap [&_table]:text-[14px]
                     [&_pre]:w-[calc(100vw-3rem)] md:[&_pre]:w-full [&_pre]:overflow-x-auto
                     [&_pre]:bg-[#fbfaf7] [&_pre]:border [&_pre]:border-[#e4e2dd] [&_pre]:text-[#33332f] [&_pre]:p-4 [&_pre]:my-8 [&_pre]:rounded-[10px] [&_pre]:text-[13.5px] [&_pre]:leading-[1.7]
                     [&_pre_code]:before:content-none [&_pre_code]:after:content-none [&_pre_code]:bg-transparent [&_pre_code]:p-0 [&_pre_code]:text-[13.5px] [&_pre_code]:font-mono

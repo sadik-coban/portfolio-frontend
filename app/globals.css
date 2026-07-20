@@ -82,6 +82,13 @@
   --sidebar-ring: oklch(0.708 0 0);
 }
 
+/* Homepage identity ribbon — the "open to roles" dot breathes so the status reads as
+   live without any copy saying so. Halo pulses; the solid core underneath stays put. */
+@keyframes pulseDot {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.9); opacity: 0.35; }
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

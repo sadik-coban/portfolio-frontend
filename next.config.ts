@@ -16,6 +16,18 @@ const nextConfig: NextConfig = {
         destination: 'https://github.com/sadik-coban',
         permanent: true,
       },
+      // /nlp was renamed to /text-analysis. Keep the old permalinks (and any index
+      // entry) alive — both locales, since Turkish is served under /tr.
+      {
+        source: '/projects/car-price/nlp',
+        destination: '/projects/car-price/text-analysis',
+        permanent: true,
+      },
+      {
+        source: '/tr/projects/car-price/nlp',
+        destination: '/tr/projects/car-price/text-analysis',
+        permanent: true,
+      },
     ];
   },
 };
@@ -24,7 +36,9 @@ const nextConfig: NextConfig = {
 const withMDX = createMDX({
   options: {
     remarkPlugins: [
-
+      // GFM is what turns markdown pipe-tables into <table> — without it the analysis posts'
+      // result tables render as literal pipes. Also gives strikethrough and autolinks.
+      'remark-gfm',
       'remark-frontmatter', 'remark-mdx-frontmatter'
     ],
     rehypePlugins: [

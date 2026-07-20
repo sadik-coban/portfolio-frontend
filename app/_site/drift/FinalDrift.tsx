@@ -6,6 +6,7 @@ import { AreaChart, Area, XAxis, CartesianGrid, Tooltip, ResponsiveContainer } f
 import { carService } from '@/lib/services/car-service';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import FinalShell from '../FinalShell';
+import * as LBL from '@/lib/labels';
 import { useLang } from '../i18n';
 
 type Snapshot = { date: string; specific_count: number; until_count: number };
@@ -14,23 +15,21 @@ type Snapshot = { date: string; specific_count: number; until_count: number };
 // model-relevant ones (price + the features the price model actually uses), in order.
 const KEY_FEATURES = ['price', 'gb_year', 'gb_mileage', 'power_hp_val', 'engine_cc_val',
     'torque_nm', 'count_painted', 'count_changed', 'count_local_painted', 'tramer_fee'];
-const FEATURE_LABELS: Record<string, { tr: string; en: string }> = {
-    price: { tr: 'Fiyat', en: 'Price' },
+// Drift-page wording for the few columns where the short heatmap label reads too terse.
+// Everything else resolves through lib/labels' shortColumn.
+const FEATURE_OVERRIDE: Record<string, { tr: string; en: string }> = {
     gb_year: { tr: 'Model yılı', en: 'Model year' },
     gb_mileage: { tr: 'Kilometre', en: 'Mileage' },
     power_hp_val: { tr: 'Motor gücü (hp)', en: 'Power (hp)' },
     engine_cc_val: { tr: 'Motor hacmi (cc)', en: 'Engine (cc)' },
-    torque_nm: { tr: 'Tork (Nm)', en: 'Torque (Nm)' },
     count_painted: { tr: 'Boyalı parça', en: 'Painted parts' },
-    count_changed: { tr: 'Değişen parça', en: 'Changed parts' },
-    count_local_painted: { tr: 'Lokal boyalı', en: 'Local paint' },
-    tramer_fee: { tr: 'Tramer bedeli', en: 'Tramer fee' },
+    count_changed: { tr: 'Değişen parça', en: 'Replaced parts' },
 };
 
 export default function FinalDrift() {
     const { t, lang } = useLang();
     const L = (tr: string, en: string) => (lang === 'tr' ? tr : en);
-    const featLabel = (f: string) => (FEATURE_LABELS[f] ? FEATURE_LABELS[f][lang === 'tr' ? 'tr' : 'en'] : f.replace(/_/g, ' '));
+    const featLabel = (f: string) => (FEATURE_OVERRIDE[f] ? FEATURE_OVERRIDE[f][lang === 'tr' ? 'tr' : 'en'] : LBL.shortColumn[f] ? LBL.label(LBL.shortColumn, f, lang) : f.replace(/_/g, ' '));
     const [snapshots, setSnapshots] = useState<Snapshot[]>([]);
     const [loadingSnaps, setLoadingSnaps] = useState(true);
     const [snapError, setSnapError] = useState<string | null>(null);

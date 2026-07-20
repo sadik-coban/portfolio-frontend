@@ -31,7 +31,9 @@ export default function PaperShell({ children }: { children: React.ReactNode }) 
                             ))}
                         </div>
                         <LangSwitch />
-                        <button onClick={() => setOpen((v) => !v)} className="md:hidden text-[#5f5f5a]" aria-label="Menu">
+                        {/* 44px tap target around a 20px icon; the -12px margins cancel the padding
+                            back out, so the icon keeps its exact position and the nav its height. */}
+                        <button onClick={() => setOpen((v) => !v)} className="md:hidden -my-3 -mr-3 flex h-11 w-11 items-center justify-center text-[#5f5f5a]" aria-label="Menu">
                             {open ? <X size={20} /> : <Menu size={20} />}
                         </button>
                     </div>

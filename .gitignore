@@ -50,6 +50,10 @@ next-env.d.ts
 # Local analytics DB — source for scripts/build-bi-data.mjs (public/bi_data.json is the committed artifact)
 /cars.duckdb
 
+# Backend drift cache — locally VOLUME_DIR defaults here so drift_cache/ lands at repo root
+# (on Railway it lives on the /data volume). Never commit.
+/drift_cache/
+
 # Full report data drops — source for scripts/shrink-site-data.mjs (public/site_data.json is the committed, downsampled artifact)
 /site_data*.json
 
@@ -64,3 +68,8 @@ next-env.d.ts
 /final_model*.pkl
 /serve*.zip
 /shap_plots*.zip
+
+/site_pipeline
+/scripts
+
+report-*.md

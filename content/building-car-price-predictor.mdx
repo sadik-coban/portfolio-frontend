@@ -1,117 +1,105 @@
 ---
-title: "End-to-End Car Price Prediction System and MLOps Architecture" 
-date: "2026-01-28" 
-description: "Technical details of the system I developed using CatBoost, offering confidence intervals via Quantile Regression and monitoring live data drift."
-tags: ["Machine Learning", "MLOps", "CatBoost", "System Design"]
+title: "1.42× the noise floor"
+date: "2026-07-19"
+description: "Before judging any model on the used-car data, I measured how much of the error is impossible to remove: 19.2% of listings are the same car at a different price."
+tags: ["Machine Learning", "Evaluation", "LightGBM", "MLOps"]
 project: "car-price"
+readTime: 8
 ---
 
-The second-hand vehicle market is one of the places where the "asymmetric information" problem is experienced most intensely. While the seller knows the history of the vehicle, the buyer usually has to rely solely on the declaration in the advertisement. As a Data Scientist, to solve this problem, I designed an architecture that offers a **decision support system**, not just a model that "predicts prices."
+I grouped 29,988 car listings on five columns — model, year, mileage, horsepower and body type — and kept every group with more than one row. That left 2,577 groups covering 5,767 listings, 19.2% of the data. Within each group, every listing describes the same car as far as my features are concerned. The median standard deviation of price inside those groups is ₺77,817, which works out to an MAE floor of ₺77,316.
 
-In this article, I will explain the journey of transforming raw data into a live MLOps system.
+That number changed how I read every result that came after it.
 
-## 1. Model Selection: Why CatBoost?
+## What the twins are and what they are not
 
-Vehicle datasets are inherently dense with **Categorical** variables: *Brand, Model, Gear Type, Fuel, Color, City...*
+They are not duplicates. Deduplication ran first, and it is where 45,159 scraped rows became 29,988. These are distinct listings, distinct sellers, distinct cars, that happen to be identical on everything I recorded.
 
-When dealing with high-cardinality categorical features, traditional approaches face a bottleneck. **One-Hot Encoding** causes the dataset matrix to swell (Curse of Dimensionality).
+What separates them is everything I did not record: the state of the interior, whether the tyres are new, how the photographs were taken, which city it is parked in, whether the seller needs the money this month. None of that is in the columns, and no amount of gradient boosting recovers it. Two identical rows, two different prices, and the model has to pick one.
 
-**Standard tree-based models (XGBoost, Random Forest) offer alternatives, but with significant tradeoffs:**
-* **Label Encoding:** Requires pruning low-frequency categories to avoid noise, leading to data loss.
-* **Target Encoding:** Replaces categories with their average price. However, for rare categories, these averages are unreliable and require manual **smoothing** with the global mean to prevent overfitting.
+So ₺77,316 is a floor. A model scoring below it on this data would be reading something that isn't there.
 
-I chose **CatBoost** because it handles these challenges natively using *Ordered Target Statistics*, eliminating the need for these complex preprocessing steps.
+One caveat before I lean on it. The floor is measured on the 19.2% of rows that happen to have a twin, and I then apply it to all 29,988. Whether cars without a twin disagree more or less is something I did not test. I use it as a reference point, not as a proof.
 
-```python
-# Model Parameters
-model = CatBoostRegressor(
-    iterations=2000,
-    learning_rate=0.1,
-    depth=6,
-    loss_function="MultiQuantile:alpha=0.05,0.5,0.95", # This is the critical point!
-    verbose=200
-)
+## The table, with a column I don't usually see
 
-```
+Every model below was evaluated on the same leak-free 5-fold split, out-of-fold, then refit on all the data. Three variants, one split, one comparison.
 
-> **Note:** I used the `MultiQuantile` loss function instead of `RMSE`. Thanks to this, the model predicts the **5% (Lowest), 50% (Median), and 95% (Highest)** range where the price might fall, instead of giving a single price point.
+| | MAE | MAPE | R² | × floor |
+|---|---|---|---|---|
+| **LightGBM · TF-IDF+SVD** | **₺109,874** | **6.49%** | **0.9747** | **1.42×** |
+| CatBoost · TF-IDF+SVD | ₺118,208 | 6.90% | 0.9717 | 1.53× |
+| CatBoost · native text | ₺121,867 | 7.07% | 0.9700 | 1.58× |
+| Model–year median | ₺190,552 | 11.17% | 0.9248 | 2.46× |
+| Dealer baseline | ₺192,424 | 11.27% | 0.9220 | 2.49× |
+| Naive baseline | ₺204,177 | 11.66% | 0.9196 | 2.64× |
 
-## 2. Feature Engineering: "Expert Risk Score"
+The R² column separates the top three models by three thousandths — the kind of number that makes people write "essentially equivalent" and move on. The `× floor` column says something more useful: the winner sits 42% above the point where the data stops containing the answer, and the runner-up sits 53% above it. The same gap, read against a fixed reference instead of against each other.
 
-Just Year and Mileage (KM) information is not enough to predict the price. A vehicle having a **painted roof** does not have the same impact on price as a **painted bumper**.
+It also flattens the bottom of the table. The baselines are not three different bad ideas; they land within 8% of each other at roughly 2.5× the floor, because they are all doing a version of the same thing.
 
-To feed this **Domain Knowledge** into the model, I developed a special **Risk Score Algorithm**:
+## The baseline I actually trust
 
-```python
-def calculate_expert_risk_score(row):
-    score = 0
-    
-    # 1. Critical Parts (Roof, Hood, Trunk)
-    # The roof implies structural integrity, thus carrying the highest penalty.
-    if row.get("tavan_degisen") == 1: score += 150
-    elif row.get("tavan_boyali") == 1: score += 75
-    elif row.get("tavan_lokal") == 1:  score += 40
+Two of those baselines are placeholders — I keep them because they are conventional, not because they are informative. The third I built deliberately, and it is the one the report uses: `model_yil_medyani`, the model–year median. Same model, same year, take the median price. That is what a person in the market does. They look up comparables.
 
-    # Hood and Trunk operations
-    if row.get("kaput_degisen") == 1: score += 60
-    if row.get("bagaj_degisen") == 1: score += 40
-    # ... (lower penalties for painting/local repairs)
+It has to be computed carefully. The medians are calculated inside each fold, on that fold's training rows only. Compute them once over the full dataset and every test row contributes to the median it is later scored against — a leak that never surfaces as an error, only as a baseline that looks better than it is.
 
-    # 2. Side Parts (Doors)
-    # Aggregating total damage across all 4 doors
-    doors_changed = sum([row.get(c, 0) for c in ["door_fl", "door_fr", ...]])
-    doors_painted = sum([row.get(c, 0) for c in ["door_fl_boyali", ...]])
-    
-    # Weights: Replaced door = 10 pts, Painted door = 5 pts
-    score += (doors_changed * 10) + (doors_painted * 5)
+Written honestly it needs a ladder, because sometimes there are no comparables:
 
-    # 3. Fenders
-    # Fenders have slightly less impact than doors (8 pts for replacement)
-    score += (fenders_changed * 8) + (fenders_painted * 4)
+1. `(model, year)` median
+2. `(model)` median across all years
+3. global median
 
-    return score
-```
+And the ladder is where it gets interesting:
 
-Thanks to this score, the model can distinguish which of two vehicles with the same model/year/km is "clean" and which is "processed" (damaged/repaired).
+| rung | rows | share | MAPE | MAE | R² |
+|---|---|---|---|---|---|
+| (model, year) | 29,232 | 97.48% | 10.68% | ₺178,273 | 0.945 |
+| (model) | 603 | 2.01% | 26.48% | ₺561,301 | 0.634 |
+| global | 153 | 0.51% | 46.16% | ₺1,075,349 | −0.25 |
 
-## 3. Explainability: Opening the "Black Box" with SHAP
+The baseline does not degrade. It collapses. On the last rung its R² goes negative — you would have done better guessing the mean — and it collapses exactly where a dealer standing in a lot would also be guessing: the car with nothing to compare it to.
 
-Accuracy is not enough; users need to trust the prediction. A "Black Box" model that spits out a price without reasoning is useless for decision support.
+The conclusion is where I want to be careful. It is tempting to write that the model earns its keep on those 756 rows, and I have seen that sentence written. I did not measure it. The breakdown above is the *baseline's* error by rung; I never computed the model's out-of-fold error on the same three populations. What the table does license is narrower and still worth having: on 2.52% of cars, "42% better than baseline" is arithmetic against a method that has already given up, so on those rows the comparison stops carrying information. Splitting the model's residuals the same way is the obvious next run.
 
-To solve this, I integrated **SHAP (SHapley Additive exPlanations)**.
+## One lira
 
-* **Global Interpretability:** I analyzed which features drive the market generally. Unsurprisingly, *Year* and *Engine Power* are positive drivers, while *Risk Score* and *Mileage* are negative drivers.
+The other thing measurement changed my mind about was brand.
 
-> Model explainability plays a key role in deriving market insights.
+| features | MAPE | MAE |
+|---|---|---|
+| brand only | 7.16% | ₺124,737 |
+| series + model | 6.49% | ₺110,154 |
+| brand + series + model | 6.49% | ₺110,153 |
 
-## 4. MLOps: The Model as a Living Entity
+Adding brand on top of series and model improves MAE by one lira. A 320i is a BMW, and the model column has been saying so the whole time. On its own the column carries real signal — 7.16% MAPE is not nothing — which is exactly why it looks worth keeping. Conditional on what is already there, it carries none.
 
-Training the model once and setting it aside is the biggest mistake made. The market changes, inflation rises, or people's preferences might shift to SUVs. This situation is called **Data Drift**.
+I left it in the feature set; it costs nothing and it makes the schema readable. I stopped listing it as a reason the model works.
 
-The system I established in this project:
+## The weakness I published
 
-1. **Versioning:** Every model training (`v1`, `v2`) is stored along with `metrics.json` and the model file.
-2. **Drift Detection:** The distribution of incoming new data is compared with the training data.
-3. **Automated Alerting:** If the price distribution shows statistical deviation (KS Test p-value < 0.05), the system flags the specific drifted features.
+The served prediction ships a fixed ±6.6% band, targeting 90% coverage. By price quartile, the coverage it actually achieves is:
 
-### Monitoring via Dashboard
+| Q1 | Q2 | Q3 | Q4 |
+|---|---|---|---|
+| 81.7% | 91.6% | 92.9% | 93.9% |
 
-The **MLOps Panel** I developed on the Frontend side (Next.js) visualizes the distribution of the reference model vs. current data.
+Averaged, that rounds to something respectable. Split, it says the band is too narrow on the cheapest quarter of the market and comfortably wide on the rest. The model is less certain about cheap cars, and a fixed band has no way to express that — which is what "fixed" means. The honest fix is a conditional interval, and until that ships the number stays on the report.
 
-*(The orange area shifting to the right indicates that prices in the market are rising and the model needs to be updated.)*
+It is the same failure mode as the baseline paragraph above: an aggregate that looks fine because a non-flat distribution got averaged. "90% coverage" and "42% better than baseline" hide the same kind of thing.
 
-## 4. Tech Stack
+## What the remaining ₺32,558 might be
 
-This project was developed with the "Full Stack Data Science" principle:
+The model sits ₺32,558 above the floor. I can name three candidates for that gap; I cannot tell you how it divides between them, because that decomposition does not exist yet.
 
-* **Model Training:** Python, Pandas, CatBoost, SHAP
-* **Backend API:** FastAPI (Asynchronous architecture, Pydantic validations)
-* **Frontend:** Next.js 16 (App Router), TypeScript, Tailwind CSS, Shadcn/UI
-* **Data Visualization:** Interactive charts are powered by **[Recharts - shadcn/ui](https://ui.shadcn.com/)** (Licensed under MIT) and **[Observable Plot](https://observablehq.com/plot)** (Licensed under ISC).
-* **Database:** PostgreSQL (Data storage)
+**Condition.** The largest missing variable. Damage enters as 13 body panels in four states each, derived from the listing form — but "no damage recorded" and "genuinely mint" are the same input. The hedonic model puts damage at −11.4% on price, so the sensitivity is real. The resolution is not.
 
-## Conclusion
+**Trim and options.** Two cars can match on all five twin columns and differ by a package worth more than the error bar. What lives in the free text does not live in the columns.
 
-This project is proof of how a machine learning model transforms from a "Jupyter Notebook" into a living, monitorable product that provides value to the real user.
+**Time.** Prices moved +5.3% across the last three snapshots, and the KS test against the January reference turns significant by 27 June (KS 0.031, p = 0.000043). The model carries no time feature — deliberately, since it has to price tomorrow's car — so drift is monitored rather than modelled.
 
-You can visit the [**Main Page**](https://www.sadikcoban.com/projects/car-price/) to view project.
+None of those reaches ₺77,316, and I do not think anything does. Closing even half the remaining gap would put the model at 1.21× the floor, on a dataset where the same car listed twice differs by more than that. Past some point the number stops being a modelling problem and becomes a fact about the market: what is left is how badly the seller wants out, and no listing field records it.
+
+---
+
+The system is live. There is a [prediction endpoint](/projects/car-price/predict) you can type a car into, a [full report](/projects/car-price/report-v2) with the figures behind everything above, and a [market dashboard](/projects/car-price/dashboard). Every number on this site is read from the analysis export at build time, including the ones in this post.

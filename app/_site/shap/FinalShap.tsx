@@ -1,37 +1,30 @@
 "use client";
 
-import { useState, useEffect } from 'react';
-import { Loader2, Info, ArrowUpRight, ArrowDownRight, HelpCircle } from 'lucide-react';
+import { useState } from 'react';
+import { Info, ArrowUpRight, ArrowDownRight, HelpCircle } from 'lucide-react';
 import FinalShell from '../FinalShell';
 import { useLang } from '../i18n';
 
-// The 3 model variants' SHAP beeswarm summaries, served as static assets
-// (public/shap/*.png from shap_plots.zip). Language-agnostic technical labels.
+// The 3 model variants' SHAP plots, served as static images (public/shap/*.png,
+// copied from site_pipeline/full_data/shap_plots/). Two views per model: the grouped
+// mean-|SHAP| bar (global importance) and the beeswarm (per-listing value spread).
+// Language-agnostic technical labels.
 const MODELS = [
-    { key: 'lightgbm', label: 'LightGBM · TF-IDF+SVD', img: '/shap/shap_lightgbm.png', best: true },
-    { key: 'catboost_svd', label: 'CatBoost · TF-IDF+SVD', img: '/shap/shap_catboost_svd.png', best: false },
-    { key: 'catboost_native', label: 'CatBoost · native', img: '/shap/shap_catboost_native.png', best: false },
+    { key: 'lightgbm', label: 'LightGBM · TF-IDF+SVD', bar: '/shap/shap_lightgbm.png', bee: '/shap/beeswarm_lightgbm.png', best: true },
+    { key: 'catboost_svd', label: 'CatBoost · TF-IDF+SVD', bar: '/shap/shap_catboost_svd.png', bee: '/shap/beeswarm_catboost_svd.png', best: false },
+    { key: 'catboost_native', label: 'CatBoost · native', bar: '/shap/shap_catboost_native.png', bee: '/shap/beeswarm_catboost_native.png', best: false },
 ];
 
 export default function FinalShap() {
-    const { t } = useLang();
+    const { t, lang } = useLang();
+    const L = (tr: string, en: string) => (lang === 'tr' ? tr : en);
     const [selectedKey, setSelectedKey] = useState('lightgbm');
-    const [loadingImage, setLoadingImage] = useState(true);
-    const [imageError, setImageError] = useState(false);
     const model = MODELS.find((m) => m.key === selectedKey) || MODELS[0];
 
-    // Preload via a JS Image() so onload fires even for a cached image. A bare <img>
-    // onLoad can miss a cache hit (the browser finishes before React attaches the
-    // handler), leaving the loader stuck on "Analyzing…" until you switch models.
-    useEffect(() => {
-        setImageError(false);
-        setLoadingImage(true);
-        const im = new Image();
-        im.onload = () => setLoadingImage(false);
-        im.onerror = () => { setLoadingImage(false); setImageError(true); };
-        im.src = model.img;
-        return () => { im.onload = null; im.onerror = null; };
-    }, [selectedKey, model.img]);
+    const plots = [
+        { src: model.bar, title: L('Özet önem (ortalama |SHAP|)', 'Summary importance (mean |SHAP|)'), sub: L('Her özniteliğin fiyata ortalama katkısı — büyük = güçlü sürücü.', 'Each feature’s average contribution to price — larger = stronger driver.') },
+        { src: model.bee, title: L('Beeswarm (değer dağılımı)', 'Beeswarm (value spread)'), sub: L('Her nokta bir ilan; renk = öznitelik değeri (kırmızı yüksek), yatay = fiyat etkisi (sağ = artırıyor).', 'Each dot is a listing; colour = feature value (red high), horizontal = price impact (right = pushes up).') },
+    ];
 
     const examples = [
         { icon: ArrowDownRight, color: 'text-[#ef4444] bg-[#ef4444]/10', title: t('shap.exKm'), desc: t('shap.exKmDesc') },
@@ -58,36 +51,28 @@ export default function FinalShap() {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                {/* chart */}
-                <div className="lg:col-span-8">
-                    <div className="rounded-[14px] border border-[#e4e2dd] bg-[#fdfcf9] p-5 h-full shadow-[0_1px_3px_rgba(40,40,30,0.05)]">
-                        <h3 className="font-semibold text-[#1a1a1a] mb-1">{t('shap.global')}</h3>
-                        <p className="text-sm text-[#5f5f5a] mb-4">{t('shap.summaryFor')} · {model.label}</p>
-                        <div className="relative w-full min-h-[480px] bg-[#f3f1ec] rounded-[12px] border border-dashed border-[#e4e2dd] flex items-center justify-center overflow-hidden p-4">
-                            {loadingImage && (
-                                <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#fdfcf9]/80 z-10 backdrop-blur-sm">
-                                    <Loader2 className="animate-spin text-[#047857]" size={36} />
-                                    <span className="text-sm text-[#86857e] mt-3">{t('shap.analyzing')}</span>
-                                </div>
-                            )}
-                            {imageError && !loadingImage && (
-                                <div className="text-center space-y-2">
-                                    <div className="inline-flex p-3 bg-[#ef4444]/10 text-[#ef4444] rounded-full"><Info size={28} /></div>
-                                    <h4 className="font-semibold text-[#1a1a1a]">{t('shap.notFound')}</h4>
-                                    <p className="text-sm text-[#86857e] max-w-xs mx-auto">{t('shap.notFoundDesc')}</p>
-                                </div>
-                            )}
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img
-                                key={model.key}
-                                src={model.img}
-                                alt={`SHAP summary — ${model.label}`}
-                                className={`max-w-full h-auto object-contain transition-opacity duration-500 ${loadingImage ? 'opacity-0' : 'opacity-100'}`}
-                                onLoad={() => setLoadingImage(false)}
-                                onError={() => { setLoadingImage(false); setImageError(true); }}
-                            />
-                        </div>
-                    </div>
+                {/* plots — bar + beeswarm */}
+                <div className="lg:col-span-8 space-y-6">
+                    {plots.map((p) => (
+                        <figure key={p.src} className="m-0 rounded-[14px] border border-[#e4e2dd] bg-[#fdfcf9] p-5 shadow-[0_1px_3px_rgba(40,40,30,0.05)]">
+                            <figcaption className="mb-1">
+                                <h3 className="font-semibold text-[#1a1a1a]">{p.title}</h3>
+                                <p className="text-[13px] text-[#5f5f5a]">{p.sub} · {model.label}</p>
+                            </figcaption>
+                            <div className="mt-3 w-full overflow-hidden rounded-[12px] border border-[#ece9e3] bg-white p-3">
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img
+                                    src={p.src}
+                                    alt={`${p.title} — ${model.label}`}
+                                    loading="lazy"
+                                    className="mx-auto block h-auto w-full max-w-full object-contain"
+                                />
+                            </div>
+                        </figure>
+                    ))}
+                    <p className="px-1 font-mono text-[12px] leading-[1.6] text-[#86857e]">
+                        {L('SHAP tüm veri üzerinde hesaplandı (örnekleme yok). Grup SHAP = üye SHAP’ların işaretli toplamı, sonra ortalama-mutlak. Metnin (model+seri dışı) katkısı ihmal edilebilir — “metin fiyata ~0 ekler”.', 'SHAP computed on all data (no sampling). Group SHAP = signed sum of member SHAPs, then mean-absolute. Free text (beyond model+series) contributes ~nothing — “text adds ~0 to price”.')}
+                    </p>
                 </div>
 
                 {/* guide */}

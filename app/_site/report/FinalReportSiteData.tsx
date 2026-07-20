@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import PlotlyChart from '@/components/charts/PlotlyChart';
 import { makeHybridTheme, CATEGORICAL_LIST, GREEN_RAMP } from '../../_charts/types';
+import * as LBL from '@/lib/labels';
 import { useLang } from '../i18n';
 
 // Car-price analytics report, driven entirely by public/site_data.json
@@ -137,9 +138,9 @@ export default function FinalReportSiteData() {
     const frBestMedAE = frModels.length ? Math.min(...frModels.map((m) => m.MedAE)) : 0;
     const frBestRMSE = frModels.length ? Math.min(...frModels.map((m) => m.RMSE)) : 0;
     const hr = dom.hedonic_reliability;
-    const hedoTerm = (t: string): string => (({ 'yaş': L('yaş', 'age'), 'yaş²': L('yaş²', 'age²'), 'yaş×km': L('yaş×km', 'age×km'), 'ağır hasar': L('ağır hasar', 'heavy damage'), 'boyalı': L('boyalı', 'painted'), 'değişen': L('değişen', 'changed') }) as Record<string, string>)[t] || t;
+    const hedoTerm = (t: string) => LBL.label(LBL.hedonicTerm, t, lang);
     // feature-drop reasons come from the data as Turkish — English rendering for the EN site
-    const fdReason = (tr: string): string => (({ 'Sabit varyans': 'Constant variance', 'Redundant kb/gb': 'Redundant kb/gb twins', 'Kapsam farkı': 'Coverage difference', 'Kimlik/sızıntı': 'Identity / leakage', 'Blok-eksik>%40': 'Block-missing >40%', 'Spec-eksik~%26': 'Spec-missing ~26%', 'low/up→val': 'low/up → value', 'Granüler hasar→agregat': 'Granular damage → aggregate', 'Ampirik audit(garanti)': 'Empirical audit (warranty)' }) as Record<string, string>)[tr] || tr;
+    const fdReason = (tr: string) => LBL.label(LBL.featureDropReason, tr, lang);
     const boot: any[] = hr?.bootstrap || [];
     // single hedonic source of truth: prefer the detailed bootstrap-fit (hedonic_reliability)
     // so the hero KPI + depreciation lead agree with the Hedonic section (domain.hedonic is the stale summary).
@@ -188,12 +189,7 @@ export default function FinalReportSiteData() {
 
     const km = dom.kmeans;
     // English labels for the (Turkish) cluster names in the data; falls back to the raw name.
-    const CLUSTER_EN: Record<string, string> = {
-        'Genç & temiz premium': 'Young & clean premium',
-        'Yaşlı & yüksek-km ekonomik': 'Old & high-mileage economy',
-        'Hasarlı': 'Damaged',
-    };
-    const clusterName = (ad: string) => L(ad, CLUSTER_EN[ad] ?? ad);
+    const clusterName = (ad: string) => LBL.clusterName(ad, lang);
     // 30K → ~2.5K stratified-by-cluster (colors must survive → density can't be used here)
     const pca = diag?.pca ?? dom.pca_scatter;
     const pcaData = [{ type: 'scatter', mode: 'markers', x: pca.map((r: any) => r[0]), y: pca.map((r: any) => r[1]), marker: { size: 4, opacity: 0.5, color: pca.map((r: any) => CATEGORICAL_LIST[r[2] % CATEGORICAL_LIST.length]) }, hoverinfo: 'skip' }];
@@ -308,6 +304,22 @@ export default function FinalReportSiteData() {
     const lofo = met.lofo ? [...met.lofo].sort((a: any, b: any) => a[1] - b[1]) : null;
     const lofoData = lofo ? [{ type: 'bar', orientation: 'h', y: lofo.map((r: any) => r[0]), x: lofo.map((r: any) => r[1]), marker: { color: lofo.map((r: any) => (r[1] >= 0 ? green : '#ef4444')) }, hovertemplate: '%{y}: %{x:+,.0f} ΔRMSE<extra></extra>' }] : null;
 
+    // ---- previously-forgotten sections: price histogram · conformal coverage · numeric correlation · content-duplication ----
+    const ph = dom.price_histogram ? [...dom.price_histogram].filter((r: any) => r[1] > 0) : [];
+    const phData = ph.length ? [{ type: 'bar', x: ph.map((r: any) => r[0]), y: ph.map((r: any) => r[1]), marker: { color: green }, customdata: ph.map((r: any) => fmtM(r[0])), hovertemplate: '%{customdata}: %{y:,} ' + L('ilan', 'listings') + '<extra></extra>' }] : null;
+
+    const cf = dom.conformal;
+    const cfHedef = cf?.coverage_hedef ?? 90;
+    const cfData = cf ? [{ type: 'bar', x: cf.by_quantile.map((r: any) => r[0]), y: cf.by_quantile.map((r: any) => r[1]), marker: { color: cf.by_quantile.map((r: any) => (r[1] >= cfHedef ? green : '#e08a1e')) }, text: cf.by_quantile.map((r: any) => r[1].toFixed(1) + '%'), textposition: 'outside', hovertemplate: '%{x}: %{y:.1f}% ' + L('kapsama', 'coverage') + '<extra></extra>' }] : null;
+
+    const nc = dom.numeric_correlation;
+    const DIVERGE: [number, string][] = [[0, '#ef4444'], [0.5, '#fdfcf9'], [1, '#059669']];
+    const numHeat = (m: number[][]) => (nc && m) ? [{ type: 'heatmap', z: m, x: nc.labels.map((l: string) => LBL.label(LBL.shortColumn, l, lang)), y: nc.labels.map((l: string) => LBL.label(LBL.shortColumn, l, lang)), zmin: -1, zmax: 1, colorscale: DIVERGE, showscale: false, xgap: 1, ygap: 1, hovertemplate: '%{y} · %{x}: %{z:.2f}<extra></extra>' }] : null;
+    const pearsonHeat = numHeat(nc?.pearson);
+    const spearmanHeat = numHeat(nc?.spearman);
+
+    const idup = met.icerik_duplike;
+
     const show = (t: Tab) => tab === 'all' || tab === t;
     const TABS: { id: Tab; label: string }[] = [
         { id: 'all', label: L('Tümü', 'All') },
@@ -403,6 +415,7 @@ export default function FinalReportSiteData() {
                             <Stat k={L('Çarpıklık (log)', 'Skew (log)')} v={dom.price_dist.skew_log.toFixed(2)} accent />
                             <Stat k={L('Medyan fiyat', 'Median price')} v={fmtM(dom.price_dist.median)} />
                         </div>
+                        {phData && <Fig className="mt-4" title={L('Fiyat histogramı (₺ · kesikli çizgi = medyan)', 'Price histogram (₺ · dashed line = median)')}><Chart h={240}><PlotlyChart data={phData} layout={base({ margin: { t: 8, r: 16, b: 28, l: 8 }, xaxis: { tickformat: '~s' }, shapes: [{ type: 'line', yref: 'paper', y0: 0, y1: 1, xref: 'x', x0: dom.price_dist.median, x1: dom.price_dist.median, line: { dash: 'dash', color: '#86857e', width: 1 } }] })} config={config} guard={false} /></Chart></Fig>}
                     </Section>
 
                     <Section n={N()} title={L('Değer kaybı: yaş & kilometre', 'Depreciation: age & mileage')}
@@ -428,7 +441,7 @@ export default function FinalReportSiteData() {
                             {Array.isArray(hr.yakit_korelasyon) && hr.yakit_korelasyon.length > 0 && (
                                 <details className="mt-3">
                                     <summary className="cursor-pointer font-mono text-[12px] text-[#5f5f5a]">{L('cc–HP korelasyonu · yakıt bazında', 'cc–HP correlation · by fuel')}</summary>
-                                    <Table className="mt-2" head={[L('Yakıt', 'Fuel'), 'Pearson', 'Spearman', 'cc/HP', 'n']} rows={hr.yakit_korelasyon.map((f: any) => [f.yakit, f.pearson.toFixed(3), f.spearman.toFixed(3), String(f.cc_hp_oran), fmtN(f.n)])} />
+                                    <Table className="mt-2" head={[L('Yakıt', 'Fuel'), 'Pearson', 'Spearman', 'cc/HP', 'n']} rows={hr.yakit_korelasyon.map((f: any) => [LBL.label(LBL.fuel, f.yakit, lang), f.pearson.toFixed(3), f.spearman.toFixed(3), String(f.cc_hp_oran), fmtN(f.n)])} />
                                 </details>
                             )}
                             {(hr.not || hr.karar) && <Method className="mt-3">{L(hr.not || hr.karar, 'Raw (no log) cc + HP: per-unit interpretation. 1000 bootstrap iterations, each with HC3 robust SEs. cc and HP are correlated but the ratio varies by fuel (diesel highest). All coefficients are solid.')}</Method>}
@@ -565,6 +578,14 @@ export default function FinalReportSiteData() {
                         {oofClipped && <Method className="mt-3">{L('Not: bu koşumda birkaç OOF tahmini büyük bir tavana (₺50M) kırpıldığı için yüzde-hatalar şişkin; backtest (%6.6 civarı) gerçek performansı yansıtır.', 'Note: in this run a few OOF predictions are clipped to a large cap (₺50M), inflating the percentage errors; the backtest (~6.6%) reflects the true performance.')}</Method>}
                     </Section>
 
+                    {cfData && (
+                        <Section n={N()} title={L('Tahmin aralığı kapsaması (conformal)', 'Prediction-interval coverage (conformal)')}
+                            lead={L(`Conformal aralıkların gerçek kapsama oranı fiyat çeyreğine göre; hedef %${cfHedef}. Üst çeyrekler hedefi tutturuyor, Q1 (ucuz araçlar) altında kalıyor — model ucuzlarda daha belirsiz (dürüst bulgu).`, `Actual coverage of the conformal intervals by price quartile; target ${cfHedef}%. Upper quartiles hit the target; Q1 (cheap cars) sits below — the model is less certain on cheap cars (an honest finding).`)}>
+                            <Fig title={L(`Kapsama % (hedef %${cfHedef})`, `Coverage % (target ${cfHedef}%)`)}><Chart h={260}><PlotlyChart data={cfData} layout={base({ margin: { t: 24, r: 16, b: 24, l: 8 }, yaxis: { ticksuffix: '%' }, shapes: [{ type: 'line', xref: 'paper', x0: 0, x1: 1, yref: 'y', y0: cfHedef, y1: cfHedef, line: { dash: 'dash', color: '#86857e', width: 1 } }] })} config={config} guard={false} /></Chart></Fig>
+                            {cf.not && <Method className="mt-3">{L(cf.not, 'Q1 (cheap) under-coverage: the model is less certain on cheap cars (an honest finding).')}</Method>}
+                        </Section>
+                    )}
+
                     <Section n={N()} title={L('İlan sayısı vs hata (güvenilirlik)', 'Sample size vs error (reliability)')}
                         lead={L('Az ilanlı modellerde hata yüksek ve saçılmış; çok ilanlı modellerde düşük ve dar. Model, bol veriye sahip araçlarda güvenilir (log eksen).', 'Rare models show high, scattered error; common models low and tight. The model is reliable where data is plentiful (log axis).')}>
                         <Fig title={L('Model ilan-adedi vs medyan hata', 'Per-model sample size vs median error')}><Chart h={300}><PlotlyChart data={residData} layout={base({ margin: { t: 8, r: 16, b: 32, l: 8 }, xaxis: { title: { text: L('ilan adedi', 'listings'), font: { size: 10 } } }, yaxis: { type: 'log' } })} config={config} guard={false} /></Chart></Fig>
@@ -613,7 +634,7 @@ export default function FinalReportSiteData() {
                                 <span key={f} className="rounded-[8px] border border-[#cfe8dc] bg-[#f1f8f4] px-2 py-1 font-mono text-[11px] text-[#22332b]">{f}</span>
                             ))}
                         </div>
-                        <Table head={[L('Grup', 'Group'), L('Gerekçe', 'Reason'), L('~kolon', '~cols')]} rows={met.feature_drop.map((r: any) => [r[0], L(r[1], fdReason(r[1])), String(r[2])])} />
+                        <Table head={[L('Grup', 'Group'), L('Gerekçe', 'Reason'), L('~kolon', '~cols')]} rows={met.feature_drop.map((r: any) => [r[0], fdReason(r[1]), String(r[2])])} />
                         {met.impute_note && <Method className="mt-3">{L(met.impute_note, 'Hierarchical imputation: missing values filled by series > segment > brand median (most-specific group first). torque_nm was dropped (27.6% missing); the rest are handled natively by the tree model.')}</Method>}
                     </Section>
 
@@ -664,6 +685,26 @@ export default function FinalReportSiteData() {
                         <Method className="mt-3">{L('Sebep: spec verisi model–katalog eşleştirmesinden gelir — standart modeller (“320i”) eşleşir, niş varyantlar (“320i 50th Year M Edition”) eşleşmez, o yüzden o ilanların tüm spec’leri birden boş kalır. Modele koymadım: niş varyantlarda hep eksik olurlardı ve model adı (TF-IDF ile) o bilgiyi zaten yakalıyor.', 'Cause: spec data comes from model–catalog matching — standard models (“320i”) match, niche variants (“320i 50th Year M Edition”) don’t, so all their specs go blank at once. Excluded from the model: they’d always be missing on niche variants, and the model name (via TF-IDF) already captures that information.')}</Method>
                     </Section>
 
+                    {idup && (
+                        <Section n={N()} title={L('İçerik-bazlı duplikasyon', 'Content-based duplication')}
+                            lead={L('ad_id-dedup DIŞINDA bir kontrol: ad_id farklı ama tüm ayırt edici özellikler (fiyat, km, yaş, model, hasar, motor) aynı olan ilanlar. Oran düşük — veri toplama temizliğini doğrular; bir kısmı gerçek tekrar-ilan, bir kısmı yaygın modellerde tesadüfi çakışma.', 'A check beyond ad_id-dedup: listings whose ad_id differs but whose every distinguishing feature (price, mileage, age, model, damage, engine) is identical. The rate is low — confirming clean collection; some are genuine re-posts, some coincidental overlaps among common models.')}>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                <Stat k={L('Katı-tanım tekrar', 'Strict-def dupes')} v={fmtN(idup.kati_tanim_fazla)} sub={pct(idup.kati_tanim_pct, 2)} accent />
+                                <Stat k={L('Gevşek-tanım tekrar', 'Loose-def dupes')} v={fmtN(idup.gevsek_tanim_fazla)} sub={pct(idup.gevsek_tanim_pct, 2)} />
+                                <Stat k={L('Duplike grubu', 'Duplicate groups')} v={fmtN(idup.duplike_grup_sayisi)} />
+                                <Stat k={L('Tanım kolonları', 'Def. columns')} v={String(idup.kati_tanim_kolonlari.length)} />
+                            </div>
+                            <div className="mt-4 mb-4 flex flex-wrap gap-1.5">
+                                {idup.kati_tanim_kolonlari.map((c: string) => (
+                                    <span key={c} className="rounded-[8px] border border-[#e9e7e2] bg-[#f3f1ec] px-2 py-1 font-mono text-[11px] text-[#5f5f5a]">{c}</span>
+                                ))}
+                            </div>
+                            {Array.isArray(idup.en_cok_tekrar) && idup.en_cok_tekrar.length > 0 &&
+                                <Table head={[L('Model', 'Model'), L('Tekrar', 'Repeats'), L('Fiyat', 'Price'), L('Yıl', 'Year')]} rows={idup.en_cok_tekrar.map((r: any) => [r.model, String(r.n_tekrar), fmtM(r.fiyat), String(r.yil)])} />}
+                            {idup.not && <Method className="mt-3">{L(idup.not, 'A content-based duplicate check beyond ad_id-dedup: ad_id differs but every distinguishing feature (price, km, age, model, damage, engine) matches. A low rate confirms clean collection.')}</Method>}
+                        </Section>
+                    )}
+
                     <Section n={N()} title={L('Kategorik bağıntı (Cramér’s V + Theil’s U)', 'Categorical dependence (Cramér’s V + Theil’s U)')}
                         lead={L('Cramér’s V ilişkinin gücünü (simetrik), Theil’s U yönünü (asimetrik) verir — ikisi de KATEGORİK öznitelikler içindir: `model` (metin), marka, seri, segment, kasa, çekiş, vites, yakıt. `model` diğerlerini neredeyse tam belirliyor (U≈1) ama tersi değil → `model` hedonikten dışlandı (sızıntı). Not: hasar sayaçları ve motor (hp/cc) SAYISAL olduğundan burada değil.', 'Cramér’s V gives association strength (symmetric); Theil’s U its direction (asymmetric) — both are for CATEGORICAL features: `model` (text), brand, series, segment, body, drivetrain, transmission, fuel. `model` almost fully determines the rest (U≈1) but not vice-versa → `model` is excluded from the hedonic model (leakage). Note: damage counters and engine specs (hp/cc) are NUMERIC, so they’re not here.')}>
                         {(cramersFull || theilsFull) ? (
@@ -674,6 +715,19 @@ export default function FinalReportSiteData() {
                         ) : null}
                         {assoc.length > 0 && <Table className="mt-4" head={[L('model →', 'model →'), "Cramér’s V", "Theil’s U"]} rows={assoc.map((r: any) => [r[0], r[1].toFixed(3), r[2].toFixed(3)])} />}
                     </Section>
+
+                    {nc && (
+                        <Section n={N()} title={L('Sayısal korelasyon (Pearson + Spearman)', 'Numeric correlation (Pearson + Spearman)')}
+                            lead={L('Sayısal öznitelikler arası korelasyon — üstteki kategorik bağıntının sayısal karşılığı. Yeşil = pozitif, kırmızı = negatif. Pearson lineer, Spearman monotonik ilişkiyi ölçer. |r|>0.5 çiftler çoklu-bağlantı için işaretlenir (VIF ile de kontrol edildi, hepsi <3).', 'Correlation among numeric features — the numeric counterpart to the categorical dependence above. Green = positive, red = negative. Pearson measures linear, Spearman monotonic association. |r|>0.5 pairs are flagged for collinearity (also checked via VIF, all <3).')}>
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                                {pearsonHeat && <Fig title="Pearson"><Chart h={340}><PlotlyChart data={pearsonHeat} layout={base({ margin: { t: 8, r: 8, b: 12, l: 12 }, xaxis: { tickangle: -40 } })} config={config} guard={false} /></Chart></Fig>}
+                                {spearmanHeat && <Fig title="Spearman"><Chart h={340}><PlotlyChart data={spearmanHeat} layout={base({ margin: { t: 8, r: 8, b: 12, l: 12 }, xaxis: { tickangle: -40 } })} config={config} guard={false} /></Chart></Fig>}
+                            </div>
+                            {Array.isArray(nc.yuksek_ciftler) && nc.yuksek_ciftler.length > 0 &&
+                                <Table className="mt-4" head={[L('Yüksek korelasyon çifti', 'High-correlation pair'), 'r']} rows={nc.yuksek_ciftler.map((p: any) => [`${LBL.label(LBL.shortColumn, p[0], lang) || p[0]} · ${LBL.label(LBL.shortColumn, p[1], lang)}`, p[2].toFixed(3)])} />}
+                            {nc.not && <Method className="mt-3">{L(nc.not, 'Numeric-feature correlation (Cramér/Theil handle the categoricals). Pearson = linear, Spearman = monotonic. |r|>0.5 pairs stand out; collinearity was also checked via VIF (all <3).')}</Method>}
+                        </Section>
+                    )}
 
                     {met.g_mpv && (
                         <Section n={N()} title={L('G ≡ MPV teşhisi', 'G ≡ MPV diagnosis')}

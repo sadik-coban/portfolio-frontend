@@ -3,6 +3,7 @@
 import ReactECharts from 'echarts-for-react';
 import { ChartPanel } from './ChartPanel';
 import type { ChartTheme } from './types';
+import * as LBL from '@/lib/labels';
 
 interface EdaData {
     meta: { totalRows: number; generatedAt: string };
@@ -101,7 +102,7 @@ export default function EChartsEdaPlots({ eda, theme, labels = DEFAULT_EDA_LABEL
             type: 'pie', radius: ['45%', '70%'], center: ['50%', '45%'],
             itemStyle: { borderColor: theme.surface, borderWidth: 2 },
             label: { show: false }, labelLine: { show: false },
-            data: eda.fuelDist.labels.map((name, i) => ({ name, value: eda.fuelDist.values[i], itemStyle: { color: theme.palette[i % theme.palette.length] } })),
+            data: eda.fuelDist.labels.map((name, i) => ({ name: LBL.label(LBL.fuel, name, 'en'), value: eda.fuelDist.values[i], itemStyle: { color: theme.palette[i % theme.palette.length] } })),
         }],
     };
 

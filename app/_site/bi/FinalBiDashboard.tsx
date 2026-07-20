@@ -5,6 +5,7 @@ import ReactECharts from 'echarts-for-react';
 import * as echarts from 'echarts';
 import { Loader2, ServerCrash, Banknote, ShieldCheck, Gauge, MapPin, Wrench, RotateCcw, Filter } from 'lucide-react';
 import FinalShell from '../FinalShell';
+import * as LBL from '@/lib/labels';
 import { useLang } from '../i18n';
 import { makeHybridTheme, GREEN_RAMP } from '../../_charts/types';
 import { type Rows, type Filters, type Agg, EMPTY_FILTERS, SEG, FUEL } from './compute';
@@ -224,8 +225,8 @@ export default function FinalBiDashboard() {
     };
     const bodyOpt = { animation: false,
         grid: { left: 44, right: 12, top: 14, bottom: 48 },
-        tooltip: { ...tip, trigger: 'item', formatter: (p: any) => { const b = agg.bodyBox[p.dataIndex]; if (!b) return ''; return `${b.body}<br/>${L('medyan', 'med')} ${priceM(b.median)}<br/>Q1 ${priceM(b.q1)} · Q3 ${priceM(b.q3)}<br/>${nf(b.n)} ${L('ilan', 'listings')}`; } },
-        xAxis: { type: 'category', data: agg.bodyBox.map((b) => b.body), ...axisCommon, splitLine: { show: false }, axisLabel: { ...ax, rotate: 30 } },
+        tooltip: { ...tip, trigger: 'item', formatter: (p: any) => { const b = agg.bodyBox[p.dataIndex]; if (!b) return ''; return `${LBL.label(LBL.bodyType, b.body, lang)}<br/>${L('medyan', 'med')} ${priceM(b.median)}<br/>Q1 ${priceM(b.q1)} · Q3 ${priceM(b.q3)}<br/>${nf(b.n)} ${L('ilan', 'listings')}`; } },
+        xAxis: { type: 'category', data: agg.bodyBox.map((b) => LBL.label(LBL.bodyType, b.body, lang)), ...axisCommon, splitLine: { show: false }, axisLabel: { ...ax, rotate: 30 } },
         yAxis: { type: 'value', ...axisCommon, axisLabel: { ...ax, formatter: (v: number) => `${(v / 1e6).toFixed(1)}M` } },
         series: [{ type: 'boxplot', data: agg.bodyBox.map((b) => [b.min, b.q1, b.median, b.q3, b.max]), itemStyle: { color: '#eef0ee', borderColor: GD, borderWidth: 1.5 } }],
     };
@@ -307,7 +308,8 @@ export default function FinalBiDashboard() {
                     </select>
                     <select className={selCls} value={filters.fuel} onChange={(e) => set({ fuel: +e.target.value })}>
                         <option value={-1}>{L('Tüm yakıtlar', 'All fuels')}</option>
-                        {FUEL.map((f, i) => <option key={f} value={i}>{f}</option>)}
+                        {/* FUEL holds the Turkish join keys from bi_rows.json — display-translate only. */}
+                        {FUEL.map((f, i) => <option key={f} value={i}>{LBL.label(LBL.fuel, f, lang)}</option>)}
                     </select>
                     <select className={selCls} value={filters.seg} onChange={(e) => set({ seg: +e.target.value })}>
                         <option value={-1}>{L('Tüm segmentler', 'All segments')}</option>

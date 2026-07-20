@@ -32,8 +32,7 @@ export default function FinalAbout() {
                 <div className="max-w-[640px]">
                     <div className="mb-6 font-mono text-[12px] uppercase tracking-[0.16em] text-[#047857]">{t('about.eyebrow')}</div>
                     <h1 className="m-0 mb-6 text-[40px] md:text-[44px] font-bold leading-[1.08] tracking-[-0.045em] text-[#1a1a1a]">{t('about.title')}</h1>
-                    <p className="m-0 mb-[18px] text-[17px] leading-[1.65] text-[#5f5f5a]">{t('about.p1')}</p>
-                    <p className="m-0 text-[17px] leading-[1.65] text-[#5f5f5a]">{t('about.p2')}</p>
+                    <p className="m-0 text-[17px] leading-[1.65] text-[#5f5f5a]">{t('about.p1')}</p>
                 </div>
             </div>
 
