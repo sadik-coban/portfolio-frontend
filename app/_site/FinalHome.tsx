@@ -28,11 +28,9 @@ export default function FinalHome({ recentPosts }: { recentPosts: any[] }) {
                 </h1>
                 <div className="grid max-w-[1000px] grid-cols-1 items-end gap-7 md:grid-cols-[1fr_auto] md:gap-12">
                     <p className="m-0 max-w-[560px] text-[17px] leading-[1.6] text-[#5f5f5a] md:text-[20px]">{t('home.heroSub')}</p>
-                    {/* The deployed model leads: it is the one asset a reader can test rather than take
-                        on trust. Four nowrap items never fit one mobile line, so the row wraps. */}
+                    {/* Three nowrap items don't fit one 272px line, so the row wraps below sm. */}
                     <div className="flex flex-wrap items-center gap-x-5 gap-y-3 whitespace-nowrap">
-                        <Link href={localize('/projects/car-price/predict', lang)} className="inline-flex h-[44px] items-center rounded-[9px] bg-[#1a1a1a] px-[22px] text-[14px] font-semibold text-[#f7f6f3] transition-opacity hover:opacity-90">{t('home.tryModel')}</Link>
-                        <Link href="#work" className="text-[14px] font-medium text-[#1a1a1a]">{t('home.viewWork')}</Link>
+                        <Link href="#work" className="inline-flex h-[44px] items-center rounded-[9px] bg-[#1a1a1a] px-[22px] text-[14px] font-semibold text-[#f7f6f3] transition-opacity hover:opacity-90">{t('home.viewWork')}</Link>
                         <Link href={localize('/about', lang)} className="text-[14px] font-medium text-[#1a1a1a]">{t('home.getInTouch')}</Link>
                         <a href={site.social.github} target="_blank" rel="noopener noreferrer" className="text-[14px] font-medium text-[#5f5f5a] transition-colors hover:text-[#1a1a1a]">GitHub ↗</a>
                     </div>

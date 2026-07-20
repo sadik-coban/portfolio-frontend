@@ -102,7 +102,6 @@ const en: Dict = {
     'home.heroEyebrow': 'Data Scientist · MLOps Engineer',
     'home.heroH1Lead': 'Models that reach production, and',
     'home.heroH1Payoff': 'tell the truth.',
-    'home.tryModel': 'Try the live model',
     // "versioned" was the one claim the repo contradicts — there is no model registry. Cut it,
     // and replaced the chiasmus with the thesis the rest of the page actually proves.
     'home.heroSub': 'I build the whole path — from the first notebook to a deployed, monitored API. Evaluated out-of-fold, so the number you see is the number you get.',
@@ -383,7 +382,6 @@ const tr: Dict = {
     'home.heroEyebrow': 'Veri Bilimci · MLOps Mühendisi',
     'home.heroH1Lead': 'Üretime çıkan ve',
     'home.heroH1Payoff': 'doğruyu söyleyen modeller.',
-    'home.tryModel': 'Canlı modeli dene',
     'home.heroSub': 'Yolun tamamını kuruyorum — ilk defterden dağıtılmış, izlenen bir API’ye. Out-of-fold değerlendirildi; gördüğün sayı, alacağın sayı.',
     'home.viewWork': 'Çalışmaları gör',
     'home.getInTouch': 'İletişime geç →',
