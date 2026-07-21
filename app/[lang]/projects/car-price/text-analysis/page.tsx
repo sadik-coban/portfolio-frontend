@@ -7,7 +7,7 @@ import { site } from '@/app/_site/site-config';
 const PATH = '/projects/car-price/text-analysis';
 
 // Static (SSG): prerender the analysis to HTML (AI-bot / no-JS readable); charts
-// hydrate client-side. Mirrors the report-v2 pattern — force-static empties the
+// hydrate client-side. Mirrors the report pattern — force-static empties the
 // cookies()/headers() from the parent layouts, and a page-level title keeps SEO right.
 export const dynamic = 'force-static';
 

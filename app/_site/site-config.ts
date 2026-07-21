@@ -80,10 +80,10 @@ export const site = {
         '/projects/car-price/predict': { title: 'Price Prediction', description: 'Estimate a car’s market value with a LightGBM · TF-IDF+SVD model that returns a price range, not just a point estimate.' },
         '/projects/car-price/drift': { title: 'Drift Analysis', description: 'Data-drift analysis between model versions using statistical tests on the training-data distribution.' },
         '/projects/car-price/shap': { title: 'SHAP Analysis', description: 'SHAP explainability for the car-price model — which features push each prediction up or down.' },
-        // v1 report is DEACTIVATED (unlinked from the sidebar, route + source kept). Titled
-        // "archived" so it can't compete with the canonical report below on the same name.
-        '/projects/car-price/report': { title: 'Analytics Report (archived v1)', description: 'The first-generation analytics report for the car-price pipeline. Superseded by the current report; kept for reference.' },
-        '/projects/car-price/report-v2': { title: 'Analytics Report', description: 'Notebook-style analytics report for the car-price pipeline — EDA, hedonic drivers, modelling, calibration, drift and methodology, deep-linkable by section.' },
+        // The v1 report has no route any more (app/[lang]/.../report-v1 removed). Its
+        // component source is kept at app/_site/report-v1/ for reference; nothing is
+        // served, so it needs no SEO entry.
+        '/projects/car-price/report': { title: 'Analytics Report', description: 'Notebook-style analytics report for the car-price pipeline — EDA, hedonic drivers, modelling, calibration, drift and methodology, deep-linkable by section.' },
         '/projects/car-price/text-analysis': { title: 'Text Analysis', description: 'What 29,988 used-car listing descriptions carry that the structured fields never record: where the ad copy and the ad form disagree, equipment with no column at all, an anomaly queue and controlled text coefficients.' },
         '/projects/car-price/journal': { title: 'Project Journal', description: 'Engineering notes, technical challenges and case studies behind the car-price prediction project.' },
         '/blog': { title: 'Blog', description: 'Notes on data science, MLOps and the systems behind them, by Sadık Çoban.' },

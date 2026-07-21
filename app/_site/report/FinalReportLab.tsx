@@ -1214,9 +1214,9 @@ export default function FinalReportLab({ initialData }: { initialData?: any } = 
             <div className="mx-auto flex w-full max-w-[1280px]">
                 {/* desktop TOC rail */}
                 <aside className="sticky top-0 hidden h-screen w-[264px] shrink-0 flex-col overflow-y-auto border-r border-[#e9e7e2] bg-[#fbfbf9] px-5 py-8 md:flex">
-                    <div className="mb-4 flex items-center justify-between">
+                    {/* v1 report has no route any more — the sibling link went with it. */}
+                    <div className="mb-4">
                         <Monogram />
-                        <a href={localize('/projects/car-price/report', lang)} title={L('Klasik rapor', 'Classic report')} className="font-mono text-[10px] text-[#86857e] transition-colors hover:text-[#047857]">/report</a>
                     </div>
                     <a href={localize('/projects/car-price', lang)} className="mb-4 flex items-center gap-2 font-mono text-[12px] text-[#86857e] transition-colors hover:text-[#5f5f5a]"><ArrowLeft size={14} /> {L('Proje', 'Project')}</a>
                     <div className="mb-5 h-[3px] w-full overflow-hidden rounded-full bg-[#ece9e3]"><div ref={progressRef} className="h-full rounded-full bg-[#047857]" style={{ width: '0%' }} /></div>

@@ -9,7 +9,7 @@ import { AppPageHeader } from './AppPageHeader';
 import { SIDEBAR_COLLAPSE_ENABLED } from './features';
 import { useSidebarCollapse } from './SidebarCollapse';
 
-type ActiveKey = 'overview' | 'dashboard' | 'eda' | 'predict' | 'drift' | 'shap' | 'report' | 'report-v2' | 'text-analysis' | 'journal';
+type ActiveKey = 'overview' | 'dashboard' | 'eda' | 'predict' | 'drift' | 'shap' | 'report' | 'text-analysis' | 'journal';
 
 export default function FinalShell({
     active, title, kicker, meta, children,
@@ -46,12 +46,9 @@ export default function FinalShell({
         { key: 'predict', label: t('sb.predict'), icon: BrainCircuit, href: '/projects/car-price/predict' },
         { key: 'drift', label: t('sb.drift'), icon: Activity, href: '/projects/car-price/drift' },
         { key: 'shap', label: t('sb.shap'), icon: PieChart, href: '/projects/car-price/shap' },
-        // Old report tab DEACTIVATED (per request): hidden from the sidebar, but the route +
-        // component are kept (app/[lang]/projects/car-price/report + app/_site/report/*) — it
-        // still resolves by direct URL, nothing was deleted. The lab report below took its
-        // place and is now simply "Report".
-        // { key: 'report', label: t('sb.report'), icon: NotebookText, href: '/projects/car-price/report' },
-        { key: 'report-v2', label: t('sb.report'), icon: NotebookText, href: '/projects/car-price/report-v2' },
+        // The v1 report has no route any more; only its component source is kept
+        // (app/_site/report-v1/). The lab report below owns the plain "Report" name.
+        { key: 'report', label: t('sb.report'), icon: NotebookText, href: '/projects/car-price/report' },
         { key: 'text-analysis', label: t('sb.textAnalysis'), icon: MessageSquareText, href: '/projects/car-price/text-analysis' },
         { key: 'journal', label: t('sb.journal'), icon: BookOpen, href: '/projects/car-price/journal' },
     ];

@@ -37,6 +37,21 @@ export const metadata: Metadata = {
     index: true,
     follow: true,
   },
+  // Bing needs an explicit, plain <link rel="icon"> pointing at /favicon.ico — it does
+  // not reliably guess the root path the way Google does. The file convention
+  // (app/favicon.ico) emitted a fingerprinted href, /favicon.ico?favicon.4c0b4984.ico,
+  // declared as sizes="48x48" only, even though the ICO carries 16/32/48. Bing
+  // recommends 32×32, so a 48-only declaration invites it to skip the file. The ICO
+  // now lives in public/, so this href is stable and unhashed.
+  icons: {
+    icon: [
+      { url: '/favicon.ico', sizes: '16x16 32x32 48x48', type: 'image/x-icon' },
+      { url: '/icon0.svg', type: 'image/svg+xml', sizes: 'any' },
+      { url: '/icon1.png', type: 'image/png', sizes: '64x64' },
+    ],
+    apple: [{ url: '/apple-icon.png', sizes: '180x180', type: 'image/png' }],
+    shortcut: ['/favicon.ico'],
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

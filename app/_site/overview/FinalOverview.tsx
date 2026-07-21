@@ -139,7 +139,7 @@ export default function FinalOverview({ initialData, initialNlp }: Props) {
                 <Link href={localize('/projects/car-price/predict', lang)} className="inline-flex h-[44px] items-center gap-2 rounded-[10px] bg-[#047857] px-5 text-[14px] font-semibold text-white transition-colors hover:bg-[#065f46]">
                     {t('ov.tryPredict')} <ArrowRight size={17} />
                 </Link>
-                <Link href={localize('/projects/car-price/report-v2', lang)} className="inline-flex h-[44px] items-center gap-2 rounded-[10px] border border-[#d8d6d0] bg-[#fdfcf9] px-5 text-[14px] font-semibold text-[#5f5f5a] transition-colors hover:border-[#86857e]">
+                <Link href={localize('/projects/car-price/report', lang)} className="inline-flex h-[44px] items-center gap-2 rounded-[10px] border border-[#d8d6d0] bg-[#fdfcf9] px-5 text-[14px] font-semibold text-[#5f5f5a] transition-colors hover:border-[#86857e]">
                     {L('Raporu oku', 'Read the report')} <ArrowRight size={16} />
                 </Link>
                 <a href="https://github.com/sadik-coban/car-price-prediction-pipeline" target="_blank" rel="noopener noreferrer" className="inline-flex h-[44px] items-center gap-2 rounded-[10px] border border-[#d8d6d0] bg-[#fdfcf9] px-5 text-[14px] font-semibold text-[#5f5f5a] transition-colors hover:border-[#86857e]">
@@ -390,7 +390,7 @@ export default function FinalOverview({ initialData, initialNlp }: Props) {
 
                 <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                     {[
-                        { href: '/projects/car-price/report-v2', t: L('Analitik Rapor · Lab', 'Analytics Report · Lab'), d: L('tam etkileşimli defter', 'the full interactive notebook') },
+                        { href: '/projects/car-price/report', t: L('Analitik Rapor · Lab', 'Analytics Report · Lab'), d: L('tam etkileşimli defter', 'the full interactive notebook') },
                         { href: '/projects/car-price/predict', t: L('Canlı tahmin', 'Live prediction'), d: L('/api/predict’i dene', 'try /api/predict') },
                         { href: '/projects/car-price/dashboard', t: L('Pazar panosu', 'Market dashboard'), d: L('sunucu-taraflı BI + TR haritası', 'server-side BI + TR map') },
                         { href: '/projects/car-price/drift', t: L('Veri kayması', 'Data drift'), d: 'KS + Wasserstein' },

@@ -9,7 +9,7 @@ import { useLang, localize } from '../i18n';
 import { Monogram } from '../Monogram';
 import * as LBL from '@/lib/labels';
 
-// Text analysis, written as a notebook report in the same shell as report-v2: its own
+// Text analysis, written as a notebook report in the same shell as the report: its own
 // TOC rail + scroll-spy + read progress instead of the car-price sidebar, and the [n]
 // execution-count section motif. Driven entirely by public/text_data.json (merged from
 // site_pipeline/text_nlp/* by scripts/build-text-data.mjs) — no figure is typed by hand.
@@ -581,7 +581,7 @@ export default function FinalTextAnalysis({ initialData }: { initialData?: any }
                 <aside className="sticky top-0 hidden h-screen w-[264px] shrink-0 flex-col overflow-y-auto border-r border-[#e9e7e2] bg-[#fbfbf9] px-5 py-8 md:flex">
                     <div className="mb-4 flex items-center justify-between">
                         <Monogram />
-                        <a href={localize('/projects/car-price/report-v2', lang)} title={L('Analitik rapor', 'Analytics report')} className="font-mono text-[10px] text-[#86857e] transition-colors hover:text-[#047857]">/report</a>
+                        <a href={localize('/projects/car-price/report', lang)} title={L('Analitik rapor', 'Analytics report')} className="font-mono text-[10px] text-[#86857e] transition-colors hover:text-[#047857]">/report</a>
                     </div>
                     <a href={localize('/projects/car-price', lang)} className="mb-4 flex items-center gap-2 font-mono text-[12px] text-[#86857e] transition-colors hover:text-[#5f5f5a]"><ArrowLeft size={14} /> {L('Proje', 'Project')}</a>
                     <div className="mb-5 h-[3px] w-full overflow-hidden rounded-full bg-[#ece9e3]"><div ref={progressRef} className="h-full rounded-full bg-[#047857]" style={{ width: '0%' }} /></div>
@@ -631,7 +631,7 @@ function TocNav({ toc, activeId, onGo }: { toc: { id: string; title: string; cha
     );
 }
 
-// ---------- presentational helpers (same API as report-v2's) ----------
+// ---------- presentational helpers (same API as the report's) ----------
 function clipText(s: any, n: number): string {
     if (typeof s !== 'string') return '';
     const t = s.trim();

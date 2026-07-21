@@ -74,7 +74,7 @@ export const HOME_PROJECTS: HomeProject[] = [
         ],
         surfaces: [
             { label: { en: 'Overview', tr: 'Genel bakış' }, href: '/projects/car-price' },
-            { label: { en: 'Report', tr: 'Rapor' }, href: '/projects/car-price/report-v2' },
+            { label: { en: 'Report', tr: 'Rapor' }, href: '/projects/car-price/report' },
             { label: { en: 'Dashboard', tr: 'Pano' }, href: '/projects/car-price/dashboard' },
         ],
     },

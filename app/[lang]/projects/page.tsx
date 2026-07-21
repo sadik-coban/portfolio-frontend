@@ -1,5 +1,5 @@
 import FinalProjects from '@/app/_site/FinalProjects';
-import { getSiteData } from '@/app/_site/report-v2/site-data';
+import { getSiteData } from '@/app/_site/report/site-data';
 
 // The work index quotes each project's headline numbers, so it reads them from the same
 // public/site_data.json the analysis pages render — not from lib/eda-data.json, a June

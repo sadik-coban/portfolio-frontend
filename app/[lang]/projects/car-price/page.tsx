@@ -1,5 +1,5 @@
 import FinalOverview from '@/app/_site/overview/FinalOverview';
-import { getSiteData } from '@/app/_site/report-v2/site-data';
+import { getSiteData } from '@/app/_site/report/site-data';
 import { getTextData } from '@/app/_site/text-analysis/text-data';
 
 // The overview is the project's landing page, so its numbers must be the same ones the

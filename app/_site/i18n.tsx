@@ -256,7 +256,7 @@ const en: Dict = {
     'rep.title': 'Analytics Report',
     'rep.kicker': 'Car Price · Report',
     // (nlp.title/nlp.kicker removed — the text-analysis page builds its own notebook
-    //  shell like report-v2, so it no longer takes a FinalShell kicker/title.)
+    //  shell like the report, so it no longer takes a FinalShell kicker/title.)
     'rep.desc': 'Full EDA & training notebook for the car-price pipeline.',
     'rn.tabNotebook': 'Notebook',
     'rn.tabNative': 'Native',

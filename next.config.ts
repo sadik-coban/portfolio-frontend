@@ -28,6 +28,18 @@ const nextConfig: NextConfig = {
         destination: '/tr/projects/car-price/text-analysis',
         permanent: true,
       },
+      // The lab report took over the plain /report name; the archived v1 moved to
+      // /report-v1. Old /report-v2 links (and anything that indexed them) follow.
+      {
+        source: '/projects/car-price/report-v2',
+        destination: '/projects/car-price/report',
+        permanent: true,
+      },
+      {
+        source: '/tr/projects/car-price/report-v2',
+        destination: '/tr/projects/car-price/report',
+        permanent: true,
+      },
     ];
   },
 };
