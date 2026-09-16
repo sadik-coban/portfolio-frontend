@@ -139,6 +139,32 @@ export function buildReportFigures(d: any, lang: Lang): Record<string, Fig> {
     put('09-residual', (resObj && diagRes) ? [hb2d(resObj.points), scOut(diagRes.outliers)] : null,
         base({ margin: { t: 8, r: 12, b: 34, l: 42 }, xaxis: { title: { text: L('tahmin ₺', 'pred ₺'), font: { size: 10 } }, tickformat: '~s' }, yaxis: { ticksuffix: '%' }, shapes: [{ type: 'line', xref: 'paper', x0: 0, x1: 1, yref: 'y', y0: 0, y1: 0, line: { dash: 'dash', color: '#86857e', width: 1 } }] }), 320);
 
+    // Every listing's OOF residual, binned before the scatter was sampled (shrink-site-data.mjs
+    // writes residual_scatter.hist) — the bars are counts, so the 6K sample would understate each
+    // one five-fold beside a table that counts all 29,988. Same bins, band and marker as the
+    // generator's figure 26.
+    const rh = dom.residual_scatter?.hist;
+    const pctL = (v: number) => (lang === 'tr' ? (v < 0 ? '-%' + -v : '%' + v) : v + '%');
+    put('26-error-hist', rh ? [{
+        type: 'bar', x: rh.counts.map((_: number, i: number) => rh.lo + (i + 0.5) * rh.step), y: rh.counts, width: rh.step,
+        marker: { color: green, line: { width: 0 } },
+        customdata: rh.counts.map((_: number, i: number) => `${pctL(rh.lo + i * rh.step)} … ${pctL(rh.lo + (i + 1) * rh.step)}`),
+        hovertemplate: '%{customdata}: %{y:,} ' + L('ilan', 'listings') + '<extra></extra>',
+    }] : null, base({
+        // two-line axis title: one line runs past a phone's plot width and Plotly does not wrap it
+        bargap: 0.08, margin: { t: 26, r: 16, b: 54, l: 8 },
+        xaxis: { title: { text: L('artık % (eksi = model fazla tahmin etti)<br>gri bant = ±%10', 'residual % (negative = model over-predicted)<br>grey band = ±10%'), font: { size: 10 } }, ticksuffix: '%' },
+        yaxis: { title: { text: L('ilan', 'listings'), font: { size: 10 } } },
+        shapes: [
+            { type: 'rect', xref: 'x', yref: 'paper', x0: -10, x1: 10, y0: 0, y1: 1, fillcolor: '#86857e', opacity: 0.08, line: { width: 0 }, layer: 'below' },
+            { type: 'line', xref: 'x', yref: 'paper', x0: 0, x1: 0, y0: 0, y1: 1, line: { dash: 'dash', color: '#b91c1c', width: 1.2 } },
+        ],
+        annotations: rh ? [{
+            xref: 'paper', yref: 'paper', x: 0, y: 1, xanchor: 'left', yanchor: 'bottom', showarrow: false, font: { size: 10, color: theme.muted },
+            text: L(`görünüm dışı: ${fmtN(rh.below)} ilan < -%${-rh.lo} · ${fmtN(rh.above)} ilan > +%${-rh.lo}`, `outside view: ${fmtN(rh.below)} listings < -${-rh.lo}% · ${fmtN(rh.above)} > +${-rh.lo}%`),
+        }] : [],
+    }), 300);
+
     // Median APE per quartile, not MAPE — the export's name hides that (the generator notes it).
     const qe = dom.quantile_error || [];
     put('10-quartile-error', qe.length ? [{ type: 'bar', x: qe.map((r: any) => r[0]), y: qe.map((r: any) => r[1]), marker: { color: green }, text: qe.map((r: any) => r[1].toFixed(1)), textposition: 'outside', hovertemplate: '%{x}: %{y:.1f}% ' + L('medyan mutlak hata', 'median absolute error') + '<extra></extra>' }] : null,

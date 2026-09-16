@@ -244,6 +244,19 @@ OOF (sızıntısız) tahminler gerçek fiyata karşı — R² **0.9744**. Artık
 
 ![Tahmin vs Gerçek (R² 0.974)](figures/tr-08-pred-vs-true.png)
 
+### Hata dağılımı
+
+| \|hata\| bandı | ilan | pay |
+|---|---:|---:|
+| ≤ %5 | 15.725 | %52.4 |
+| %5 – %10 | 8.251 | %27.5 |
+| %10 – %20 | 4.825 | %16.1 |
+| > %20 | 1.187 | %4.0 |
+
+![OOF hata dağılımı — artık % = (gerçek − tahmin) / gerçek](figures/tr-26-error-hist.png)
+
+Tüm 29.988 ilanın OOF hatası. Dağılım sıfırda tepe yapıyor (medyan artık -%0.26); ±%10 içinde kalan ilan payı **%80.0**. Ortalama |hata| %6.5 — MAPE'nin kendisi; medyan |hata| %4.7. Kuyruk asimetrik, fazla tahmin tarafı daha kalın: model gerçeğin %20'den fazla **üstünü** 761 ilanda, **altını** 426 ilanda söylüyor (en uçlar -%178.4 ve +%55.3). Asimetrinin bir kısmı tanımdan gelir: artık gerçek fiyata bölündüğü için düşük tahmin en fazla %100 olabilir, fazla tahminin sınırı yoktur. Std (%9.31) bu kuyruk yüzünden şişik; tipik hatayı medyan |hata| daha iyi anlatır.
+
 ![Artık% vs Tahmin](figures/tr-09-residual.png)
 
 ![Model ilan-adedi vs medyan hata (log eksen)](figures/tr-11-n-vs-error.png)

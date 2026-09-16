@@ -76,6 +76,25 @@ function shrinkScatter(key, devOf, roundY) {
     if (Array.isArray(o.ideal_line)) o.ideal_line = o.ideal_line.map(round);
     after[key] = o.points.length;
 }
+// The residual histogram needs every listing, not the sample: its bars are counts, and the report
+// table beside it counts all 29,988. So it is binned here, before sampling, the way the generator
+// bins it (build_report.py figure 26: 1-point bins over ±RESID_VIEW, the rest counted as outside
+// the view). 80 numbers instead of 30K residuals.
+const RESID_VIEW = 40;
+const rsFull = dom.residual_scatter;
+if (rsFull && Array.isArray(rsFull.points)) {
+    const counts = new Array(2 * RESID_VIEW).fill(0);
+    let below = 0, above = 0;
+    for (const p of rsFull.points) {
+        const v = p[1];
+        if (v == null) continue;
+        if (v < -RESID_VIEW) below++;
+        else if (v > RESID_VIEW) above++;
+        else counts[Math.min(2 * RESID_VIEW - 1, Math.floor(v + RESID_VIEW))]++; // numpy: last bin is closed
+    }
+    rsFull.hist = { lo: -RESID_VIEW, step: 1, counts, below, above };
+}
+
 shrinkScatter('pred_vs_true', (p) => Math.abs(p[0] - p[1]), round);       // [actual, pred] → both ₺
 shrinkScatter('residual_scatter', (p) => Math.abs(p[1]), round2);          // [pred ₺, resid %]
 

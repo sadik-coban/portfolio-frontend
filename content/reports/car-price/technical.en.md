@@ -244,6 +244,19 @@ OOF (leak-free) predictions vs actual — R² **0.9744**. Residual% centers on z
 
 ![Predicted vs Actual (R² 0.974)](figures/en-08-pred-vs-true.png)
 
+### Error distribution
+
+| \|error\| band | listings | share |
+|---|---:|---:|
+| ≤ 5% | 15,725 | 52.4% |
+| 5% – 10% | 8,251 | 27.5% |
+| 10% – 20% | 4,825 | 16.1% |
+| > 20% | 1,187 | 4.0% |
+
+![OOF error distribution — residual % = (actual − predicted) / actual](figures/en-26-error-hist.png)
+
+OOF error for all 29,988 listings. The distribution peaks at zero (median residual -0.26%); the share of listings within ±10% is **80.0%**. Mean |error| is 6.5% — the MAPE itself; median |error| 4.7%. The tails are asymmetric, the over-prediction side is heavier: the model says more than 20% **above** the actual price for 761 listings and more than 20% **below** it for 426 (extremes -178.4% and +55.3%). Part of the asymmetry is by definition: the residual is divided by the actual price, so under-prediction is capped at 100% while over-prediction is unbounded. The std (9.31%) is inflated by that tail; median |error| describes the typical miss better.
+
 ![Residual% vs Predicted](figures/en-09-residual.png)
 
 ![Per-model sample size vs median error (log axis)](figures/en-11-n-vs-error.png)
