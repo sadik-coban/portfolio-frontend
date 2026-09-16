@@ -1,23 +1,30 @@
 "use client";
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import FinalShell from '../FinalShell';
-import type { ReportLang } from './report-source';
+import type { Block, ReportLang } from './report-source';
+import { useReportFigures, ReportFigure } from './figures';
 
-type Doc = { html: string; words: number; figures: number; generated: string };
+type Doc = { blocks: Block[]; words: number; figures: number; generated: string };
 
 // Renders one generated report inside the car-price app shell.
 //
 // Both languages arrive already rendered from the server, so the toggle is a state flip with
-// no refetch — on a phone that is the difference between instant and a spinner. It also means
-// the page works with JS disabled: the Turkish copy is in the HTML either way.
+// no refetch — on a phone that is the difference between instant and a spinner. The prose is
+// in the HTML either way, so the page reads with JS disabled.
+//
+// The figures are the exception: they are drawn natively with Plotly from report-data.json,
+// fetched once on mount. That file is 469 KB, which belongs in a cacheable request rather than
+// inlined into every page's HTML. Until it lands, each figure shows the PNG the pipeline
+// generated — so there is never an empty slot where a chart should be.
 //
 // The site is English-only (I18N_ENABLED is false), so this toggle is local to the page and
 // touches nothing global.
 
 export default function ReportPreview({
-    active, kicker, title, docs, defaultLang = 'tr', note,
+    kind, active, kicker, title, docs, defaultLang = 'tr', note,
 }: {
+    kind: 'car-price' | 'text-analysis';
     active: 'report-business' | 'report-technical' | 'text-business' | 'text-technical';
     kicker: string;
     title: string;
@@ -26,7 +33,21 @@ export default function ReportPreview({
     note?: string;
 }) {
     const [lang, setLang] = useState<ReportLang>(defaultLang);
+    const [data, setData] = useState<Record<string, unknown> | null>(null);
     const doc = docs[lang];
+    const figures = useReportFigures(kind, data, lang);
+
+    useEffect(() => {
+        let alive = true;
+        fetch(kind === 'car-price' ? '/report-data.json' : '/text_data.json')
+            .then((r) => r.text())
+            // the export carries Infinity/NaN, which are not valid JSON
+            .then((t) => { if (alive) setData(JSON.parse(t.replace(/-?Infinity/g, 'null').replace(/\bNaN\b/g, 'null'))); })
+            .catch(() => { /* figures fall back to the generated PNGs */ });
+        return () => { alive = false; };
+    }, [kind]);
+
+    const T = (tr: string, en: string) => (lang === 'tr' ? tr : en);
 
     return (
         <FinalShell active={active} kicker={kicker} title={title}>
@@ -48,11 +69,12 @@ export default function ReportPreview({
                 </div>
 
                 <span className="font-mono text-[11px] text-[#86857e]">
-                    {doc.figures} {lang === 'tr' ? 'figür' : 'figures'} · {doc.words.toLocaleString(lang === 'tr' ? 'tr-TR' : 'en-US')} {lang === 'tr' ? 'kelime' : 'words'}
+                    {doc.figures} {T('figür', 'figures')} · {doc.words.toLocaleString(lang === 'tr' ? 'tr-TR' : 'en-US')} {T('kelime', 'words')}
+                    {data ? ` · ${T('etkileşimli', 'interactive')}` : ''}
                 </span>
 
                 <span className="ml-auto font-mono text-[11px] text-[#9a9a92]">
-                    {lang === 'tr' ? 'üretim' : 'generated'} {doc.generated}
+                    {T('üretim', 'generated')} {doc.generated}
                 </span>
             </div>
 
@@ -62,30 +84,40 @@ export default function ReportPreview({
                 </p>
             )}
 
-            {/* The generator owns the words; this only gives them the site's typography.
-                Figures are wide, so they get the full measure while prose stays readable. */}
-            <article
-                className="prose prose-neutral max-w-none
-                    prose-headings:font-semibold prose-headings:tracking-[-0.025em] prose-headings:text-[#1a1a1a]
-                    prose-h1:hidden
-                    prose-h2:mt-12 prose-h2:mb-4 prose-h2:text-[21px] sm:prose-h2:text-[23px]
-                    prose-h3:mt-8 prose-h3:mb-3 prose-h3:text-[17px]
-                    prose-p:max-w-[70ch] prose-p:text-[15px] prose-p:leading-[1.7] prose-p:text-[#33332f] sm:prose-p:text-[16px]
-                    prose-li:max-w-[70ch] prose-li:text-[15px] prose-li:leading-[1.65] prose-li:text-[#33332f]
-                    prose-strong:font-semibold prose-strong:text-[#1a1a1a]
-                    prose-a:text-[#047857] prose-a:no-underline hover:prose-a:underline
-                    prose-blockquote:max-w-[70ch] prose-blockquote:border-l-[3px] prose-blockquote:border-[#059669]
-                    prose-blockquote:pl-5 prose-blockquote:not-italic prose-blockquote:font-normal prose-blockquote:text-[#5f5f5a]
-                    prose-hr:border-[#e9e7e2]
-                    prose-img:my-7 prose-img:w-full prose-img:rounded-[12px] prose-img:border prose-img:border-[#e4e2dd] prose-img:bg-[#fdfcf9]
-                    prose-table:block prose-table:w-full prose-table:overflow-x-auto prose-table:text-[14px]
-                    prose-thead:border-[#e9e7e2]
-                    prose-th:whitespace-nowrap prose-th:font-mono prose-th:text-[11px] prose-th:font-medium prose-th:uppercase prose-th:tracking-[0.05em] prose-th:text-[#86857e]
-                    prose-td:text-[#33332f] [&_td]:tabular-nums [&_tbody_tr]:border-[#f0eee9]
-                    [&_code]:rounded-[5px] [&_code]:bg-[#f3f1ec] [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:font-mono [&_code]:text-[13px] [&_code]:text-[#047857]
-                    [&_code]:before:content-[''] [&_code]:after:content-['']"
-                dangerouslySetInnerHTML={{ __html: doc.html }}
-            />
+            <div className="max-w-[860px]">
+                {doc.blocks.map((b, i) => (
+                    b.type === 'figure'
+                        ? <ReportFigure key={i} fig={figures[b.slug]} caption={b.caption} fallback={b.fallback} />
+                        : <Prose key={i} html={b.html} />
+                ))}
+            </div>
         </FinalShell>
+    );
+}
+
+// The generator owns the words; this only gives them the site's typography.
+function Prose({ html }: { html: string }) {
+    return (
+        <div
+            className="prose prose-neutral max-w-none
+                prose-headings:font-semibold prose-headings:tracking-[-0.025em] prose-headings:text-[#1a1a1a]
+                prose-h1:hidden
+                prose-h2:mt-12 prose-h2:mb-4 prose-h2:text-[21px] sm:prose-h2:text-[23px]
+                prose-h3:mt-8 prose-h3:mb-3 prose-h3:text-[17px]
+                prose-p:max-w-[70ch] prose-p:text-[15px] prose-p:leading-[1.7] prose-p:text-[#33332f] sm:prose-p:text-[16px]
+                prose-li:max-w-[70ch] prose-li:text-[15px] prose-li:leading-[1.65] prose-li:text-[#33332f]
+                prose-strong:font-semibold prose-strong:text-[#1a1a1a]
+                prose-a:text-[#047857] prose-a:no-underline hover:prose-a:underline
+                prose-blockquote:max-w-[70ch] prose-blockquote:border-l-[3px] prose-blockquote:border-[#059669]
+                prose-blockquote:pl-5 prose-blockquote:not-italic prose-blockquote:font-normal prose-blockquote:text-[#5f5f5a]
+                prose-hr:border-[#e9e7e2]
+                prose-table:block prose-table:w-full prose-table:overflow-x-auto prose-table:text-[14px]
+                prose-thead:border-[#e9e7e2]
+                prose-th:whitespace-nowrap prose-th:font-mono prose-th:text-[11px] prose-th:font-medium prose-th:uppercase prose-th:tracking-[0.05em] prose-th:text-[#86857e]
+                prose-td:text-[#33332f] [&_td]:tabular-nums [&_tbody_tr]:border-[#f0eee9]
+                [&_code]:rounded-[5px] [&_code]:bg-[#f3f1ec] [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:font-mono [&_code]:text-[13px] [&_code]:text-[#047857]
+                [&_code]:before:content-[''] [&_code]:after:content-['']"
+            dangerouslySetInnerHTML={{ __html: html }}
+        />
     );
 }
