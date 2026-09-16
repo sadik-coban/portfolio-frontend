@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import * as Dialog from '@radix-ui/react-dialog';
-import { Menu, X, ArrowLeft, Briefcase, FlaskConical } from 'lucide-react';
+import { Menu, X, ArrowLeft } from 'lucide-react';
 import { Monogram } from '../Monogram';
 
 // The notebook shell the live report pages use — a sticky contents rail with a read-progress
@@ -12,21 +12,23 @@ import { Monogram } from '../Monogram';
 // Modelled on FinalReportLab's shell rather than imported from it: the report and text-analysis
 // pages each carry their own TocNav and the two copies have drifted apart, so unifying them
 // would quietly change one of the published pages. This keeps the preview's change inside the
-// preview.
+// preview. The look is the live one, class for class: same ground, same rail, contents grouped
+// under chapter labels.
 //
 // One addition over the live shell: a Reports switcher above the contents. The preview pages
 // used to sit inside the app shell, whose sidebar is how you moved between the four of them on
 // a phone. Dropping that for a contents list alone would have removed the only way across
 // without going back to the project.
 
-type TocItem = { id: string; title: string };
+/** A chapter band (level 2, h2) or a section inside one (level 3, h3); see report-source.ts. */
+type TocItem = { id: string; title: string; level: 2 | 3; n: string };
 type Lang = 'tr' | 'en';
 
 const REPORTS = [
-    { key: 'report-business', href: '/projects/car-price/report-preview/business', tr: 'Karar notu', en: 'Decision note', icon: Briefcase },
-    { key: 'report-technical', href: '/projects/car-price/report-preview/technical', tr: 'Teknik rapor', en: 'Technical report', icon: FlaskConical },
-    { key: 'text-business', href: '/projects/car-price/text-preview/business', tr: 'Metin · karar', en: 'Text · decision', icon: Briefcase },
-    { key: 'text-technical', href: '/projects/car-price/text-preview/technical', tr: 'Metin · teknik', en: 'Text · technical', icon: FlaskConical },
+    { key: 'report-business', href: '/projects/car-price/report-preview/business', tr: 'Karar notu', en: 'Decision note' },
+    { key: 'report-technical', href: '/projects/car-price/report-preview/technical', tr: 'Teknik rapor', en: 'Technical report' },
+    { key: 'text-business', href: '/projects/car-price/text-preview/business', tr: 'Metin · karar', en: 'Text · decision' },
+    { key: 'text-technical', href: '/projects/car-price/text-preview/technical', tr: 'Metin · teknik', en: 'Text · technical' },
 ] as const;
 
 export type ReportKey = (typeof REPORTS)[number]['key'];
@@ -79,7 +81,12 @@ export default function NotebookShell({
         if (!root) return;
 
         const live = () => Array.from(root.querySelectorAll<HTMLElement>('[data-toc]'));
-        setToc(live().map((el) => ({ id: el.id, title: (el.textContent || '').trim() })));
+        setToc(live().map((el) => ({
+            id: el.id,
+            title: (el.textContent || '').trim(),
+            level: el.dataset.toc === '3' ? 3 : 2,
+            n: el.dataset.n || '',
+        })));
 
         // A heading becomes current once it has scrolled up past this line — just below the
         // mobile title bar, the same 84px the headings keep as scroll margin.
@@ -156,12 +163,13 @@ export default function NotebookShell({
         </Link>
     );
 
+    // Styled as one more chapter of the rail (label + items), so it reads as part of the live
+    // rail rather than a second navigation bolted on; a hairline separates it from the contents.
     const nav = (
         <>
-
-            <div className="mb-5">
-                <div className="mb-1.5 font-mono text-[10px] uppercase tracking-[0.12em] text-[#86857e]">{L('Raporlar', 'Reports')}</div>
-                <ul className="space-y-0.5">
+            <div className="mb-4 border-b border-[#ece9e3] pb-4">
+                <div className="mb-1.5 font-mono text-[10px] uppercase leading-snug tracking-[0.12em] text-[#86857e]">{L('Raporlar', 'Reports')}</div>
+                <ul className="space-y-0.5 text-[13px]">
                     {REPORTS.map((r) => {
                         const on = r.key === active;
                         return (
@@ -170,9 +178,8 @@ export default function NotebookShell({
                                     href={r.href}
                                     onClick={() => setDrawer(false)}
                                     aria-current={on ? 'page' : undefined}
-                                    className={`flex items-center gap-2 rounded-[6px] px-2.5 py-1.5 text-[13px] leading-snug transition-colors ${on ? 'bg-[#e7f3ec] font-semibold text-[#047857]' : 'text-[#5f5f5a] hover:bg-[#f1efe9] hover:text-[#1a1a1a]'}`}
+                                    className={`block w-full rounded-[6px] px-2.5 py-1.5 text-left leading-snug transition-colors ${on ? 'bg-[#e7f3ec] font-semibold text-[#047857]' : 'text-[#5f5f5a] hover:bg-[#f1efe9] hover:text-[#1a1a1a]'}`}
                                 >
-                                    <r.icon size={14} className={on ? 'text-[#047857]' : 'text-[#9a9a92]'} />
                                     {L(r.tr, r.en)}
                                 </Link>
                             </li>
@@ -188,9 +195,10 @@ export default function NotebookShell({
     const activeTitle = toc.find((x) => x.id === activeId)?.title ?? title;
 
     return (
-        <div className="min-h-screen bg-[#f7f6f3] text-[#1a1a1a]">
+        // lang: the chapter labels are CSS capitals, and Turkish "i" only capitalises to "İ" under tr.
+        <div lang={lang} className="min-h-screen bg-[#fbfbf9] text-[#1a1a1a]">
             {/* mobile title bar */}
-            <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-[#e9e7e2] bg-[#fdfcf9]/95 px-4 py-3 backdrop-blur md:hidden">
+            <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-[#e9e7e2] bg-[#fbfbf9]/95 px-4 py-3 backdrop-blur md:hidden">
                 <button onClick={() => setDrawer(true)} aria-label={L('İçindekiler', 'Contents')} className="-ml-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-[#5f5f5a] hover:bg-[#f1efe9]">
                     <Menu size={20} />
                 </button>
@@ -202,9 +210,9 @@ export default function NotebookShell({
             <Dialog.Root open={drawer} onOpenChange={setDrawer}>
                 <Dialog.Portal>
                     <Dialog.Overlay className="fixed inset-0 z-40 bg-black/30 md:hidden" />
-                    <Dialog.Content aria-describedby={undefined} className="fixed inset-y-0 left-0 z-50 flex w-[82%] max-w-[300px] flex-col overflow-y-auto border-r border-[#e9e7e2] bg-[#fdfcf9] p-5 shadow-xl focus:outline-none md:hidden">
+                    <Dialog.Content lang={lang} aria-describedby={undefined} className="fixed inset-y-0 left-0 z-50 flex w-[82%] max-w-[300px] flex-col overflow-y-auto border-r border-[#e9e7e2] bg-[#fdfcf9] p-5 shadow-xl focus:outline-none md:hidden">
                         <div className="mb-4 flex items-center justify-between">
-                            <Dialog.Title className="font-mono text-[11px] uppercase tracking-[0.14em] text-[#86857e]">{title}</Dialog.Title>
+                            <Dialog.Title className="font-mono text-[11px] uppercase tracking-[0.14em] text-[#86857e]">{L('İçindekiler', 'Contents')}</Dialog.Title>
                             <Dialog.Close asChild>
                                 <button aria-label={L('Kapat', 'Close')} className="flex h-8 w-8 items-center justify-center rounded-lg text-[#5f5f5a] hover:bg-[#f1efe9]"><X size={18} /></button>
                             </Dialog.Close>
@@ -234,31 +242,60 @@ export default function NotebookShell({
     );
 }
 
-// Contents list. Real <a href="#s-n"> anchors, so they are shareable and work with JS off;
-// the click handler adds the smooth scroll, drawer close and hash update.
+// Contents list, grouped the way the live rail groups it: each chapter band is a small mono
+// label, its sections are the items beneath. Real <a href="#s-n"> anchors, so they are shareable
+// and work with JS off; the click handler adds the smooth scroll, drawer close and hash update.
+//
+// Two differences from the live TocNav, both because a generated chapter can have no sections:
+// the chapter label carries its number (the band on the page does too, and the reports cite
+// "§8"), and it turns green while the reader is in the chapter's own text — otherwise a chapter
+// without sections would never show as current.
 function TocNav({ toc, activeId, onGo, label }: { toc: TocItem[]; activeId: string; onGo: (id: string) => void; label: string }) {
     if (!toc.length) return null;
+    const chapters: { head?: TocItem; items: TocItem[] }[] = [];
+    for (const it of toc) {
+        if (it.level === 2 || !chapters.length) chapters.push({ head: it.level === 2 ? it : undefined, items: [] });
+        if (it.level === 3) chapters[chapters.length - 1].items.push(it);
+    }
     const go = (e: React.MouseEvent, id: string) => { e.preventDefault(); onGo(id); };
     return (
-        <nav className="flex-1 text-[13px]" aria-label={label}>
-            <div className="mb-1.5 font-mono text-[10px] uppercase tracking-[0.12em] text-[#86857e]">{label}</div>
-            <ul className="space-y-0.5">
-                {toc.map((it) => {
-                    const on = it.id === activeId;
-                    return (
-                        <li key={it.id}>
+        <nav className="flex-1 overflow-y-auto text-[13px]" aria-label={label}>
+            {chapters.map((ch, ci) => {
+                const headOn = !!ch.head && ch.head.id === activeId;
+                return (
+                    <div key={ch.head?.id ?? ci} className="mb-4">
+                        {ch.head && (
                             <a
-                                href={'#' + it.id}
-                                onClick={(e) => go(e, it.id)}
-                                aria-current={on ? 'true' : undefined}
-                                className={`block w-full rounded-[6px] px-2.5 py-1.5 text-left leading-snug transition-colors ${on ? 'bg-[#e7f3ec] font-semibold text-[#047857]' : 'text-[#5f5f5a] hover:bg-[#f1efe9] hover:text-[#1a1a1a]'}`}
+                                href={'#' + ch.head.id}
+                                onClick={(e) => go(e, ch.head!.id)}
+                                aria-current={headOn ? 'true' : undefined}
+                                className={`mb-1.5 block font-mono text-[10px] uppercase leading-snug tracking-[0.12em] transition-colors hover:text-[#047857] ${headOn ? 'text-[#047857]' : 'text-[#86857e]'}`}
                             >
-                                {it.title}
+                                <span className="mr-1.5 tracking-normal">{ch.head.n}</span>{ch.head.title}
                             </a>
-                        </li>
-                    );
-                })}
-            </ul>
+                        )}
+                        {ch.items.length > 0 && (
+                            <ul className="space-y-0.5">
+                                {ch.items.map((it) => {
+                                    const on = it.id === activeId;
+                                    return (
+                                        <li key={it.id}>
+                                            <a
+                                                href={'#' + it.id}
+                                                onClick={(e) => go(e, it.id)}
+                                                aria-current={on ? 'true' : undefined}
+                                                className={`block w-full rounded-[6px] px-2.5 py-1.5 text-left leading-snug transition-colors ${on ? 'bg-[#e7f3ec] font-semibold text-[#047857]' : 'text-[#5f5f5a] hover:bg-[#f1efe9] hover:text-[#1a1a1a]'}`}
+                                            >
+                                                {it.title}
+                                            </a>
+                                        </li>
+                                    );
+                                })}
+                            </ul>
+                        )}
+                    </div>
+                );
+            })}
         </nav>
     );
 }

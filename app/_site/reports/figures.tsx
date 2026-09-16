@@ -389,7 +389,7 @@ export function ReportFigure({ fig, caption, fallback }: { fig?: Fig; caption: s
         );
     }
     return (
-        <figure className="m-0 my-7 rounded-[14px] border border-[#e4e2dd] bg-[#fdfcf9] p-3 sm:p-4">
+        <figure className="m-0 my-7 rounded-[14px] border border-[#e4e2dd] bg-[#fdfcf9] p-3 shadow-[0_1px_3px_rgba(40,40,30,0.05)] sm:p-4">
             <figcaption className="mb-2 px-1 text-[13px] font-semibold text-[#1a1a1a]">{caption}</figcaption>
             <div style={{ height: fig.height, minHeight: 220, width: '100%' }}>
                 <PlotlyChart data={fig.traces as any} layout={fig.layout as any} config={CONFIG} guard={false} />

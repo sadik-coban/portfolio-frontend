@@ -90,7 +90,9 @@ export default function ReportPreview({
                 </p>
             )}
 
-            <div className="max-w-[860px]">
+            {/* The left padding is the live report's section gutter: the "[01]" of each section
+                sits in it, and the chapter bands pull back out across it. */}
+            <div className="max-w-[860px] sm:pl-14">
                 {doc.blocks.map((b, i) => (
                     b.type === 'figure'
                         ? <ReportFigure key={i} fig={figures[b.slug]} caption={b.caption} fallback={b.fallback} />
@@ -112,26 +114,21 @@ export default function ReportPreview({
 // min-content width, which is what actually stops the overflow inside the flex layout. Tables opt
 // back out: they already scroll inside their own box, and a figure split mid-number reads worse.
 //
-// Tables are styled where they are rendered (report-source.ts, the live report's <Table> look),
-// not here. `lang` is not decoration: the table headers are CSS capitals, and without it a Turkish
+// Headings, method notes and tables are styled where they are rendered (report-source.ts, in the
+// live report's look), not here. `lang` is not decoration: the table headers are CSS capitals, and without it a Turkish
 // "tekil ilan" capitalises to "TEKIL ILAN" instead of "TEKİL İLAN".
 function Prose({ html, lang }: { html: string; lang: ReportLang }) {
     return (
         <div
             lang={lang}
             className="prose prose-neutral max-w-none [overflow-wrap:anywhere] [&_table]:[overflow-wrap:normal]
-                prose-headings:font-semibold prose-headings:tracking-[-0.025em] prose-headings:text-[#1a1a1a]
                 prose-h1:hidden
-                prose-h2:mt-12 prose-h2:mb-4 prose-h2:scroll-mt-[84px] prose-h2:text-[21px] sm:prose-h2:text-[23px]
-                prose-h3:mt-8 prose-h3:mb-3 prose-h3:text-[17px]
-                prose-p:max-w-[70ch] prose-p:text-[15px] prose-p:leading-[1.7] prose-p:text-[#33332f] sm:prose-p:text-[16px]
-                prose-li:max-w-[70ch] prose-li:text-[15px] prose-li:leading-[1.65] prose-li:text-[#33332f]
+                prose-p:max-w-[680px] prose-p:text-[15px] prose-p:leading-[1.7] prose-p:text-[#33332f] sm:prose-p:text-[16px]
+                prose-li:max-w-[680px] prose-li:text-[15px] prose-li:leading-[1.65] prose-li:text-[#33332f]
                 prose-strong:font-semibold prose-strong:text-[#1a1a1a]
                 prose-a:text-[#047857] prose-a:no-underline hover:prose-a:underline
-                prose-blockquote:max-w-[70ch] prose-blockquote:border-l-[3px] prose-blockquote:border-[#059669]
-                prose-blockquote:pl-5 prose-blockquote:not-italic prose-blockquote:font-normal prose-blockquote:text-[#5f5f5a]
                 prose-hr:border-[#e9e7e2]
-                [&_td_code]:[font-size:inherit] [&_td_code]:px-1
+                [&_td_code]:[font-size:inherit] [&_td_code]:px-1 [&_blockquote_code]:[font-size:inherit] [&_blockquote_code]:px-1
                 [&_code]:rounded-[5px] [&_code]:bg-[#f3f1ec] [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:font-mono [&_code]:text-[13px] [&_code]:text-[#047857]
                 [&_code]:before:content-[''] [&_code]:after:content-['']"
             dangerouslySetInnerHTML={{ __html: html }}

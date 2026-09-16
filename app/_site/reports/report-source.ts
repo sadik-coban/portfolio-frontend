@@ -32,20 +32,70 @@ const FIGURE_LINE = /^!\[([^\]]*)\]\(figures\/(?:tr|en)-([a-z0-9-]+)\.png\)\s*$/
 type HastNode = { type: string; tagName?: string; properties?: Record<string, unknown>; children?: HastNode[] };
 
 /**
- * Gives every section heading a positional id (s-1, s-2, …) and marks it for the contents list.
+ * Turns the generator's two heading levels into the live report's notebook structure.
  *
- * Positional rather than slugged from the text, on purpose: the page swaps language in place,
- * and a slug like "ne-kadar-degerinde" does not exist in the English document, so a link copied
- * in Turkish would break the moment you switch. The generator emits the two languages with an
- * identical heading structure (checked: h2 counts match in all eight documents), so section 3 is
- * #s-3 in both — a shared link and the reader's place both survive the toggle.
+ * The live pages (FinalReportLab, FinalTextAnalysis) are chapters and sections: a chapter band —
+ * green rule, "01" and the title in mono capitals — then sections with a big title and an
+ * execution-count "[01]" in the left gutter, restarting in every chapter. The generator writes
+ * `## 1. Title` and `### Title`, the same two-level shape, so h2 becomes the band and h3 the
+ * section, and the contents rail can group them the way the live rail does.
  *
- * The counter is shared across the chunks one document is rendered in; ids stay unique per page.
+ * The number leaves the heading's text for data-n and is drawn by ::before. The text is what the
+ * contents rail and the phone title bar read, and neither should say "1. " or "[01]". A decision
+ * note's headings carry no number, so its bands are numbered by position.
+ *
+ * Ids are positional (s-2, s-2-3) rather than slugs: the page swaps language in place, and a slug
+ * does not exist in the other language. TR and EN share the heading structure (checked, h2 and h3,
+ * all eight documents), so a shared link and the reader's place both survive the toggle. The
+ * counter is shared across the chunks one document is rendered in.
  */
-const sectionIds = (counter: { n: number }) => () => (tree: HastNode) => {
+const H2_BAND = 'not-prose mb-8 mt-16 flex scroll-mt-[84px] items-center gap-3 border-t-2 border-[#047857]/25 pt-6 font-mono text-[13px] font-normal uppercase leading-snug tracking-[0.16em] text-[#5f5f5a] sm:-ml-14 before:shrink-0 before:text-[12px] before:font-bold before:tracking-normal before:text-[#047857] before:content-[attr(data-n)]';
+const H3_SECTION = 'not-prose group relative mb-3 mt-12 scroll-mt-[84px] text-[21px] font-semibold leading-[1.3] tracking-[-0.028em] text-[#1a1a1a] sm:text-[23px] before:mr-3 before:font-mono before:text-[13px] before:font-bold before:tracking-normal before:text-[#047857] before:content-[attr(data-n)] sm:before:absolute sm:before:-left-14 sm:before:top-[7px] sm:before:mr-0 sm:before:w-11 sm:before:text-right sm:before:text-[12px] sm:before:font-normal sm:before:tabular-nums sm:before:text-[#9a9a92] sm:before:transition-colors sm:hover:before:text-[#047857]';
+
+const pad2 = (n: number) => String(n).padStart(2, '0');
+
+const headings = (counter: { h2: number; h3: number }) => () => (tree: HastNode) => {
     const walk = (node: HastNode) => {
-        if (node.type === 'element' && node.tagName === 'h2') {
-            node.properties = { ...(node.properties || {}), id: `s-${++counter.n}`, dataToc: '' };
+        if (node.type === 'element' && (node.tagName === 'h2' || node.tagName === 'h3')) {
+            if (node.tagName === 'h2') {
+                counter.h2 += 1;
+                counter.h3 = 0;
+                const first = node.children?.[0] as (HastNode & { value?: string }) | undefined;
+                const hit = first?.type === 'text' ? first.value?.match(/^\s*(\d+)\.\s+/) : null;
+                if (hit && first) first.value = first.value!.slice(hit[0].length);
+                node.properties = {
+                    ...(node.properties || {}), id: `s-${counter.h2}`, dataToc: '2',
+                    dataN: pad2(hit ? Number(hit[1]) : counter.h2), className: H2_BAND.split(' '),
+                };
+            } else {
+                counter.h3 += 1;
+                node.properties = {
+                    ...(node.properties || {}), id: `s-${counter.h2}-${counter.h3}`, dataToc: '3',
+                    dataN: `[${pad2(counter.h3)}]`, className: H3_SECTION.split(' '),
+                };
+            }
+        }
+        node.children?.forEach(walk);
+    };
+    walk(tree);
+};
+
+/**
+ * Blockquotes become the live report's method notes (<Method>): a grey mono box opened by a green
+ * "// ". The generator uses blockquotes for exactly that — provenance lines and "Not —" caveats.
+ */
+const METHOD_NOTE = 'not-prose my-6 rounded-[10px] border border-[#e9e7e2] bg-[#f3f1ec] px-4 py-3 font-mono text-[12px] leading-[1.6] text-[#5f5f5a] [&_a]:text-[#047857] [&_a]:underline [&_a]:underline-offset-2 [&_strong]:font-semibold [&_strong]:text-[#33332f] [&>p+p]:mt-2';
+
+const methodNotes = () => (tree: HastNode) => {
+    const walk = (node: HastNode) => {
+        if (node.type === 'element' && node.tagName === 'blockquote') {
+            node.properties = { ...(node.properties || {}), className: METHOD_NOTE.split(' ') };
+            const firstP = node.children?.find((c) => c.type === 'element' && c.tagName === 'p');
+            firstP?.children?.unshift({
+                type: 'element', tagName: 'span', properties: { className: ['text-[#047857]'] },
+                children: [{ type: 'text', value: '// ' } as HastNode],
+            });
+            return;
         }
         node.children?.forEach(walk);
     };
@@ -107,13 +157,14 @@ const tableStyle = () => (tree: HastNode) => {
     walk(tree);
 };
 
-const toHtml = async (md: string, counter: { n: number }) => {
+const toHtml = async (md: string, counter: { h2: number; h3: number }) => {
     if (!md.trim()) return '';
     const file = await unified()
         .use(remarkParse)
         .use(remarkGfm)                    // the business notes are table-heavy
         .use(remarkRehype)
-        .use(sectionIds(counter))
+        .use(headings(counter))
+        .use(methodNotes)
         .use(tableStyle)
         .use(rehypeStringify)
         .process(md);
@@ -132,7 +183,7 @@ export const getReport = cache(async (
 
     const blocks: Block[] = [];
     let buffer: string[] = [];
-    const counter = { n: 0 };
+    const counter = { h2: 0, h3: 0 };
     const flush = async () => {
         const html = await toHtml(buffer.join('\n'), counter);
         if (html) blocks.push({ type: 'html', html });
