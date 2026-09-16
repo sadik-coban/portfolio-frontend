@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Car, Zap, Award, AlertTriangle, Loader2 } from 'lucide-react';
 import { carService } from '@/lib/services/car-service';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,10 @@ import { cn } from '@/lib/utils';
 import FinalShell from '../FinalShell';
 import * as LBL from '@/lib/labels';
 import { useLang } from '../i18n';
+// Five real listings picked for the demo (not heavy-damaged, common trims, the model within ±3% of
+// their price out of fold). `input` is the exact /api/predict body; `year` + `panels` are what this
+// form holds, and buildPayload() turns them back into that same body.
+import EXAMPLES from './examples.json';
 
 const FIELD = "w-full h-12 bg-[#f7f6f3] border-[#d8d6d0] rounded-[10px] px-4 text-base text-[#1a1a1a] focus:border-[#047857]";
 const CURRENT_YEAR = 2026;
@@ -56,57 +60,110 @@ const emptyPanels = (): Record<string, PanelState> =>
 const countBy = (panels: Record<string, PanelState>, keys: readonly string[], s: PanelState) =>
     keys.reduce((n, k) => n + (panels[k] === s ? 1 : 0), 0);
 
+type Example = (typeof EXAMPLES.examples)[number];
+
+const DEFAULT_FORM = {
+    brand: 'bmw', series: '', model: '',
+    kb_body_type: 'Sedan', kb_drivetrain: 'Arkadan İtiş', segment: 'D',
+    kb_transmission: 'Otomatik', kb_fuel: 'Benzin',
+    year: 2020, gb_mileage: 50000, power_hp_val: 170, engine_cc_val: 1598,
+    is_heavy_damaged: 0,
+};
+type Form = typeof DEFAULT_FORM;
+
+// The /api/predict body, from what the form holds.
+const buildPayload = (form: Form, panels: Record<string, PanelState>) => ({
+    brand: form.brand, series: form.series, model: form.model,
+    kb_body_type: form.kb_body_type, kb_drivetrain: form.kb_drivetrain, segment: form.segment,
+    kb_transmission: form.kb_transmission, kb_fuel: form.kb_fuel,
+    vehicle_age: Math.max(0, CURRENT_YEAR - Number(form.year)),
+    gb_mileage: Number(form.gb_mileage), power_hp_val: Number(form.power_hp_val),
+    engine_cc_val: Number(form.engine_cc_val),
+    // Single panels pass their state through; group panels collapse to per-operation
+    // counts — the same derivation the training pipeline used.
+    roof_state: panels.roof, hood_state: panels.hood, trunk_state: panels.trunk,
+    door_changed: countBy(panels, DOORS, 'changed'), door_painted: countBy(panels, DOORS, 'painted'), door_local: countBy(panels, DOORS, 'local'),
+    fender_changed: countBy(panels, FENDERS, 'changed'), fender_painted: countBy(panels, FENDERS, 'painted'), fender_local: countBy(panels, FENDERS, 'local'),
+    bumper_changed: countBy(panels, BUMPERS, 'changed'), bumper_painted: countBy(panels, BUMPERS, 'painted'), bumper_local: countBy(panels, BUMPERS, 'local'),
+    is_heavy_damaged: form.is_heavy_damaged,
+});
+
 export default function FinalPredict() {
     const { t, lang } = useLang();
     const L = (tr: string, en: string) => (lang === 'tr' ? tr : en);
     const [loading, setLoading] = useState(false);
-    const [result, setResult] = useState<any>(null);
+    // /api/predict response (backend: LightGBM · TF-IDF+SVD)
+    const [result, setResult] = useState<{ price: number; price_range?: { min: number; max: number; margin_percent: number }; model?: string } | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [seriesDict, setSeriesDict] = useState<{ b: number; name: string }[]>([]);
 
-    const [form, setForm] = useState({
-        brand: 'bmw', series: '', model: '',
-        kb_body_type: 'Sedan', kb_drivetrain: 'Arkadan İtiş', segment: 'D',
-        kb_transmission: 'Otomatik', kb_fuel: 'Benzin',
-        year: 2020, gb_mileage: 50000, power_hp_val: 170, engine_cc_val: 1598,
-        is_heavy_damaged: 0,
-    });
+    const [form, setForm] = useState<Form>(DEFAULT_FORM);
     // Damage is held per physical panel; the model's fields are derived from this on submit.
     const [panels, setPanels] = useState<Record<string, PanelState>>(emptyPanels);
-    const cyclePanel = (k: string) => setPanels((p) => {
-        const order: PanelState[] = ['original', 'local', 'painted', 'changed'];
-        return { ...p, [k]: order[(order.indexOf(p[k]) + 1) % order.length] };
-    });
+    // The example the form currently holds, untouched. Any edit clears it: the listing price is only
+    // a fair comparison for that exact car.
+    const [activeEx, setActiveEx] = useState<Example | null>(null);
+    const cyclePanel = (k: string) => {
+        setActiveEx(null);
+        setPanels((p) => {
+            const order: PanelState[] = ['original', 'local', 'painted', 'changed'];
+            return { ...p, [k]: order[(order.indexOf(p[k]) + 1) % order.length] };
+        });
+    };
     const damagedCount = Object.values(panels).filter((s) => s !== 'original').length;
-    const set = (patch: Partial<typeof form>) => setForm((p) => ({ ...p, ...patch }));
+    const set = (patch: Partial<Form>) => { setActiveEx(null); setForm((p) => ({ ...p, ...patch })); };
 
     useEffect(() => { carService.getBiMeta().then((m) => setSeriesDict(m.dict.series)).catch(() => {}); }, []);
     const bIdx = form.brand === 'bmw' ? 0 : 1;
-    const seriesOptions = [...new Set(seriesDict.filter((s) => s.b === bIdx).map((s) => s.name))].sort((a, b) => a.localeCompare(b, 'tr'));
+    // The chosen series is always an option, so an example's series shows even before (or without)
+    // the series list arriving from the API.
+    const seriesOptions = [...new Set([...seriesDict.filter((s) => s.b === bIdx).map((s) => s.name), ...(form.series ? [form.series] : [])])]
+        .sort((a, b) => a.localeCompare(b, 'tr'));
 
-    const handlePredict = async () => {
+    const resultRef = useRef<HTMLDivElement>(null);
+    const errorRef = useRef<HTMLDivElement>(null);
+    // Only the newest request may write the result: tapping a second example while the first is
+    // still in flight must not end with the first car's price.
+    const reqRef = useRef(0);
+
+    const runPredict = async (f: Form, p: Record<string, PanelState>, fromExample = false) => {
         setError(null);
-        if (!form.series || !form.model) { setError(t('pr.errFields')); return; }
+        if (!f.series || !f.model) { setError(t('pr.errFields')); return; }
+        const req = ++reqRef.current;
         setLoading(true); setResult(null);
+        const smooth = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
         try {
-            const payload = {
-                brand: form.brand, series: form.series, model: form.model,
-                kb_body_type: form.kb_body_type, kb_drivetrain: form.kb_drivetrain, segment: form.segment,
-                kb_transmission: form.kb_transmission, kb_fuel: form.kb_fuel,
-                vehicle_age: Math.max(0, CURRENT_YEAR - Number(form.year)),
-                gb_mileage: Number(form.gb_mileage), power_hp_val: Number(form.power_hp_val),
-                engine_cc_val: Number(form.engine_cc_val),
-                // Single panels pass their state through; group panels collapse to per-operation
-                // counts — the same derivation the training pipeline used.
-                roof_state: panels.roof, hood_state: panels.hood, trunk_state: panels.trunk,
-                door_changed: countBy(panels, DOORS, 'changed'), door_painted: countBy(panels, DOORS, 'painted'), door_local: countBy(panels, DOORS, 'local'),
-                fender_changed: countBy(panels, FENDERS, 'changed'), fender_painted: countBy(panels, FENDERS, 'painted'), fender_local: countBy(panels, FENDERS, 'local'),
-                bumper_changed: countBy(panels, BUMPERS, 'changed'), bumper_painted: countBy(panels, BUMPERS, 'painted'), bumper_local: countBy(panels, BUMPERS, 'local'),
-                is_heavy_damaged: form.is_heavy_damaged,
-            };
-            setResult(await carService.predictBest(payload));
-        } catch { setError(t('pr.errFail')); } finally { setLoading(false); }
+            const res = await carService.predictBest(buildPayload(f, p));
+            if (req !== reqRef.current) return;
+            setResult(res);
+            // On a phone the result sits below the whole form; bring it up after an example tap.
+            if (fromExample && window.matchMedia('(max-width: 1279px)').matches) {
+                requestAnimationFrame(() => resultRef.current?.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto', block: 'start' }));
+            }
+        } catch {
+            if (req !== reqRef.current) return;
+            setError(t('pr.errFail'));
+            if (fromExample) requestAnimationFrame(() => errorRef.current?.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto', block: 'center' }));
+        } finally {
+            if (req === reqRef.current) setLoading(false);
+        }
     };
+    const handlePredict = () => runPredict(form, panels);
+
+    const applyExample = (ex: Example) => {
+        const i = ex.input;
+        const f: Form = {
+            brand: i.brand, series: i.series, model: i.model,
+            kb_body_type: i.kb_body_type, kb_drivetrain: i.kb_drivetrain, segment: i.segment,
+            kb_transmission: i.kb_transmission, kb_fuel: i.kb_fuel,
+            year: ex.year, gb_mileage: i.gb_mileage, power_hp_val: i.power_hp_val, engine_cc_val: i.engine_cc_val,
+            is_heavy_damaged: i.is_heavy_damaged,
+        };
+        const p = { ...emptyPanels(), ...(ex.panels as Record<string, PanelState>) };
+        setForm(f); setPanels(p); setActiveEx(ex);
+        runPredict(f, p, true);
+    };
+    const exDiff = activeEx && result?.price ? ((result.price - activeEx.reference.listing_price) / activeEx.reference.listing_price) * 100 : null;
 
     const Section = ({ title, icon: Icon, danger }: any) => (
         <h3 className={cn("text-base font-semibold mb-5 flex items-center gap-2 border-b border-[#e9e7e2] pb-3 text-[#1a1a1a]", danger ? 'text-amber-600' : '')}>
@@ -126,6 +183,46 @@ export default function FinalPredict() {
     return (
         <FinalShell active="predict" kicker={t('pr.kicker')} title={t('pr.title')}>
             <p className="mb-6 max-w-[580px] text-[15px] leading-[1.6] text-[#5f5f5a]">{t('pr.desc')}</p>
+
+            {/* EXAMPLES — a swipeable row on a phone, a grid from sm up */}
+            <section aria-labelledby="pr-examples" className="mb-6">
+                <div className="mb-3 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+                    <h2 id="pr-examples" className="font-mono text-[11px] uppercase tracking-[0.12em] text-[#86857e]">{L('Örnek araçlar', 'Example cars')}</h2>
+                    <p className="text-[12px] text-[#9a9a92]">{L('Birine dokun: form dolar, tahmin hemen çalışır.', 'Tap one: the form fills in and the prediction runs.')}</p>
+                </div>
+                <div className="flex snap-x gap-3 overflow-x-auto pb-2 sm:grid sm:grid-cols-2 sm:overflow-visible sm:pb-0 lg:grid-cols-3 2xl:grid-cols-5">
+                    {EXAMPLES.examples.map((ex) => {
+                        const on = activeEx?.id === ex.id;
+                        return (
+                            <button
+                                key={ex.id}
+                                type="button"
+                                onClick={() => applyExample(ex)}
+                                aria-pressed={on}
+                                className={cn(
+                                    'flex w-[240px] shrink-0 snap-start flex-col rounded-[12px] border p-4 text-left transition-colors sm:w-auto',
+                                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#047857] focus-visible:ring-offset-1',
+                                    on ? 'border-[#047857] bg-[#f1f8f4]' : 'border-[#e4e2dd] bg-[#fdfcf9] hover:border-[#b9d9c8]',
+                                )}
+                            >
+                                {/* not CSS-uppercased: the site is lang="en", which would turn "Serisi" into "SERISI" */}
+                                <span className="font-mono text-[11px] text-[#86857e]">{ex.input.series} · {L('segment', 'segment')} {ex.input.segment}</span>
+                                <span className="mt-1 text-[14px] font-semibold leading-snug text-[#1a1a1a]">{ex.title}</span>
+                                <span className="mt-1 font-mono text-[11px] text-[#5f5f5a]">{L(ex.subtitle.tr, ex.subtitle.en)}</span>
+                                <span className="mb-3 mt-2 line-clamp-2 text-[12px] leading-[1.45] text-[#86857e]">{L(ex.why.tr, ex.why.en)}</span>
+                                <span className="mt-auto flex items-center justify-between gap-2 border-t border-[#ece9e3] pt-2.5 font-mono text-[11px]">
+                                    <span className="text-[#86857e]">{L('ilan fiyatı', 'listing')}</span>
+                                    <span className="flex items-center gap-1.5 font-semibold tabular-nums text-[#1a1a1a]">
+                                        {on && loading && <Loader2 size={12} className="animate-spin text-[#047857]" />}
+                                        {ex.reference.listing_price.toLocaleString('en-US')}
+                                    </span>
+                                </span>
+                            </button>
+                        );
+                    })}
+                </div>
+            </section>
+
             <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
                 {/* FORM */}
                 <div className="xl:col-span-8">
@@ -202,7 +299,7 @@ export default function FinalPredict() {
                                                 : L('Tüm paneller orijinal', 'All panels original')}
                                         </span>
                                         {damagedCount > 0 && (
-                                            <button type="button" onClick={() => setPanels(emptyPanels())} className="text-[12px] font-medium text-[#047857] hover:underline">
+                                            <button type="button" onClick={() => { setActiveEx(null); setPanels(emptyPanels()); }} className="text-[12px] font-medium text-[#047857] hover:underline">
                                                 {L('sıfırla', 'reset')}
                                             </button>
                                         )}
@@ -221,7 +318,7 @@ export default function FinalPredict() {
                             {loading ? <><Loader2 className="animate-spin mr-2 w-5 h-5" /> {t('pr.calculating')}</> : <><Zap className="mr-2 w-5 h-5" /> {t('pr.calculate')}</>}
                         </Button>
                         {error && (
-                            <div className="mt-4 p-3 bg-[#ef4444]/10 text-[#ef4444] text-sm text-center rounded-xl flex items-center justify-center gap-2">
+                            <div ref={errorRef} className="mt-4 p-3 bg-[#ef4444]/10 text-[#ef4444] text-sm text-center rounded-xl flex items-center justify-center gap-2">
                                 <AlertTriangle size={16} /> {error}
                             </div>
                         )}
@@ -229,7 +326,7 @@ export default function FinalPredict() {
                 </div>
 
                 {/* RESULT */}
-                <div className="xl:col-span-4">
+                <div ref={resultRef} className="scroll-mt-20 xl:col-span-4">
                     <div className="sticky top-6">
                         <div className={cn("rounded-[14px] border border-[#e4e2dd] bg-[#fdfcf9] p-8 transition-all shadow-[0_1px_3px_rgba(40,40,30,0.05)]", result ? "opacity-100" : "opacity-70")}>
                             <div className="text-center">
@@ -247,6 +344,24 @@ export default function FinalPredict() {
                                             <div className="font-mono text-[11px] text-[#047857] font-semibold">{result.model}</div>
                                             <div className="font-mono text-[11px] text-[#5f5f5a] mt-0.5">±{result.price_range?.margin_percent}% · {L('OOF MAPE bandı', 'OOF MAPE band')}</div>
                                         </div>
+                                        {activeEx && exDiff != null && (
+                                            <div className="mt-3 rounded-[12px] border border-[#e4e2dd] bg-[#f7f6f3] p-3 text-left">
+                                                <div className="flex items-baseline justify-between gap-3 font-mono text-[11px]">
+                                                    <span className="text-[#86857e]">{L('Gerçek ilan fiyatı', 'Actual listing price')}</span>
+                                                    <span className="font-semibold tabular-nums text-[#1a1a1a]">{activeEx.reference.listing_price.toLocaleString('en-US')}</span>
+                                                </div>
+                                                <div className="mt-1 flex items-baseline justify-between gap-3 font-mono text-[11px]">
+                                                    <span className="text-[#86857e]">{L('Tahmin farkı', 'Prediction off by')}</span>
+                                                    {/* green when the listing sits inside the quoted band */}
+                                                    <span className={cn('font-semibold tabular-nums', Math.abs(exDiff) <= (result.price_range?.margin_percent ?? 0) ? 'text-[#047857]' : 'text-[#b45309]')}>
+                                                        {exDiff >= 0 ? '+' : ''}{exDiff.toFixed(1)}%
+                                                    </span>
+                                                </div>
+                                                <p className="mt-2 text-[11px] leading-snug text-[#86857e]">
+                                                    {L(`${activeEx.title} — veri setindeki gerçek bir ilan.`, `${activeEx.title} — a real listing from the data set.`)}
+                                                </p>
+                                            </div>
+                                        )}
                                     </>
                                 ) : (
                                     <div className="h-36 flex flex-col items-center justify-center text-[#9a9a92] gap-3 border-2 border-dashed border-[#e4e2dd] rounded-[14px]">
