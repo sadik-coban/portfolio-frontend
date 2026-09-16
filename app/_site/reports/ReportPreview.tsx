@@ -102,10 +102,19 @@ export default function ReportPreview({
 }
 
 // The generator owns the words; this only gives them the site's typography.
+//
+// overflow-wrap:anywhere is what keeps a phone from scrolling sideways. The reports quote file
+// paths as inline code, and a path has no break opportunity — worse in Turkish, where a case
+// suffix attaches with an apostrophe ("…/extraction_results.jsonl'dan") and the path plus the
+// suffix become one unbreakable run. Measured on the text technical report at 393px: that run
+// pushed the page to 406px in TR while EN fit. `anywhere` breaks only a run that cannot fit on a
+// line of its own, so ordinary words are untouched; unlike `break-word` it also lowers the
+// min-content width, which is what actually stops the overflow inside the flex layout. Tables opt
+// back out: they already scroll inside their own box, and a figure split mid-number reads worse.
 function Prose({ html }: { html: string }) {
     return (
         <div
-            className="prose prose-neutral max-w-none
+            className="prose prose-neutral max-w-none [overflow-wrap:anywhere] [&_table]:[overflow-wrap:normal]
                 prose-headings:font-semibold prose-headings:tracking-[-0.025em] prose-headings:text-[#1a1a1a]
                 prose-h1:hidden
                 prose-h2:mt-12 prose-h2:mb-4 prose-h2:scroll-mt-[84px] prose-h2:text-[21px] sm:prose-h2:text-[23px]
