@@ -10,6 +10,8 @@ Galerinin refleksi — *aynı model, aynı yıl, medyana bak* — ortalama **₺
 
 Kapattığı şey model+yılın ötesi: kilometre, hasar, motor.
 
+![Ortalama hata: galeri refleksi vs model](figures/tr-00-base-vs-model.png)
+
 **Emsal yoksa taban çöküyor.** Model her yerde aynı kalıyor:
 
 | taban basamağı | ilan | pay | ortalama hata |
@@ -26,7 +28,7 @@ Yaş yılda **%7.1**, kilometre her 100 bin km'de **%14.6** değer kaybettiriyor
 
 ![Kilometreye göre fiyat (medyan + ort.)](figures/tr-06-km-price.png)
 
-Piyasa üç gruba ayrılıyor (denetimsiz kümeleme, k=3):
+Denetimsiz kümeleme piyasayı 3 profile ayırıyor (k=3 yorumlanabilirlik için sabit seçildi; veride belirgin doğal küme yok — bkz. teknik §8):
 
 | küme | ilan | medyan | yaş | km | motor (hp) | ağır hasar |
 |---|---:|---:|---:|---:|---:|---:|
@@ -46,7 +48,11 @@ Piyasa üç gruba ayrılıyor (denetimsiz kümeleme, k=3):
 
 Model ucuz araçlarda zorlanıyor — hata fiyat çeyreğine göre belirgin değişiyor.
 
-![Fiyat çeyreğine göre hata (MAPE %)](figures/tr-10-quartile-error.png)
+![Fiyat çeyreğine göre medyan hata (%)](figures/tr-10-quartile-error.png)
+
+### Neden tek sayı değil aralık
+
+İlan fiyatında iki yönlü hata da para kaybettirir: **fazla tahmin alıcıya**, pahalı alınan araç olarak; **düşük tahmin satıcıya**, ucuza giden araç olarak patlar. Tek sayı ne kadar emin olunduğunu saklar; aralık bunu söyler ve kullanıcıyı belirsizliğin büyük olduğu yerde uyarır.
 
 Bu yüzden çıktı tek sayı değil, **%90 aralık**. Ama aralık ucuz araçlarda tutmuyor: en ucuz çeyrekte gerçek kapsama **%81.6**, hedefin altında.
 

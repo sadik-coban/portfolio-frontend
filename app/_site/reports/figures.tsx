@@ -14,9 +14,9 @@ import * as LBL from '@/lib/labels';
 // Native Plotly for the figures the analysis pipeline ships as PNGs.
 //
 // The pipeline draws its figures with matplotlib and writes them next to the markdown. The
-// site already had all 25 of those charts as interactive Plotly — the mapping is 1:1, slug for
-// slug — so nothing new is invented here: the trace builders are the ones FinalReportLab
-// already uses, keyed by the pipeline's figure slug so the markdown can ask for one by name.
+// site already had those charts as interactive Plotly — the mapping is 1:1, slug for slug — so
+// nothing new is invented here: the trace builders are the ones FinalReportLab already uses,
+// keyed by the pipeline's figure slug so the markdown can ask for one by name.
 //
 // The data is public/report-data.json, the current pipeline run. That matters: the site's
 // older public/site_data.json disagrees with the report text it would sit next to (MAPE 6.49
@@ -70,8 +70,20 @@ export function buildReportFigures(d: any, lang: Lang): Record<string, Fig> {
         out[slug] = { traces: Array.isArray(traces) ? traces.filter(Boolean) : [traces], layout, height };
     };
 
+    // ---------- the headline: the dealer's reflex vs the model ----------
+    // Same two numbers the generator draws (build_report.py derive(): model_compare.lightgbm and
+    // model_yil_medyani.taban) — the report names LightGBM as "the model" even where CatBoost
+    // edges it on MAPE, so the variant table's winner is not the right source here.
+    const fmtK = (n: number) => '₺' + Math.round(n / 1e3).toLocaleString(loc) + 'K';
+    const baseMae = dom.model_yil_medyani?.taban?.MAE, modelMae = dom.model_compare?.lightgbm?.MAE;
+    put('00-base-vs-model', (baseMae != null && modelMae != null) ? [{
+        type: 'bar', x: [L('model+yıl medyanı', 'model+year median'), 'model'], y: [baseMae, modelMae],
+        marker: { color: ['#b8b6ae', green] }, text: [fmtK(baseMae), fmtK(modelMae)], textposition: 'outside', cliponaxis: false,
+        hovertemplate: '%{x}: %{text}<extra></extra>',
+    }] : null, base({ margin: { t: 24, r: 16, b: 28, l: 8 }, yaxis: { tickformat: '~s', title: { text: L('ortalama mutlak hata (₺)', 'mean absolute error (₺)'), font: { size: 10 } } } }), 260);
+
     // ---------- market shape ----------
-    const body = [...(dom.body_median || [])].filter((r: any) => r[0] && r[0] !== 'missing').sort((a: any, b: any) => a[1] - b[1]);
+    const body =[...(dom.body_median || [])].filter((r: any) => r[0] && r[0] !== 'missing').sort((a: any, b: any) => a[1] - b[1]);
     put('01-body-median',
         [{ type: 'bar', orientation: 'h', y: body.map((r: any) => r[0]), x: body.map((r: any) => r[1]), marker: { color: green }, hovertemplate: '%{y}: %{customdata}<extra></extra>', customdata: body.map((r: any) => fmtM(r[1])) }],
         base({ margin: { t: 8, r: 16, b: 24, l: 8 } }), 300);
@@ -127,9 +139,10 @@ export function buildReportFigures(d: any, lang: Lang): Record<string, Fig> {
     put('09-residual', (resObj && diagRes) ? [hb2d(resObj.points), scOut(diagRes.outliers)] : null,
         base({ margin: { t: 8, r: 12, b: 34, l: 42 }, xaxis: { title: { text: L('tahmin ₺', 'pred ₺'), font: { size: 10 } }, tickformat: '~s' }, yaxis: { ticksuffix: '%' }, shapes: [{ type: 'line', xref: 'paper', x0: 0, x1: 1, yref: 'y', y0: 0, y1: 0, line: { dash: 'dash', color: '#86857e', width: 1 } }] }), 320);
 
+    // Median APE per quartile, not MAPE — the export's name hides that (the generator notes it).
     const qe = dom.quantile_error || [];
-    put('10-quartile-error', qe.length ? [{ type: 'bar', x: qe.map((r: any) => r[0]), y: qe.map((r: any) => r[1]), marker: { color: green }, text: qe.map((r: any) => r[1].toFixed(1)), textposition: 'outside', hovertemplate: '%{x}: %{y:.1f}<extra></extra>' }] : null,
-        base({ margin: { t: 24, r: 16, b: 24, l: 8 } }), 260);
+    put('10-quartile-error', qe.length ? [{ type: 'bar', x: qe.map((r: any) => r[0]), y: qe.map((r: any) => r[1]), marker: { color: green }, text: qe.map((r: any) => r[1].toFixed(1)), textposition: 'outside', hovertemplate: '%{x}: %{y:.1f}% ' + L('medyan mutlak hata', 'median absolute error') + '<extra></extra>' }] : null,
+        base({ margin: { t: 24, r: 16, b: 24, l: 8 }, yaxis: { title: { text: L('medyan mutlak hata %', 'median absolute error %'), font: { size: 10 } } } }), 260);
 
     const rvn = dom.residual_vs_n || [];
     put('11-n-vs-error', rvn.length ? [{ type: 'scatter', mode: 'markers', x: rvn.map((r: any) => r[0]), y: rvn.map((r: any) => r[1]), marker: { size: 6, color: green, opacity: 0.5 }, hovertemplate: '%{x} ' + L('ilan', 'listings') + ' · %{y:.1f}<extra></extra>' }] : null,
@@ -240,10 +253,37 @@ export function buildReportFigures(d: any, lang: Lang): Record<string, Fig> {
 /**
  * The seven text-analysis figures, from public/text_data.json.
  *
- * That file, unlike site_data.json, is current — its equipment coverage matches the pipeline's
- * metrics exactly (35.9%, n=10,755) — so the charts agree with the report text beside them.
- * Builders are the ones FinalTextAnalysis already uses.
+ * Every value these charts read matches the pipeline's metrics/*.json (checked field by field
+ * against the 2026-09-16 run). One name does not: the pipeline renamed the contradiction flag,
+ * so it is mapped below. Builders are the ones FinalTextAnalysis already uses.
+ *
+ * The labels are not lib/labels. Each chart sits next to a table the generator wrote, and the two
+ * must name a signal the same way, so they mirror build_text_report.py (COEF_TR / COEF_EN,
+ * CLAIM_EN, COUNT_KEY). lib/labels stays as it is — the live text-analysis page still uses it.
  */
+const COEF_RENAMED: Record<string, string> = {
+    "Aldatıcı 'temiz' iddiası (gizli hasar)": "Çelişkili 'temiz' beyanı (satıcının formu hasar gösteriyor)",
+};
+const COEF_TR: Record<string, string> = {
+    'Premium audio': 'Premium ses sistemi', 'Mod suspension': 'Modifiye süspansiyon', 'Mod exhaust': 'Modifiye egzoz',
+    'Mod engine/tune': 'Modifiye motor / yazılım', 'Navigation': 'Navigasyon', 'Heated seats': 'Isıtmalı koltuk',
+    'Panoramic roof': 'Panoramik tavan', 'Driver assist': 'Sürüş asistanı', 'Mod wheels/body': 'Modifiye jant / kaporta',
+    'Leather seats': 'Deri koltuk',
+};
+const COEF_EN: Record<string, string> = {
+    'Servis kayıtlı': 'Service history', 'Yetkili servis': 'Franchised service', 'Garanti': 'Warranty',
+    "Çelişkili 'temiz' beyanı (satıcının formu hasar gösteriyor)": "Contradictory 'clean' claim (seller's own form shows damage)",
+};
+const CLAIM_EN: Record<string, string> = {
+    'değişensiz ama değişen var': "'no replaced parts' but has replaced",
+    'boyasız ama boya var': "'no paint' but has paint",
+    'blanket temiz ama yapısal hasar': "blanket 'clean' but structural damage",
+};
+const COUNT_KEY: Record<string, [string, string]> = {
+    year: ['yıl', 'year'], hp: ['hp', 'hp'], model: ['model', 'model'], fuel: ['yakıt', 'fuel'],
+    transmission: ['vites', 'transmission'], body: ['kasa', 'body'], drivetrain: ['çekiş', 'drivetrain'],
+    engine_cc: ['motor hacmi', 'engine size'],
+};
 export function buildTextFigures(d: any, lang: Lang): Record<string, Fig> {
     if (!d) return {};
 
@@ -255,10 +295,15 @@ export function buildTextFigures(d: any, lang: Lang): Record<string, Fig> {
     const pct = (n: number, digits = 1) => (lang === 'tr' ? '%' + Number(n).toFixed(digits) : Number(n).toFixed(digits) + '%');
 
     const sevT = LBL.labeller(LBL.severity, lang);
-    const claimT = LBL.labeller(LBL.claimType, lang);
-    const countT = LBL.labeller(LBL.countField, lang);
+    const claimT = (k: string) => (lang === 'tr' ? k : CLAIM_EN[k] ?? k);
+    const countT = (k: string) => COUNT_KEY[k]?.[lang === 'tr' ? 0 : 1] ?? k;
     const equipT = LBL.labeller(LBL.equipment, lang);
-    const coefT = LBL.labeller(LBL.coefFeature, lang);
+    // The flag's full name is the table's; on a phone one line of it would squeeze the bars to
+    // nothing, so the parenthetical drops to a second line.
+    const coefT = (raw: string) => {
+        const f = COEF_RENAMED[raw] ?? raw;
+        return (lang === 'tr' ? COEF_TR[f] ?? f : COEF_EN[f] ?? f).replace(' (', '<br>(');
+    };
     const residT = LBL.labeller(LBL.residualSignal, lang);
 
     const base = (over: any = {}) => {
@@ -305,7 +350,7 @@ export function buildTextFigures(d: any, lang: Lang): Record<string, Fig> {
         marker: { color: claimRows.map(([k]) => (k.startsWith('blanket') ? green : amber)) },
         text: claimRows.map(([, v]) => String(v)), textposition: 'outside', cliponaxis: false,
         hovertemplate: '%{y}: %{x}<extra></extra>',
-    }] : null, base({ margin: { t: 8, r: 44, b: 24, l: 8 } }), 190);
+    }] : null, base({ margin: { t: 8, r: 44, b: 36, l: 8 }, xaxis: { title: { text: L('ilan (bir ilan birden çok türde olabilir)', 'listings (one listing can match several)'), font: { size: 10 } } } }), 200);
 
     const eq = (ex?.equipment_coverage || []).slice().sort((a: any, b: any) => a.mention_pct - b.mention_pct);
     put('04-equipment', eq.length ? [{ type: 'bar', orientation: 'h', y: eq.map((r: any) => equipT(r.feature)), x: eq.map((r: any) => r.mention_pct), marker: { color: green }, text: eq.map((r: any) => pct(r.mention_pct)), textposition: 'outside', hovertemplate: '%{y}: %{x:.1f}% · %{customdata} ' + L('ilan', 'listings') + '<extra></extra>', customdata: eq.map((r: any) => fmtN(r.n)) }] : null,

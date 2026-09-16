@@ -15,7 +15,7 @@ type Doc = { blocks: Block[]; words: number; figures: number; generated: string 
 // in the HTML either way, so the page reads with JS disabled.
 //
 // The figures are the exception: they are drawn natively with Plotly from report-data.json,
-// fetched once on mount. That file is 469 KB, which belongs in a cacheable request rather than
+// fetched once on mount. That file is ~350 KB, which belongs in a cacheable request rather than
 // inlined into every page's HTML. Until it lands, each figure shows the PNG the pipeline
 // generated — so there is never an empty slot where a chart should be.
 //

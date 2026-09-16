@@ -10,15 +10,88 @@ Decision summary: [business.en.md](business.en.md)
 
 Median asking price ₺1.54M, ranging ₺0.84M–₺3.42M (P10–P90).
 
+### Scale
+
+| item | value |
+|---|---:|
+| raw rows (all snapshots) | 45,159 |
+| unique listings (`ad_id` dedup) | 29,988 |
+| snapshots | 4 (2026-01-18 – 2026-06-27) |
+| model features | 25 |
+| BMW / Audi | 17,896 / 12,092 |
+| target | `log1p(price)` |
+
+### Three data layers
+
+1. **Structural** — age · km · engine power/size · body · fuel · transmission · drivetrain · segment.
+2. **Damage / inspection** — every body panel × {changed, painted, local paint} + tramer record + heavy damage.
+3. **Free text** — the seller's description; not in this report but in the separate text analysis (claims · equipment · anomalies).
+
+### Kept features (25)
+
+Model (`model`) · Series (`series`) · Brand (`brand`) · Body Type (`kb_body_type`) · Drivetrain (`kb_drivetrain`) · Segment (`segment`) · Transmission (`kb_transmission`) · Fuel Type (`kb_fuel`) · Roof State (`roof_state`) · Hood State (`hood_state`) · Trunk State (`trunk_state`) · Age (years) (`vehicle_age`) · Mileage (`gb_mileage`) · Power (hp) (`power_hp_val`) · Engine (cc) (`engine_cc_val`) · Door Changed (`door_changed`) · Door Painted (`door_painted`) · Door Local Paint (`door_local`) · Fender Changed (`fender_changed`) · Fender Painted (`fender_painted`) · Fender Local Paint (`fender_local`) · Bumper Changed (`bumper_changed`) · Bumper Painted (`bumper_painted`) · Bumper Local Paint (`bumper_local`) · Heavy Damaged (`is_heavy_damaged`)
+
+### Dropped feature groups
+
+| group | reason | ~cols |
+|---|---|---:|
+| A | Constant variance | ~2 |
+| B | Redundant kb/gb twins | ~12 |
+| B* | Coverage difference | 1 |
+| C | Identity / leakage | ~8 |
+| D | Block-missing >40% | ~15 |
+| E | Spec-missing ~26% | ~10 |
+
+Imputation: hierarchical fill — series > segment > brand median (most specific group first). `torque_nm` was dropped (27.6% missing).
+
 **Leakage control.** Dedup runs on `ad_id`, before the CV split. Evaluation is 5-fold out-of-fold: every listing is predicted exactly once, by a model that never saw it.
 
-The risk `ad_id` cannot see was checked separately — **content-based duplication**: 137 rows (0.46%) with every distinguishing field identical, 209 (0.7%) under the loosest definition. Real repeats that could straddle folds sit under 1%.
+### Content-based duplication
+
+| definition | excess rows | share |
+|---|---:|---:|
+| strict — every distinguishing field identical | 137 | 0.46% |
+| loose | 209 | 0.70% |
+
+The risk `ad_id` cannot see: different `ad_id`, same car. 127 duplicate groups. Strict-definition columns: `price`, `gb_mileage`, `gb_year`, `brand`, `series`, `model`, `kb_fuel`, `is_heavy_damaged`, `count_painted`, `count_changed`, `power_hp_up`, `engine_cc_up`. Some are genuine re-posts, some coincidental matches on common models; either way the share that could leak across folds is under 1%.
+
+Most repeated listings:
+
+| model | year | price | repeats |
+|---|---:|---:|---:|
+| 320i Sport Line | 2025 | ₺4,900,000 | 4 |
+| 318i Standart | 2005 | ₺717,000 | 3 |
+| A3 Sportback 1.6 Ambition | 2010 | ₺890,000 | 3 |
+| 116d Joy Plus | 2015 | ₺1,044,950 | 3 |
+| 320i First Edition Sport Line | 2019 | ₺2,530,000 | 3 |
 
 ## 2. Missingness isn't random
 
-30 columns are over 2% missing and a block of them drops **together**; co-missing correlation **1.0**. This isn't "missing data", it's listings where catalog matching collapsed: standard models match, niche variants don't, and all their specs go blank at once. Because it is systematic, reliable imputation is impossible → dropped.
+30 columns are over 2% missing and a block of them drops **together**. This isn't "missing data", it's listings where catalog matching collapsed: standard models match, niche variants don't, and all their specs go blank at once. Because it is systematic, reliable imputation is impossible → dropped.
 
 ![Missing rate (%) — same rate = co-missing block](figures/en-16-missing.png)
+
+### Co-missing blocks
+
+| cols | avg missing | missing together | example columns |
+|---:|---:|---:|---|
+| 15 | 27.6% | 98.8% | `weight_kg`, `kb_fuel_tank`, `gb_segment`, `torque_nm` … |
+| 2 | 31.4% | 100.0% | `city_fuel_cons`, `highway_fuel_cons` |
+| 2 | 29.9% | 100.0% | `production_year_start`, `production_year_end` |
+| 2 | 29.3% | 100.0% | `rpm_max`, `rpm_min` |
+
+**Missingness correlation 1.0 ≠ value correlation (~0.59).** What co-moves is the columns' *present/absent* state; their values carry separate information. What they share is the source: catalog matching.
+
+### gb_ / kb_ dual source
+
+| field | Overview (gb) empty | QuickInfo (kb) twin |
+|---|---:|---|
+| Drivetrain (`gb_drivetrain`) | 74.0% | `kb_drivetrain` · missing 1.5% |
+| Avg. Traffic Insurance (`gb_traffic_insurance_avg`) | 54.3% | none |
+| Avg. Casco Insurance (`gb_kasko_avg`) | 51.1% | none |
+| Annual Vehicle Tax (`gb_mtv_yearly`) | 40.6% | none |
+
+A listing page can carry the same field in two tabs. For the 1 field(s) with a twin the populated side (kb) is used; the 3 without one (insurance/tax) crossed the 40% threshold and were dropped.
 
 ## 3. Redundancy and dependence checks
 
@@ -30,17 +103,97 @@ Cramér's V gives association strength (symmetric); Theil's U its direction (asy
 
 ![Every series lands in exactly one segment — median price (₺M)](figures/en-19-series-segment.png)
 
-Correlation among numeric features — the numeric counterpart to the categorical dependence above. |r|>0.5 pairs are flagged for collinearity (also checked via VIF).
+### Theil's U asymmetry
+
+| direction | reads as | U |
+|---|---|---:|
+| U(series \| model) | how much model pins down series | 0.999 |
+| U(model \| series) | how much series pins down model | 0.387 |
+| U(brand \| model) | brand given model | 1.000 |
+| U(brand \| series) | brand given series | 1.000 |
+
+Model determines series at 1.00; series determines model only at 0.39. Brand is fully readable from either model or series → brand carries no separate information (the ablation in §9 measures the same thing).
+
+Correlation among numeric features — the numeric counterpart to the categorical dependence above. |r|>0.5 pairs are flagged for collinearity (also checked via VIF, §4).
 
 ![Pearson](figures/en-20-pearson.png)
 
 ![Spearman](figures/en-21-spearman.png)
+
+### High-correlation pairs (|r| > 0.5)
+
+| feature A | feature B | Pearson r |
+|---|---|---:|
+| Age (years) | Mileage | 0.737 |
+| Power (hp) | Engine (cc) | 0.730 |
+| Door Painted | Fender Painted | 0.670 |
 
 ## 4. Hedonic model — controlled effects
 
 The hedonic regression gives each driver's *controlled* effect on price (all else equal) — R² **0.9309**, n **29,554**. Coefficients carry bootstrap confidence intervals; all 10 terms have a 95% CI excluding zero → each driver is reliably significant.
 
 ![Bootstrap coefficients (point + 95% CI)](figures/en-03-bootstrap-ci.png)
+
+### Bootstrap coefficients
+
+| term | effect | log coef [95% CI] | effect 95% CI | significant |
+|---|---:|---:|---:|---|
+| age | -7.12% | -0.0739 [-0.0761, -0.0715] | -7.33% … -6.90% | yes |
+| age² | +0.08% | +0.0008 [+0.0007, +0.0010] | +0.07% … +0.10% | yes |
+| km (100K) | -14.58% | -0.1576 [-0.1674, -0.1479] | -15.41% … -13.75% | yes |
+| km² | +1.73% | +0.0172 [+0.0144, +0.0202] | +1.45% … +2.04% | yes |
+| age×km | -0.66% | -0.0066 [-0.0078, -0.0055] | -0.78% … -0.55% | yes |
+| heavy damage | -11.40% | -0.1210 [-0.1297, -0.1118] | -12.16% … -10.58% | yes |
+| painted | -1.05% | -0.0106 [-0.0115, -0.0096] | -1.14% … -0.96% | yes |
+| changed | -3.10% | -0.0314 [-0.0336, -0.0294] | -3.30% … -2.90% | yes |
+| +100 HP | +21.34% | +0.1935 [+0.1759, +0.2119] | +19.23% … +23.60% | yes |
+| +1 litre | +7.71% | +0.0742 [+0.0504, +0.0979] | +5.17% … +10.29% | yes |
+
+Effect = exp(β)−1. Squared and interaction terms (age², km², age×km) are not read alone; they carry the curvature.
+
+### Engine effect
+
++100 HP → **+21.3%**, +1 litre → **+7.7%** (same regression, the other held fixed). Displacement's effect is what remains once power is fixed; the units differ, so the two numbers are not directly comparable.
+
+### cc–HP correlation by fuel
+
+| fuel | Pearson | Pearson (log) | Spearman | cc / HP | n |
+|---|---:|---:|---:|---:|---:|
+| Petrol | 0.806 | 0.731 | 0.407 | 9.8 | 14,693 |
+| Diesel | 0.836 | 0.863 | 0.694 | 11.1 | 12,783 |
+| LPG & Petrol | 0.900 | 0.863 | 0.805 | 13.9 | 1,199 |
+| Hybrid | 0.429 | 0.522 | 0.308 | 10.0 | 879 |
+
+Overall correlation 0.73. The relationship varies by fuel — weakest for Hybrid (Pearson 0.429, n 879). Displacement cannot be derived from power; both stay as separate features.
+
+### VIF — multicollinearity
+
+| term | VIF |
+|---|---:|
+| age | 2.57 |
+| km | 2.36 |
+| heavy damage | 1.05 |
+| painted | 1.22 |
+| changed | 1.11 |
+| +100 HP | 2.88 |
+| engine (L) | 3.19 |
+
+Highest **engine (L) 3.19** — all below 5; collinearity is not distorting the coefficients.
+
+### Period effect
+
+| snapshot | price level vs 01-18 |
+|---|---:|
+| 01-18 (base) | 0.00% |
+| 01-27 | +1.54% |
+| 03-21 | +3.17% |
+| 06-27 | +5.30% |
+
+The hedonic model controls for time with period dummies: for the same car the price level moved **+5.3%** across 4 snapshots. The report's model (LightGBM) is time-blind — it takes no period feature.
+
+### Assumption tests
+
+Breusch-Pagan (equal variance) p = **<0.001** · Jarque-Bera (normality) p = **<0.001** → both violated. Inference therefore does not use naive OLS p-values but **HC3** robust standard errors + **1000×** bootstrap.
 
 LOFO is a second, independent method: drop each feature and measure how much CV error grows. That it produces the same ranking is the finding.
 
@@ -50,9 +203,40 @@ LOFO is a second, independent method: drop each feature and measure how much CV 
 
 ## 5. Model comparison and the noise floor
 
-Winner LightGBM (TF-IDF+SVD) — MAPE **6.5%**, R² **0.9744**, MAE **₺110K**. Target `log1p(price)`, 25 features. 42% better than the model+year median baseline.
+The report's model: **LightGBM (TF-IDF+SVD)** — MAPE **6.5%**, R² **0.9744**, MAE **₺110K**. Target `log1p(price)`, 25 features. 42% better than the model+year median baseline.
+
+### Model variants
+
+| variant | MAPE | R² | MAE | MedAE | RMSE |
+|---|---:|---:|---:|---:|---:|
+| LightGBM (TF-IDF+SVD) | 6.50% | 0.9744 | ₺110,072 | ₺75,282 | ₺176,576 |
+| CatBoost (TF-IDF+SVD) ★ | 6.45% | 0.9742 | ₺110,294 | ₺74,660 | ₺177,186 |
+| CatBoost (native text) | 6.59% | 0.9734 | ₺113,125 | ₺77,772 | ₺179,772 |
+| model+year median (baseline) | 11.20% | 0.9235 | ₺191,224 | ₺130,000 | ₺305,050 |
+
+★ = winner under the producer's rule (MAPE only): **CatBoost (TF-IDF+SVD)**. But the two TF-IDF+SVD variants differ by 0.05 MAPE points and ₺222 MAE; LightGBM leads on MAE, RMSE, R², CatBoost on MAPE, MedAE → in practice they are **tied**. Throughout this report "the model" is LightGBM: bit-identical deterministic on CPU, whereas CatBoost's trees depend on the device (GPU/CPU) — the published GPU run had the MAPE order reversed. The noise floor, conformal interval, brand ablation and sample predictions all come from LightGBM.
+
+### Baseline tier breakdown
+
+| tier | listings | share | MAPE | MAE | R² |
+|---|---:|---:|---:|---:|---:|
+| model + year | 29,236 | 97.49% | 10.69% | ₺179K | 0.9450 |
+| model | 596 | 1.99% | 26.70% | ₺559K | 0.6082 |
+| global | 156 | 0.52% | 47.38% | ₺1.10M | -0.2359 |
+
+Ladder: (model, year) median → (model) median — all years → global median. If the test (model, year) cell is absent from the training fold, the baseline steps down a rung; error grows sharply at each step — without a comparable the baseline is weak anyway. Medians are computed on the training part of each fold only (leak-free, same 5 folds as the model).
 
 **Noise floor.** Cars with identical specs (same model · year · km · hp · body) still list **₺77K** apart — 5,767 rows, 2,577 groups. That is a floor: sellers price the same car differently and no model can go below it. The model sits at ₺110K, **1.42×** the floor, so the entire remaining headroom is ₺33K. A hyperparameter search typically claims ~₺5K of that, which is why none was run.
+
+### Sample predictions
+
+| band | car | age | km | actual | LightGBM | dev. | OOF resid. | CatBoost (SVD) |
+|---|---|---:|---:|---:|---:|---:|---:|---:|
+| economy | A3 Sportback 1.4 TFSI Attraction | 16 | 216,000 | ₺770,000 | ₺754,463 | 2.0% | 0.0% | ₺796,416 |
+| mid | 520i Premium | 13 | 230,000 | ₺1,525,000 | ₺1,527,918 | 0.2% | 0.0% | ₺1,492,718 |
+| premium | A3 Sedan 35 TFSI Advanced | 1 | 11,000 | ₺2,867,000 | ₺2,832,053 | 1.2% | 0.0% | ₺2,879,939 |
+
+> **These are best-case examples, not typical ones.** In each price tercile the producer picks the non-heavy-damaged listing with the smallest |OOF residual|. "dev." is the final model trained on all data (it saw the listing); the leak-free measure is "OOF resid.". For typical error see MAPE.
 
 ## 6. Calibration, residuals and where it is weak
 
@@ -64,9 +248,77 @@ OOF (leak-free) predictions vs actual — R² **0.9744**. Residual% centers on z
 
 ![Per-model sample size vs median error (log axis)](figures/en-11-n-vs-error.png)
 
+The weakness is price-dependent: median error is 6.97% in the cheapest quartile and 3.54% in the most expensive. The 90% conformal interval fails in the same place — Q1 coverage 81.6%.
+
+![Median error by price quartile (%)](figures/en-10-quartile-error.png)
+
+![Conformal coverage % (target 90%)](figures/en-12-coverage.png)
+
+### Best 5 predictions
+
+| model | age | km | actual | OOF pred. | error |
+|---|---:|---:|---:|---:|---:|
+| A3 Sedan 35 TFSI Advanced | 1 | 11,000 | ₺2,867,000 | ₺2,867,018 | 0.0% |
+| 520i Premium | 13 | 230,000 | ₺1,525,000 | ₺1,524,988 | 0.0% |
+| 525d xDrive Exclusive | 13 | 235,000 | ₺1,680,000 | ₺1,679,985 | 0.0% |
+| 320i ED Luxury Line | 13 | 210,036 | ₺1,359,000 | ₺1,359,014 | 0.0% |
+| A3 Sportback 1.6 TDI Design Line | 8 | 112,750 | ₺1,690,000 | ₺1,689,980 | 0.0% |
+
+Across 29,988 listings a few predictions landing within a few lira of the truth is expected by chance alone; this table shows the zero end of the error distribution, not typical quality.
+
+### Worst 6 predictions
+
+| model | age | km | actual | OOF pred. | error |
+|---|---:|---:|---:|---:|---:|
+| A4 Sedan 2.0 TDI | 20 | 355,000 | ₺644,000 | ₺1,792,742 | 178.4% |
+| 750i Long | 19 | 271,000 | ₺1,190,000 | ₺3,115,921 | 161.8% |
+| 745i Long | 21 | 280,000 | ₺885,000 | ₺2,066,226 | 133.5% |
+| M2 | 10 | 153,000 | ₺1,650,000 | ₺3,325,961 | 101.6% |
+| 1.8 1.8 T | 20 | 96,000 | ₺950,000 | ₺1,816,088 | 91.2% |
+| 320i ED M Plus | 13 | 240,000 | ₺1,400,000 | ₺2,584,235 | 84.6% |
+
+In 6 of the worst 6 the model says **more** than the actual price; median age 20. Something invisible in the structured fields (damage history, project car, rare variant) is a plausible explanation — not verified listing by listing here. All predictions are OOF; the listing id (`ad_id`) is deliberately not published.
+
 ## 7. Distribution drift and temporal backtest
 
 Two lines of evidence give the same call. Distribution drift: the period curves nearly overlap. Temporal backtest: train on an earlier period and test only on the next period's NEW listings (leak-free). Verdict: the market LEVEL shifted +5.3% but the SHAPE held → monthly retraining suffices.
+
+### Temporal backtest
+
+| single: train → test | MAPE | n | cumulative: train → test | MAPE | n |
+|---|---:|---:|---|---:|---:|
+| 01-18 → 01-27 | 6.58% | 2,960 | ≤01-18 → 01-27 | 6.58% | 2,960 |
+| 01-18 → 03-21 | 6.80% | 8,182 | ≤01-18 → 03-21 | 6.80% | 8,182 |
+| 01-18 → 06-27 | 7.55% | 10,529 | ≤01-18 → 06-27 | 7.55% | 10,529 |
+| 01-27 → 03-21 | 6.62% | 7,413 | ≤01-27 → 03-21 | 6.55% | 7,238 |
+| 01-27 → 06-27 | 7.31% | 10,313 | ≤01-27 → 06-27 | 7.35% | 10,257 |
+| 03-21 → 06-27 | 7.06% | 9,099 | ≤03-21 → 06-27 | 6.96% | 8,889 |
+
+Single = train on one snapshot, predict a later one. Cumulative = train on every snapshot up to t. The test set holds only `ad_id`s never seen in training (leak-free), so cumulative n is at most the single n. From the same training snapshot, error grows as the test horizon lengthens.
+
+### Per-snapshot OOF
+
+| snapshot (standalone) | MAPE | n | cumulative | MAPE | n |
+|---|---:|---:|---|---:|---:|
+| 01-18 | 7.04% | 10,901 | ≤01-18 | 7.05% | 10,901 |
+| 01-27 | 7.00% | 11,254 | ≤01-27 | 6.85% | 13,861 |
+| 03-21 | 7.02% | 11,478 | ≤03-21 | 6.52% | 21,099 |
+| 06-27 | 7.23% | 11,526 | ≤06-27 | 6.52% | 29,988 |
+
+![OOF MAPE — per-snapshot vs cumulative](figures/en-15-backtest.png)
+
+### Distribution drift
+
+| snapshot pair | KS | KS p | PSI | EMD (₺) |
+|---|---:|---:|---:|---:|
+| 01-18→01-27 | 0.0055 | 0.996 | 0.0004 | ₺10,109 |
+| 01-18→03-21 | 0.0173 | 0.070 | 0.0015 | ₺20,560 |
+| 01-18→06-27 | 0.0309 | <0.001 | 0.0049 | ₺48,059 |
+| 01-27→03-21 | 0.0161 | 0.104 | 0.0011 | ₺15,717 |
+| 01-27→06-27 | 0.0301 | <0.001 | 0.0038 | ₺39,115 |
+| 03-21→06-27 | 0.0157 | 0.118 | 0.0017 | ₺28,620 |
+
+PSI thresholds: < 0.10 safe, > 0.25 retrain. Highest PSI **0.0049** — below the safe threshold. 2 pairs have KS p < 0.05: with large n even a tiny shift is significant; its size is given by PSI and EMD.
 
 ![Price distribution by snapshot](figures/en-13-drift-hist.png)
 
@@ -74,7 +326,7 @@ Two lines of evidence give the same call. Distribution drift: the period curves 
 
 ## 8. Segmentation — KMeans + PCA
 
-k=3 was chosen by silhouette and corroborated with the PCA scatter. The damage signal appearing independently across the hedonic model, PCA and KMeans is a robustness check.
+**k=3 was not chosen by silhouette.** Silhouette at k=3 is 0.146 — rank 7 of the 7 values tried; the highest is k=8 (0.211). All sit below 0.25: the data has no pronounced natural clusters. k=3 was fixed for interpretability; read the clusters through the axes below, not as "the market's natural structure". The damage signal still appearing independently across the hedonic model, PCA and KMeans is a robustness check.
 
 ![k selection — Elbow + Silhouette](figures/en-24-k-selection.png)
 
@@ -82,7 +334,39 @@ k=3 was chosen by silhouette and corroborated with the PCA scatter. The damage s
 
 ![PCA — PC1 19.7% × PC3 11.0%](figures/en-23-pca-scatter-13.png)
 
-## 9. Target and preprocessing
+### Axes separating the clusters
+
+| cluster | listings | top 3 axes vs the mean |
+|---|---:|---|
+| Older, high-km economy · 5% heavy damage | 9,046 | Mileage ↑ · Fender Local Paint ↑ · Engine (cc) ↑ |
+| Newer, clean premium | 15,976 | Mileage ↓ · Age (years) ↓ · Engine (cc) ↓ |
+| Older, high-km economy · 13% heavy damage | 4,966 | Door Painted ↑ · Fender Painted ↑ · Fender Changed ↑ |
+
+↑/↓ = cluster mean above/below the overall mean (top 3 by z-score magnitude). Clusters the producer gave the same name separate in this column.
+
+### PCA loadings
+
+| PC | variance | top 4 loadings |
+|---|---:|---|
+| PC1 | 19.7% | Mileage (+0.46) · Age (years) (+0.45) · Fender Painted (+0.41) · Door Painted (+0.41) |
+| PC2 | 12.4% | Power (hp) (+0.65) · Engine (cc) (+0.61) · Fender Painted (-0.24) · Door Painted (-0.24) |
+| PC3 | 11.0% | Fender Local Paint (+0.58) · Door Local Paint (+0.57) · Power (hp) (-0.28) · Bumper Local Paint (+0.22) |
+
+The first 3 components explain 43.1% of variance. PC1 ≈ Mileage + Age (years) · PC2 ≈ Power (hp) + Engine (cc) · PC3 ≈ Fender Local Paint + Door Local Paint.
+
+## 9. Brand
+
+### Brand ablation
+
+| identity columns | MAPE | MAE | R² |
+|---|---:|---:|---:|
+| brand only | 7.17% | ₺125K | 0.9679 |
+| series + model | 6.50% | ₺110K | 0.9744 |
+| brand + series + model (the report's model) | 6.50% | ₺110K | 0.9744 |
+
+Only the identity columns change in the full model, everything else fixed; same 5-fold OOF. Giving brand alone instead of series+model worsens MAE by ₺15K. Adding brand on top of series+model changes MAE by ₺0 (MAPE delta 0.00 pts) → once model is known, brand carries no information. U(brand | model) = 1.00 in §3 is the dependence side of the same fact.
+
+## 10. Target and preprocessing
 
 Raw price is right-skewed (skew 1.62); a log transform pulls it toward symmetry (0.28). The model trains on `log1p(price)`: under squared loss the extremes were swallowing the whole error budget. A modelling decision, not a market finding.
 
@@ -90,7 +374,7 @@ Raw price is right-skewed (skew 1.62); a log transform pulls it toward symmetry 
 
 ![Median price by body style](figures/en-01-body-median.png)
 
-## 10. Reproducibility
+## 11. Reproducibility
 
 - seed: `42` · row order: `ORDER BY ad_id` · LightGBM deterministic: `True` · CatBoost device: `CPU` · n_jobs: `16`
 
