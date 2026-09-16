@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import FinalShell from '../FinalShell';
+import NotebookShell, { type ReportKey } from './NotebookShell';
 import type { Block, ReportLang } from './report-source';
 import { useReportFigures, ReportFigure } from './figures';
 
 type Doc = { blocks: Block[]; words: number; figures: number; generated: string };
 
-// Renders one generated report inside the car-price app shell.
+// Renders one generated report inside the notebook shell the live report pages use — contents
+// rail, read progress, drawer on a phone.
 //
 // Both languages arrive already rendered from the server, so the toggle is a state flip with
 // no refetch — on a phone that is the difference between instant and a spinner. The prose is
@@ -25,7 +26,7 @@ export default function ReportPreview({
     kind, active, kicker, title, docs, defaultLang = 'tr', note,
 }: {
     kind: 'car-price' | 'text-analysis';
-    active: 'report-business' | 'report-technical' | 'text-business' | 'text-technical';
+    active: ReportKey;
     kicker: string;
     title: string;
     docs: Record<ReportLang, Doc>;
@@ -50,7 +51,12 @@ export default function ReportPreview({
     const T = (tr: string, en: string) => (lang === 'tr' ? tr : en);
 
     return (
-        <FinalShell active={active} kicker={kicker} title={title}>
+        <NotebookShell active={active} lang={lang} title={title} contentKey={kind + ':' + active + ':' + lang}>
+            <div className="mb-7">
+                <div className="mb-2 font-mono text-[12px] font-medium uppercase tracking-[0.14em] text-[#047857]">{kicker}</div>
+                <h1 className="text-[28px] font-bold tracking-[-0.041em] text-[#1a1a1a] md:text-[34px]">{title}</h1>
+            </div>
+
             <div className="mb-7 flex flex-wrap items-center gap-x-4 gap-y-3 border-b border-[#e9e7e2] pb-5">
                 <div className="inline-flex rounded-[8px] border border-[#d8d6d0] p-[3px]" role="group" aria-label="Dil / Language">
                     {(['tr', 'en'] as const).map((l) => (
@@ -91,7 +97,7 @@ export default function ReportPreview({
                         : <Prose key={i} html={b.html} />
                 ))}
             </div>
-        </FinalShell>
+        </NotebookShell>
     );
 }
 
@@ -102,7 +108,7 @@ function Prose({ html }: { html: string }) {
             className="prose prose-neutral max-w-none
                 prose-headings:font-semibold prose-headings:tracking-[-0.025em] prose-headings:text-[#1a1a1a]
                 prose-h1:hidden
-                prose-h2:mt-12 prose-h2:mb-4 prose-h2:text-[21px] sm:prose-h2:text-[23px]
+                prose-h2:mt-12 prose-h2:mb-4 prose-h2:scroll-mt-[84px] prose-h2:text-[21px] sm:prose-h2:text-[23px]
                 prose-h3:mt-8 prose-h3:mb-3 prose-h3:text-[17px]
                 prose-p:max-w-[70ch] prose-p:text-[15px] prose-p:leading-[1.7] prose-p:text-[#33332f] sm:prose-p:text-[16px]
                 prose-li:max-w-[70ch] prose-li:text-[15px] prose-li:leading-[1.65] prose-li:text-[#33332f]

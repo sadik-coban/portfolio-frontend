@@ -30,12 +30,36 @@ export type Block =
 const DIR = path.join(process.cwd(), 'content', 'reports');
 const FIGURE_LINE = /^!\[([^\]]*)\]\(figures\/(?:tr|en)-([a-z0-9-]+)\.png\)\s*$/;
 
-const toHtml = async (md: string) => {
+type HastNode = { type: string; tagName?: string; properties?: Record<string, unknown>; children?: HastNode[] };
+
+/**
+ * Gives every section heading a positional id (s-1, s-2, …) and marks it for the contents list.
+ *
+ * Positional rather than slugged from the text, on purpose: the page swaps language in place,
+ * and a slug like "ne-kadar-degerinde" does not exist in the English document, so a link copied
+ * in Turkish would break the moment you switch. The generator emits the two languages with an
+ * identical heading structure (checked: h2 counts match in all eight documents), so section 3 is
+ * #s-3 in both — a shared link and the reader's place both survive the toggle.
+ *
+ * The counter is shared across the chunks one document is rendered in; ids stay unique per page.
+ */
+const sectionIds = (counter: { n: number }) => () => (tree: HastNode) => {
+    const walk = (node: HastNode) => {
+        if (node.type === 'element' && node.tagName === 'h2') {
+            node.properties = { ...(node.properties || {}), id: `s-${++counter.n}`, dataToc: '' };
+        }
+        node.children?.forEach(walk);
+    };
+    walk(tree);
+};
+
+const toHtml = async (md: string, counter: { n: number }) => {
     if (!md.trim()) return '';
     const file = await unified()
         .use(remarkParse)
         .use(remarkGfm)                    // the business notes are table-heavy
         .use(remarkRehype)
+        .use(sectionIds(counter))
         .use(rehypeStringify)
         .process(md);
     return String(file);
@@ -53,8 +77,9 @@ export const getReport = cache(async (
 
     const blocks: Block[] = [];
     let buffer: string[] = [];
+    const counter = { n: 0 };
     const flush = async () => {
-        const html = await toHtml(buffer.join('\n'));
+        const html = await toHtml(buffer.join('\n'), counter);
         if (html) blocks.push({ type: 'html', html });
         buffer = [];
     };
