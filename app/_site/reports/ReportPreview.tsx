@@ -94,7 +94,7 @@ export default function ReportPreview({
                 {doc.blocks.map((b, i) => (
                     b.type === 'figure'
                         ? <ReportFigure key={i} fig={figures[b.slug]} caption={b.caption} fallback={b.fallback} />
-                        : <Prose key={i} html={b.html} />
+                        : <Prose key={i} html={b.html} lang={lang} />
                 ))}
             </div>
         </NotebookShell>
@@ -111,9 +111,14 @@ export default function ReportPreview({
 // line of its own, so ordinary words are untouched; unlike `break-word` it also lowers the
 // min-content width, which is what actually stops the overflow inside the flex layout. Tables opt
 // back out: they already scroll inside their own box, and a figure split mid-number reads worse.
-function Prose({ html }: { html: string }) {
+//
+// Tables are styled where they are rendered (report-source.ts, the live report's <Table> look),
+// not here. `lang` is not decoration: the table headers are CSS capitals, and without it a Turkish
+// "tekil ilan" capitalises to "TEKIL ILAN" instead of "TEKİL İLAN".
+function Prose({ html, lang }: { html: string; lang: ReportLang }) {
     return (
         <div
+            lang={lang}
             className="prose prose-neutral max-w-none [overflow-wrap:anywhere] [&_table]:[overflow-wrap:normal]
                 prose-headings:font-semibold prose-headings:tracking-[-0.025em] prose-headings:text-[#1a1a1a]
                 prose-h1:hidden
@@ -126,10 +131,7 @@ function Prose({ html }: { html: string }) {
                 prose-blockquote:max-w-[70ch] prose-blockquote:border-l-[3px] prose-blockquote:border-[#059669]
                 prose-blockquote:pl-5 prose-blockquote:not-italic prose-blockquote:font-normal prose-blockquote:text-[#5f5f5a]
                 prose-hr:border-[#e9e7e2]
-                prose-table:block prose-table:w-full prose-table:overflow-x-auto prose-table:text-[14px]
-                prose-thead:border-[#e9e7e2]
-                prose-th:whitespace-nowrap prose-th:font-mono prose-th:text-[11px] prose-th:font-medium prose-th:uppercase prose-th:tracking-[0.05em] prose-th:text-[#86857e]
-                prose-td:text-[#33332f] [&_td]:tabular-nums [&_tbody_tr]:border-[#f0eee9]
+                [&_td_code]:[font-size:inherit] [&_td_code]:px-1
                 [&_code]:rounded-[5px] [&_code]:bg-[#f3f1ec] [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:font-mono [&_code]:text-[13px] [&_code]:text-[#047857]
                 [&_code]:before:content-[''] [&_code]:after:content-['']"
             dangerouslySetInnerHTML={{ __html: html }}

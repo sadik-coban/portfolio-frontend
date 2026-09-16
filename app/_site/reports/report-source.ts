@@ -8,14 +8,13 @@ import remarkRehype from 'remark-rehype';
 import rehypeStringify from 'rehype-stringify';
 
 // Server-only reader for the reports the analysis pipeline generates
-// (clean/car_price_report/ and clean/text_analysis/, synced by scripts/sync-reports).
+// (clean/car_price_report/ and clean/text_analysis/, copied into content/reports/).
 //
 // The markdown is copied in byte-for-byte, so a re-sync is a plain file copy and the site can
 // never disagree with the generator about wording.
 //
 // The document comes back as a list of blocks rather than one HTML string, because every
-// figure the generator emits as a PNG is drawn natively instead — the site already had all 32
-// of those charts in Plotly. Splitting here, where the markdown is still text, avoids doing
+// figure the generator emits as a PNG is drawn natively instead (figures.tsx). Splitting here, where the markdown is still text, avoids doing
 // DOM surgery on rendered HTML in the browser. It is safe because the generator always puts a
 // figure alone on its line (verified across all eight documents).
 
@@ -53,6 +52,61 @@ const sectionIds = (counter: { n: number }) => () => (tree: HastNode) => {
     walk(tree);
 };
 
+/**
+ * Dresses every table the way the live report's <Table> component does (FinalReportLab.tsx):
+ * a rounded, bordered box that scrolls on its own, a beige header band in small mono capitals,
+ * mono cells on cream with a hairline between rows, the first column dark and the rest muted.
+ *
+ * The classes go onto the elements here, on the server, because the tables arrive as markdown —
+ * there is no component to hand them to. `not-prose` on the wrapper keeps the typography plugin's
+ * own table styles from fighting these.
+ *
+ * One rule differs, on purpose. <Table> right-aligns every column after the first because its
+ * tables were all numbers. The generator's tables also carry text columns (controls, example
+ * columns, cluster axes), so alignment follows the markdown instead: the generator writes `---:`
+ * for numbers, which gives exactly the old right-aligned, tabular, unbroken look, and `---` for
+ * text, which stays left and wraps.
+ *
+ * The minimum width is <Table>'s formula, so a wide table scrolls on a phone at the same point.
+ */
+const TABLE_WRAP = 'not-prose my-6 overflow-x-auto rounded-[12px] border border-[#e4e2dd]';
+const TABLE = 'w-full border-collapse text-left';
+const TABLE_HEAD_ROW = 'bg-[#f1efe9]';
+const TABLE_TH = 'px-2 py-[11px] align-bottom font-mono text-[10px] font-normal uppercase tracking-[0.05em] text-[#5f5f5a] first:pl-3.5 last:pr-3.5 sm:first:pl-[18px] sm:last:pr-[18px]';
+const TABLE_BODY_ROW = 'border-t border-[#ece9e3] bg-[#fdfcf9]';
+const TABLE_TD = 'px-2 py-[11px] align-middle font-mono text-[12px] text-[#5f5f5a] first:pl-3.5 first:text-[#1a1a1a] last:pr-3.5 sm:text-[13px] sm:first:pl-[18px] sm:last:pr-[18px]';
+const ALIGN: Record<string, string> = { right: 'text-right whitespace-nowrap tabular-nums', center: 'text-center' };
+
+const tableStyle = () => (tree: HastNode) => {
+    const kids = (node: HastNode, tag: string) => (node.children || []).filter((c) => c.type === 'element' && c.tagName === tag);
+    const addClass = (node: HastNode, cls: string) => {
+        node.properties = { ...(node.properties || {}), className: cls.split(' ') };
+    };
+    const styleCells = (row: HastNode, tag: 'th' | 'td', base: string) => {
+        for (const cell of kids(row, tag)) {
+            const align = cell.properties?.align as string | undefined;
+            if (cell.properties) delete cell.properties.align;
+            addClass(cell, align && ALIGN[align] ? `${base} ${ALIGN[align]}` : base);
+        }
+    };
+    const walk = (node: HastNode) => {
+        node.children?.forEach((child, i) => {
+            if (child.type !== 'element' || child.tagName !== 'table') return walk(child);
+            const head = kids(child, 'thead')[0];
+            const headRow = head ? kids(head, 'tr')[0] : undefined;
+            const cols = headRow ? kids(headRow, 'th').length : 1;
+            addClass(child, TABLE);
+            child.properties = { ...child.properties, style: `min-width:${220 + (cols - 1) * 84}px` };
+            if (headRow) { addClass(headRow, TABLE_HEAD_ROW); styleCells(headRow, 'th', TABLE_TH); }
+            for (const body of kids(child, 'tbody')) {
+                for (const row of kids(body, 'tr')) { addClass(row, TABLE_BODY_ROW); styleCells(row, 'td', TABLE_TD); }
+            }
+            node.children![i] = { type: 'element', tagName: 'div', properties: { className: TABLE_WRAP.split(' ') }, children: [child] };
+        });
+    };
+    walk(tree);
+};
+
 const toHtml = async (md: string, counter: { n: number }) => {
     if (!md.trim()) return '';
     const file = await unified()
@@ -60,6 +114,7 @@ const toHtml = async (md: string, counter: { n: number }) => {
         .use(remarkGfm)                    // the business notes are table-heavy
         .use(remarkRehype)
         .use(sectionIds(counter))
+        .use(tableStyle)
         .use(rehypeStringify)
         .process(md);
     return String(file);
