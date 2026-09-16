@@ -35,6 +35,8 @@
     "react-dom": "19.2.3",
     "recharts": "^2.15.4",
     "rehype-pretty-code": "^0.14.1",
+    "rehype-raw": "^7.0.0",
+    "rehype-stringify": "^10.0.1",
     "remark-frontmatter": "^5.0.0",
     "remark-gfm": "^4.0.1",
     "remark-mdx-frontmatter": "^5.2.0",
@@ -43,6 +45,7 @@
   },
   "devDependencies": {
     "@duckdb/node-api": "^1.5.4-r.1",
+    "@playwright/test": "^1.63.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",

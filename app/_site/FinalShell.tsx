@@ -2,14 +2,15 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Rocket, LayoutDashboard, BrainCircuit, Activity, PieChart, NotebookText, MessageSquareText, BookOpen, ArrowLeft, Menu, X, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { Rocket, LayoutDashboard, BrainCircuit, Activity, PieChart, NotebookText, MessageSquareText, BookOpen, Briefcase, FlaskConical, ArrowLeft, Menu, X, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { useLang, LangSwitch, localize } from './i18n';
 import { Monogram } from './Monogram';
 import { AppPageHeader } from './AppPageHeader';
 import { SIDEBAR_COLLAPSE_ENABLED } from './features';
 import { useSidebarCollapse } from './SidebarCollapse';
 
-type ActiveKey = 'overview' | 'dashboard' | 'eda' | 'predict' | 'drift' | 'shap' | 'report' | 'text-analysis' | 'journal';
+type ActiveKey = 'overview' | 'dashboard' | 'eda' | 'predict' | 'drift' | 'shap' | 'report' | 'text-analysis' | 'journal'
+    | 'report-business' | 'report-technical' | 'text-business' | 'text-technical';
 
 export default function FinalShell({
     active, title, kicker, meta, children,
@@ -21,6 +22,7 @@ export default function FinalShell({
     children: React.ReactNode;
 }) {
     const { t, lang } = useLang();
+    const L = (tr: string, en: string) => (lang === 'tr' ? tr : en);
     const [open, setOpen] = useState(false);
 
     // Desktop-only icon-collapse for the sidebar — gated behind SIDEBAR_COLLAPSE_ENABLED
@@ -53,6 +55,17 @@ export default function FinalShell({
         { key: 'journal', label: t('sb.journal'), icon: BookOpen, href: '/projects/car-price/journal' },
     ];
 
+    // The reports the analysis pipeline generates (clean/car_price_report, clean/text_analysis).
+    // They sit in their own group because they answer a different question from the pages above:
+    // those are the live app, these are the written findings — and each is split the way the
+    // generator splits it, business (what to do, in ₺) from technical (protocol and limits).
+    const previewNav = [
+        { key: 'report-business', label: L('Karar notu', 'Decision note'), icon: Briefcase, href: '/projects/car-price/report-preview/business' },
+        { key: 'report-technical', label: L('Teknik rapor', 'Technical report'), icon: FlaskConical, href: '/projects/car-price/report-preview/technical' },
+        { key: 'text-business', label: L('Metin · karar', 'Text · decision'), icon: Briefcase, href: '/projects/car-price/text-preview/business' },
+        { key: 'text-technical', label: L('Metin · teknik', 'Text · technical'), icon: FlaskConical, href: '/projects/car-price/text-preview/technical' },
+    ];
+
     // Every row is [40px icon slot][label]. The icon slot is a fixed width, so the
     // icon never shifts as the rail animates between widths — only the label fades
     // (and is clipped by the sidebar's overflow-hidden). In a 72px collapsed rail
@@ -62,7 +75,18 @@ export default function FinalShell({
     // that keeps icons static through the collapse while the label fades.
     const NavList = ({ onNavigate, mini = false, flat = false }: { onNavigate?: () => void; mini?: boolean; flat?: boolean }) => (
         <nav className="flex flex-col gap-1 overflow-y-auto overflow-x-hidden min-h-0">
-            {nav.map((n) => {
+            {[...nav, { divider: true as const, key: '__reports' }, ...previewNav].map((n) => {
+                // Group label between the app pages and the generated reports. Collapsed to a
+                // plain rule in the icon rail, where there is no room for the word.
+                if ('divider' in n) {
+                    return (
+                        <div key={n.key} className="mt-4 mb-1 px-[10px]">
+                            {mini
+                                ? <span className="mx-auto block h-px w-8 bg-[#e9e7e2]" />
+                                : <span className="font-mono text-[9.5px] uppercase tracking-[0.14em] text-[#a8a7a0]">{L('Raporlar', 'Reports')}</span>}
+                        </div>
+                    );
+                }
                 const on = n.key === active;
                 return (
                     <Link
@@ -91,7 +115,7 @@ export default function FinalShell({
         </nav>
     );
 
-    const activeLabel = nav.find((n) => n.key === active)?.label ?? '';
+    const activeLabel = [...nav, ...previewNav].find((n) => n.key === active)?.label ?? title;
 
     return (
         <div className="relative min-h-screen bg-[#f7f6f3] text-[#1a1a1a]">
