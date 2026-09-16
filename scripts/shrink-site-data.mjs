@@ -13,11 +13,14 @@
 //
 // Re-run after each new full drop (keep the full file out of git):
 //   node scripts/shrink-site-data.mjs "site_data (9).json"
+//   node scripts/shrink-site-data.mjs <full.json> public/report-data.json
 // ---------------------------------------------------------------------------
 import fs from 'node:fs';
 
 const SRC = process.argv[2] || 'site_data (9).json';
-const OUT = 'public/site_data.json';
+// optional 2nd arg: the report preview needs its own artifact (public/report-data.json)
+// from a newer drop, without disturbing the one the live /report page reads.
+const OUT = process.argv[3] || 'public/site_data.json';
 const SCATTER_N = 6000, PCA_N = 3000, N_OUT = 120;
 
 const round = (v) => Math.round(v);
