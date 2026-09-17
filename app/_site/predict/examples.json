@@ -1,0 +1,309 @@
+{
+  "about": {
+    "tr": "Tahmin sayfası için beş örnek araç. Her biri veri setinden gerçek bir ilan (ilan kimliği yazılmadı). `input` modelin beklediği 25 alanın tamamı, /api/predict gövdesiyle birebir aynı; `year` ve `panels` formu doldurur (input bunlardan FinalPredict.tsx ile aynı kuralla türetilir). `reference.listing_price` ilanın fiyatıdır; sayfa canlı tahmini bununla kıyaslar. `reference.oof_error_pct` seçim ölçütüdür: modelin ilanı hiç görmeden (5-fold OOF) yaptığı tahminin hatası.",
+    "en": "Five example cars for the predict page. Each is a real listing from the data set (the listing id is not written). `input` is all 25 fields the model expects, identical to the /api/predict body; `year` and `panels` fill the form (input is derived from them by the same rule as FinalPredict.tsx). `reference.listing_price` is the listing price, which the page compares with the live prediction. `reference.oof_error_pct` is the selection criterion: the error of a prediction made without seeing the listing (5-fold OOF)."
+  },
+  "source": {
+    "data": "cardatasys/clean/data/cars.duckdb — latest snapshot per ad_id, 29,988 listings",
+    "model": "cardatasys/clean/data/serving/serve — lightgbm_tfidf_svd.txt + encoders.pkl",
+    "selected": "2026-09-17",
+    "criteria": "form-selectable values only · not heavy-damaged · trim with >= 40 listings · no content duplicate · |OOF error| and |served error| <= 3%"
+  },
+  "examples": [
+    {
+      "id": "bmw-320i-sport-line-2020",
+      "title": "BMW 320i Sport Line",
+      "subtitle": {
+        "tr": "2020 · 72.000 km · hasarsız",
+        "en": "2020 · 72,000 km · no damage"
+      },
+      "why": {
+        "tr": "Veride en yaygın seri ve kasa: benzinli, otomatik 3 Serisi sedan, orta yaşta ve hasarsız. Diğer örnekler bununla kıyaslanabilir.",
+        "en": "The most common series and body in the data: a petrol automatic 3 Series saloon, mid-aged and undamaged. The yardstick for the others."
+      },
+      "year": 2020,
+      "panels": {
+        "hood": "original",
+        "roof": "original",
+        "trunk": "original",
+        "door_fl": "original",
+        "door_fr": "original",
+        "door_rl": "original",
+        "door_rr": "original",
+        "fender_fl": "original",
+        "fender_fr": "original",
+        "fender_rl": "original",
+        "fender_rr": "original",
+        "bumper_front": "original",
+        "bumper_rear": "original"
+      },
+      "input": {
+        "brand": "bmw",
+        "series": "3 Serisi",
+        "model": "320i Sport Line",
+        "kb_body_type": "Sedan",
+        "kb_drivetrain": "Arkadan İtiş",
+        "segment": "D",
+        "kb_transmission": "Otomatik",
+        "kb_fuel": "Benzin",
+        "vehicle_age": 6,
+        "gb_mileage": 72000,
+        "power_hp_val": 170,
+        "engine_cc_val": 1597,
+        "roof_state": "original",
+        "hood_state": "original",
+        "trunk_state": "original",
+        "door_changed": 0,
+        "door_painted": 0,
+        "door_local": 0,
+        "fender_changed": 0,
+        "fender_painted": 0,
+        "fender_local": 0,
+        "bumper_changed": 0,
+        "bumper_painted": 0,
+        "bumper_local": 0,
+        "is_heavy_damaged": 0
+      },
+      "reference": {
+        "listing_price": 2850000,
+        "oof_error_pct": -1.18
+      }
+    },
+    {
+      "id": "audi-a3-sportback-16-tdi-2014",
+      "title": "Audi A3 Sportback 1.6 TDI Attraction",
+      "subtitle": {
+        "tr": "2014 · 231.000 km · 2 boyalı",
+        "en": "2014 · 231,000 km · 2 painted"
+      },
+      "why": {
+        "tr": "Ekonomik bant: yüksek kilometreli dizel hatchback, iki paneli boyalı. Hafif hasarın ve kilometrenin birlikte etkisi.",
+        "en": "The economy band: a high-mileage diesel hatchback with two painted panels. Light damage and mileage together."
+      },
+      "year": 2014,
+      "panels": {
+        "hood": "original",
+        "roof": "original",
+        "trunk": "original",
+        "door_fl": "original",
+        "door_fr": "original",
+        "door_rl": "original",
+        "door_rr": "painted",
+        "fender_fl": "painted",
+        "fender_fr": "original",
+        "fender_rl": "original",
+        "fender_rr": "original",
+        "bumper_front": "original",
+        "bumper_rear": "original"
+      },
+      "input": {
+        "brand": "audi",
+        "series": "A3",
+        "model": "A3 Sportback 1.6 TDI Attraction",
+        "kb_body_type": "Hatchback/5",
+        "kb_drivetrain": "Önden Çekiş",
+        "segment": "C",
+        "kb_transmission": "Otomatik",
+        "kb_fuel": "Dizel",
+        "vehicle_age": 12,
+        "gb_mileage": 231000,
+        "power_hp_val": 113,
+        "engine_cc_val": 1600,
+        "roof_state": "original",
+        "hood_state": "original",
+        "trunk_state": "original",
+        "door_changed": 0,
+        "door_painted": 1,
+        "door_local": 0,
+        "fender_changed": 0,
+        "fender_painted": 1,
+        "fender_local": 0,
+        "bumper_changed": 0,
+        "bumper_painted": 0,
+        "bumper_local": 0,
+        "is_heavy_damaged": 0
+      },
+      "reference": {
+        "listing_price": 1105000,
+        "oof_error_pct": 1.53
+      }
+    },
+    {
+      "id": "bmw-520i-m-sport-2024",
+      "title": "BMW 520i M Sport",
+      "subtitle": {
+        "tr": "2024 · 27.000 km · hasarsız",
+        "en": "2024 · 27,000 km · no damage"
+      },
+      "why": {
+        "tr": "Fiyat aralığının üst ucu: neredeyse yeni, düşük kilometreli, hasarsız E segmenti sedan.",
+        "en": "The top of the price range: a nearly new, low-mileage, undamaged E-segment saloon."
+      },
+      "year": 2024,
+      "panels": {
+        "hood": "original",
+        "roof": "original",
+        "trunk": "original",
+        "door_fl": "original",
+        "door_fr": "original",
+        "door_rl": "original",
+        "door_rr": "original",
+        "fender_fl": "original",
+        "fender_fr": "original",
+        "fender_rl": "original",
+        "fender_rr": "original",
+        "bumper_front": "original",
+        "bumper_rear": "original"
+      },
+      "input": {
+        "brand": "bmw",
+        "series": "5 Serisi",
+        "model": "520i M Sport",
+        "kb_body_type": "Sedan",
+        "kb_drivetrain": "Arkadan İtiş",
+        "segment": "E",
+        "kb_transmission": "Otomatik",
+        "kb_fuel": "Benzin",
+        "vehicle_age": 2,
+        "gb_mileage": 27000,
+        "power_hp_val": 188,
+        "engine_cc_val": 1600,
+        "roof_state": "original",
+        "hood_state": "original",
+        "trunk_state": "original",
+        "door_changed": 0,
+        "door_painted": 0,
+        "door_local": 0,
+        "fender_changed": 0,
+        "fender_painted": 0,
+        "fender_local": 0,
+        "bumper_changed": 0,
+        "bumper_painted": 0,
+        "bumper_local": 0,
+        "is_heavy_damaged": 0
+      },
+      "reference": {
+        "listing_price": 5850000,
+        "oof_error_pct": 0.53
+      }
+    },
+    {
+      "id": "audi-a5-sportback-20-tdi-quattro-2015",
+      "title": "Audi A5 Sportback 2.0 TDI Quattro",
+      "subtitle": {
+        "tr": "2015 · 155.000 km · hasarsız",
+        "en": "2015 · 155,000 km · no damage"
+      },
+      "why": {
+        "tr": "Dört çeker (quattro) dizel Sportback: çekiş ve kasa tipi ötekilerden farklı, orta-üst fiyat bandı.",
+        "en": "A four-wheel-drive (quattro) diesel Sportback: drivetrain and body unlike the others, upper-middle price band."
+      },
+      "year": 2015,
+      "panels": {
+        "hood": "original",
+        "roof": "original",
+        "trunk": "original",
+        "door_fl": "original",
+        "door_fr": "original",
+        "door_rl": "original",
+        "door_rr": "original",
+        "fender_fl": "original",
+        "fender_fr": "original",
+        "fender_rl": "original",
+        "fender_rr": "original",
+        "bumper_front": "original",
+        "bumper_rear": "original"
+      },
+      "input": {
+        "brand": "audi",
+        "series": "A5",
+        "model": "A5 Sportback 2.0 TDI Quattro",
+        "kb_body_type": "Hatchback/5",
+        "kb_drivetrain": "4WD (Sürekli)",
+        "segment": "D",
+        "kb_transmission": "Otomatik",
+        "kb_fuel": "Dizel",
+        "vehicle_age": 11,
+        "gb_mileage": 155000,
+        "power_hp_val": 188,
+        "engine_cc_val": 2000,
+        "roof_state": "original",
+        "hood_state": "original",
+        "trunk_state": "original",
+        "door_changed": 0,
+        "door_painted": 0,
+        "door_local": 0,
+        "fender_changed": 0,
+        "fender_painted": 0,
+        "fender_local": 0,
+        "bumper_changed": 0,
+        "bumper_painted": 0,
+        "bumper_local": 0,
+        "is_heavy_damaged": 0
+      },
+      "reference": {
+        "listing_price": 2100000,
+        "oof_error_pct": 0.6
+      }
+    },
+    {
+      "id": "bmw-116i-comfort-2012",
+      "title": "BMW 116i Comfort",
+      "subtitle": {
+        "tr": "2012 · 255.000 km · 3 değişen, 2 boyalı",
+        "en": "2012 · 255,000 km · 3 replaced, 2 painted"
+      },
+      "why": {
+        "tr": "Hasarın fiyata etkisi: kaput dahil üç parçası değişmiş, iki parçası boyalı, yüksek kilometreli 1 Serisi.",
+        "en": "What damage does to price: a high-mileage 1 Series with three replaced parts, the hood among them, and two painted."
+      },
+      "year": 2012,
+      "panels": {
+        "hood": "changed",
+        "roof": "original",
+        "trunk": "original",
+        "door_fl": "original",
+        "door_fr": "painted",
+        "door_rl": "original",
+        "door_rr": "original",
+        "fender_fl": "changed",
+        "fender_fr": "painted",
+        "fender_rl": "changed",
+        "fender_rr": "original",
+        "bumper_front": "original",
+        "bumper_rear": "original"
+      },
+      "input": {
+        "brand": "bmw",
+        "series": "1 Serisi",
+        "model": "116i Comfort",
+        "kb_body_type": "Hatchback/5",
+        "kb_drivetrain": "Arkadan İtiş",
+        "segment": "C",
+        "kb_transmission": "Otomatik",
+        "kb_fuel": "Benzin",
+        "vehicle_age": 14,
+        "gb_mileage": 255000,
+        "power_hp_val": 138,
+        "engine_cc_val": 1600,
+        "roof_state": "original",
+        "hood_state": "changed",
+        "trunk_state": "original",
+        "door_changed": 0,
+        "door_painted": 1,
+        "door_local": 0,
+        "fender_changed": 2,
+        "fender_painted": 1,
+        "fender_local": 0,
+        "bumper_changed": 0,
+        "bumper_painted": 0,
+        "bumper_local": 0,
+        "is_heavy_damaged": 0
+      },
+      "reference": {
+        "listing_price": 835000,
+        "oof_error_pct": -0.73
+      }
+    }
+  ]
+}
