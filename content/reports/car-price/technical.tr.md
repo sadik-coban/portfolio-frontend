@@ -257,6 +257,40 @@ OOF (sızıntısız) tahminler gerçek fiyata karşı — R² **0.9744**. Artık
 
 Tüm 29.988 ilanın OOF hatası. Dağılım sıfırda tepe yapıyor (medyan artık -%0.26); ±%10 içinde kalan ilan payı **%80.0**. Ortalama |hata| %6.5 — MAPE'nin kendisi; medyan |hata| %4.7. Kuyruk asimetrik, fazla tahmin tarafı daha kalın: model gerçeğin %20'den fazla **üstünü** 761 ilanda, **altını** 426 ilanda söylüyor (en uçlar -%178.4 ve +%55.3). Asimetrinin bir kısmı tanımdan gelir: artık gerçek fiyata bölündüğü için düşük tahmin en fazla %100 olabilir, fazla tahminin sınırı yoktur. Std (%9.31) bu kuyruk yüzünden şişik; tipik hatayı medyan |hata| daha iyi anlatır.
 
+### Büyük hatalar nereden geliyor
+
+Hatası ±%20 sınırını aşan 1.187 ilan (761 fazla, 426 düşük tahmin). Aşağıdaki kırılımlar yalnız yapısal alanlardan sayılır — metin dedektörüne dayanmaz.
+
+| aynı model+yılda ilan | ilan | büyük hata | fazla tahmin | düşük tahmin |
+|---|---:|---:|---:|---:|
+| 1 | 610 | %19.2 | %11.5 | %7.7 |
+| 2–4 | 1.584 | %10.6 | %6.3 | %4.3 |
+| 5–19 | 5.732 | %4.6 | %3.0 | %1.6 |
+| 20–99 | 16.505 | %2.9 | %1.9 | %1.0 |
+| 100+ | 5.557 | %2.8 | %1.9 | %0.9 |
+
+1. **Emsal yok.** Aynı model ve yıldan başka ilan yoksa büyük hata oranı %19.2, 100+ emsal varsa %2.8. Model görmediği aracı fiyatlayamıyor.
+2. **Uç ya da yaşlı araç.** F/S segmentte %20.6 (diğerleri %3.8); yaş ≥ 18'de %11.6 (daha gençlerde %3.2). Form alanları bu araçlardaki fiyat farkını açıklamaya yetmiyor.
+3. **Zaman.** Model dönem bilmiyor: medyan artık ilk dönemde (2026-01-18) -%3.39, son dönemde (2026-06-27) +%1.42 — piyasa yükseldikçe önce pahalı, sonra ucuz söylüyor.
+
+İlişki; ilan ilan doğrulanmadı. Formda olmayan bilgi (hasar geçmişi, donanım, modifiye) olası katkı, burada ölçülmedi.
+
+#### Örnekler
+
+| araç | yıl | km | fiyat | model tahmini | artık | otomatik gerekçe |
+|---|---:|---:|---:|---:|---:|---|
+| BMW 640i | 2011 | 160.000 | ₺5.600.000 | ₺3.238.105 | +%42.2 | metinde 650 hp, formda 320 hp · metinde farklı M/RS modeli (M6) · metinde dönüşüm ifadesi · veride bu modelden 3 ilan |
+| Audi 4.2 FSI Quattro R-tronic (R8) | 2008 | 112.550 | ₺4.690.000 | ₺2.610.304 | +%44.3 | veride bu modelden 1 ilan · aynı model+yılda başka ilan yok · segment S · yaş 18 |
+| BMW 750i Long | 2007 | 271.000 | ₺1.190.000 | ₺3.115.921 | -%161.8 | veride bu modelden 2 ilan · aynı model+yılda başka ilan yok · segment F · yaş 19 |
+
+Otomatik gerekçe dedektörlerden gelir (metindeki HP ve M/RS etiketi, dönüşüm/modifiye ifadesi, sayımlar); ilan metni yazılmaz.
+
+> **Elle yazılmış açıklama (2026-09-17)** — ilan metinleri okunarak; üreteç yalnız yukarıdaki tabloyu hesaplar.
+>
+> - **BMW 640i · 2011:** İlan metnine göre araç komple M6 dönüşümü: M6 motoru ve M6 kasa parçaları takılmış. Form hâlâ 640i dediği için model onu sıradan bir 640i gibi fiyatlıyor; alıcı ise bir M6'ya bakıyor.
+> - **Audi 4.2 FSI Quattro R-tronic (R8) · 2008:** Veride tek R8. Formdaki model adı yalnız "4.2 FSI Quattro R-tronic"; aynı motor adını taşıyan S5 4.2 FSI Quattro'ların medyanı ₺2.62M ve model tahmini buna neredeyse eşit. Emsali olmayan bir süper otomobili model, adı benzeyen S5 gibi fiyatlamış.
+> - **BMW 750i Long · 2007:** Veride bu addan iki ilan var; diğeri ₺5.3M'lik dönüşümlü bir 2009 araç. Bu ilan ise aynı yılın 730d'leriyle (15 ilan, medyan ₺1.18M) uyumlu ve metni bakımlı, masrafsız diyor. İlan piyasaya uygun, yanılan model: emsali olmadığı için muhtemelen adın diğer, pahalı ilanından etkileniyor.
+
 ![Artık% vs Tahmin](figures/tr-09-residual.png)
 
 ![Model ilan-adedi vs medyan hata (log eksen)](figures/tr-11-n-vs-error.png)

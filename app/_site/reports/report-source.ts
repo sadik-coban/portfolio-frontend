@@ -84,7 +84,9 @@ const headings = (counter: { h2: number; h3: number }) => () => (tree: HastNode)
  * Blockquotes become the live report's method notes (<Method>): a grey mono box opened by a green
  * "// ". The generator uses blockquotes for exactly that — provenance lines and "Not —" caveats.
  */
-const METHOD_NOTE = 'not-prose my-6 rounded-[10px] border border-[#e9e7e2] bg-[#f3f1ec] px-4 py-3 font-mono text-[12px] leading-[1.6] text-[#5f5f5a] [&_a]:text-[#047857] [&_a]:underline [&_a]:underline-offset-2 [&_strong]:font-semibold [&_strong]:text-[#33332f] [&>p+p]:mt-2';
+// not-prose also strips list markers, and a note can hold a list (the hand-written explanations
+// under the large-error examples), so bullets and block spacing are put back here.
+const METHOD_NOTE = 'not-prose my-6 rounded-[10px] border border-[#e9e7e2] bg-[#f3f1ec] px-4 py-3 font-mono text-[12px] leading-[1.6] text-[#5f5f5a] [&_a]:text-[#047857] [&_a]:underline [&_a]:underline-offset-2 [&_strong]:font-semibold [&_strong]:text-[#33332f] [&>*+*]:mt-2.5 [&_ul]:list-disc [&_ul]:space-y-2 [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:space-y-2 [&_ol]:pl-4 [&_li]:marker:text-[#047857]';
 
 const methodNotes = () => (tree: HastNode) => {
     const walk = (node: HastNode) => {

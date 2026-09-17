@@ -257,6 +257,40 @@ OOF (leak-free) predictions vs actual — R² **0.9744**. Residual% centers on z
 
 OOF error for all 29,988 listings. The distribution peaks at zero (median residual -0.26%); the share of listings within ±10% is **80.0%**. Mean |error| is 6.5% — the MAPE itself; median |error| 4.7%. The tails are asymmetric, the over-prediction side is heavier: the model says more than 20% **above** the actual price for 761 listings and more than 20% **below** it for 426 (extremes -178.4% and +55.3%). Part of the asymmetry is by definition: the residual is divided by the actual price, so under-prediction is capped at 100% while over-prediction is unbounded. The std (9.31%) is inflated by that tail; median |error| describes the typical miss better.
 
+### Where the large errors come from
+
+There are 1,187 listings with an error beyond ±20% (761 over-, 426 under-predicted). The breakdowns below are counted from structured fields only — no text detector involved.
+
+| listings of the same model+year | listings | large error | over-predicted | under-predicted |
+|---|---:|---:|---:|---:|
+| 1 | 610 | 19.2% | 11.5% | 7.7% |
+| 2–4 | 1,584 | 10.6% | 6.3% | 4.3% |
+| 5–19 | 5,732 | 4.6% | 3.0% | 1.6% |
+| 20–99 | 16,505 | 2.9% | 1.9% | 1.0% |
+| 100+ | 5,557 | 2.8% | 1.9% | 0.9% |
+
+1. **No comparable.** With no other listing of the same model and year the large-error rate is 19.2%; with 100+ comparables 2.8%. The model cannot price a car it has not seen.
+2. **Exotic or old car.** 20.6% in the F/S segments (others 3.8%); 11.6% at age ≥ 18 (younger 3.2%). The form fields cannot explain the price differences among these cars.
+3. **Time.** The model is time-blind: median residual -3.39% in the first snapshot (2026-01-18), +1.42% in the last (2026-06-27) — as the market rises it first says too expensive, then too cheap.
+
+Association; not verified listing by listing. Information absent from the form (damage history, equipment, modifications) is a likely contributor, not measured here.
+
+#### Examples
+
+| car | year | km | price | model estimate | residual | automatic reasons |
+|---|---:|---:|---:|---:|---:|---|
+| BMW 640i | 2011 | 160,000 | ₺5,600,000 | ₺3,238,105 | +42.2% | text says 650 hp, form says 320 hp · text names a different M/RS model (M6) · conversion wording in text · 3 listing(s) of this model in the data |
+| Audi 4.2 FSI Quattro R-tronic (R8) | 2008 | 112,550 | ₺4,690,000 | ₺2,610,304 | +44.3% | 1 listing(s) of this model in the data · no other listing of the same model+year · segment S · age 18 |
+| BMW 750i Long | 2007 | 271,000 | ₺1,190,000 | ₺3,115,921 | -161.8% | 2 listing(s) of this model in the data · no other listing of the same model+year · segment F · age 19 |
+
+Automatic reasons come from the detectors (HP and M/RS label in the text, conversion/modification wording, counts); the ad text itself is not written.
+
+> **Hand-written explanation (2026-09-17)** — written by reading the ads; the generator computes only the table above.
+>
+> - **BMW 640i · 2011:** Per the ad text the car is a full M6 conversion: M6 engine and M6 body parts. The form still says 640i, so the model prices an ordinary 640i while the buyer is looking at an M6.
+> - **Audi 4.2 FSI Quattro R-tronic (R8) · 2008:** The only R8 in the data. Its model name on the form is just "4.2 FSI Quattro R-tronic"; the S5 4.2 FSI Quattros sharing that engine name have a median of ₺2.62M, and the model's estimate is almost exactly that. With no comparable, the model priced a supercar like the similarly named S5.
+> - **BMW 750i Long · 2007:** There are two listings under this name; the other is a ₺5.3M converted 2009 car. This listing is in line with same-year 730ds (15 listings, median ₺1.18M) and its text says well-maintained with no pending costs. The listing is priced right and the model is wrong: lacking a comparable, it is probably pulled up by the name's other, expensive listing.
+
 ![Residual% vs Predicted](figures/en-09-residual.png)
 
 ![Per-model sample size vs median error (log axis)](figures/en-11-n-vs-error.png)

@@ -50,6 +50,8 @@ The model struggles on cheap cars — error varies sharply by price quartile.
 
 ![Median error by price quartile (%)](figures/en-10-quartile-error.png)
 
+**Large misses (beyond ±20%) concentrate where there is no comparable.** With no other listing of the same model and year the rate is 19.2%; with 100+ comparables 2.8%. Top/sport segments (20.6%) and cars aged 18+ (11.6%) are risky too; overall 4.0%.
+
 ### Why a range, not a single number
 
 An asking-price error costs money in both directions: **over-estimation hits the buyer** (a car bought too dear), **under-estimation hits the seller** (a car let go too cheap). A single number hides how sure the estimate is; a range states it and warns the user exactly where uncertainty is large.

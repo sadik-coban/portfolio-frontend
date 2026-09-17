@@ -50,6 +50,8 @@ Model ucuz araçlarda zorlanıyor — hata fiyat çeyreğine göre belirgin değ
 
 ![Fiyat çeyreğine göre medyan hata (%)](figures/tr-10-quartile-error.png)
 
+**Büyük sapmalar (±%20 üstü) en çok emsali olmayan ilanlarda.** Aynı model ve yıldan başka ilan yoksa bu oran %19.2, 100+ emsal varsa %2.8. Üst/spor segment (%20.6) ve 18 yaş üstü araçlar (%11.6) da riskli; genel oran %4.0.
+
 ### Neden tek sayı değil aralık
 
 İlan fiyatında iki yönlü hata da para kaybettirir: **fazla tahmin alıcıya**, pahalı alınan araç olarak; **düşük tahmin satıcıya**, ucuza giden araç olarak patlar. Tek sayı ne kadar emin olunduğunu saklar; aralık bunu söyler ve kullanıcıyı belirsizliğin büyük olduğu yerde uyarır.
