@@ -28,7 +28,7 @@ Yaş yılda **%7.1**, kilometre her 100 bin km'de **%14.6** değer kaybettiriyor
 
 ![Kilometreye göre fiyat (medyan + ort.)](figures/tr-06-km-price.png)
 
-Denetimsiz kümeleme piyasayı 3 profile ayırıyor (k=3 yorumlanabilirlik için sabit seçildi; veride belirgin doğal küme yok — bkz. teknik §8):
+Denetimsiz kümeleme piyasayı 3 profile ayırıyor (k=3 yorumlanabilirlik için sabit seçildi; veride belirgin doğal küme yok — bkz. teknik §5):
 
 | küme | ilan | medyan | yaş | km | motor (hp) | ağır hasar |
 |---|---:|---:|---:|---:|---:|---:|

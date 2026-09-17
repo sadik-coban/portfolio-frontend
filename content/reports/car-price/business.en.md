@@ -28,7 +28,7 @@ Age costs **7.1%** a year, mileage **14.6%** per 100k km — two separate but co
 
 ![Price by mileage (median + mean)](figures/en-06-km-price.png)
 
-Unsupervised clustering splits the market into 3 profiles (k=3 was fixed for interpretability; the data has no pronounced natural clusters — see technical §8):
+Unsupervised clustering splits the market into 3 profiles (k=3 was fixed for interpretability; the data has no pronounced natural clusters — see technical §5):
 
 | cluster | listings | median | age | km | engine (hp) | heavy damage |
 |---|---:|---:|---:|---:|---:|---:|

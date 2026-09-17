@@ -93,7 +93,7 @@ Most repeated listings:
 
 A listing page can carry the same field in two tabs. For the 1 field(s) with a twin the populated side (kb) is used; the 3 without one (insurance/tax) crossed the 40% threshold and were dropped.
 
-## 3. Redundancy and dependence checks
+## 3. Redundancy, dependence and brand
 
 Cramér's V gives association strength (symmetric); Theil's U its direction (asymmetric). The asymmetry is the finding: `model` almost fully determines the rest but not vice-versa — `series` is a coarsened view of `model`, not independent information.
 
@@ -112,9 +112,9 @@ Cramér's V gives association strength (symmetric); Theil's U its direction (asy
 | U(brand \| model) | brand given model | 1.000 |
 | U(brand \| series) | brand given series | 1.000 |
 
-Model determines series at 1.00; series determines model only at 0.39. Brand is fully readable from either model or series → brand carries no separate information (the ablation in §9 measures the same thing).
+Model determines series at 1.00; series determines model only at 0.39. Brand is fully readable from either model or series → brand carries no separate information (the brand ablation below measures the same thing).
 
-Correlation among numeric features — the numeric counterpart to the categorical dependence above. |r|>0.5 pairs are flagged for collinearity (also checked via VIF, §4).
+Correlation among numeric features — the numeric counterpart to the categorical dependence above. |r|>0.5 pairs are flagged for collinearity (also checked via VIF, §6).
 
 ![Pearson](figures/en-20-pearson.png)
 
@@ -128,7 +128,55 @@ Correlation among numeric features — the numeric counterpart to the categorica
 | Power (hp) | Engine (cc) | 0.730 |
 | Door Painted | Fender Painted | 0.670 |
 
-## 4. Hedonic model — controlled effects
+### Brand ablation
+
+| identity columns | MAPE | MAE | R² |
+|---|---:|---:|---:|
+| brand only | 7.17% | ₺125K | 0.9679 |
+| series + model | 6.50% | ₺110K | 0.9744 |
+| brand + series + model (the report's model) | 6.50% | ₺110K | 0.9744 |
+
+Only the identity columns change in the full model, everything else fixed; same 5-fold OOF. Giving brand alone instead of series+model worsens MAE by ₺15K. Adding brand on top of series+model changes MAE by ₺0 (MAPE delta 0.00 pts) → once model is known, brand carries no information. U(brand | model) = 1.00 above is the dependence side of the same fact.
+
+## 4. Target and preprocessing
+
+Raw price is right-skewed (skew 1.62); a log transform pulls it toward symmetry (0.28). The model trains on `log1p(price)`: under squared loss the extremes were swallowing the whole error budget. A modelling decision, not a market finding.
+
+![Price histogram — all data (dashed line = median)](figures/en-25-price-hist.png)
+
+![Median price by body style](figures/en-01-body-median.png)
+
+## 5. Market structure — segmentation (KMeans + PCA)
+
+**k=3 was not chosen by silhouette.** Silhouette at k=3 is 0.146 — rank 7 of the 7 values tried; the highest is k=8 (0.211). All sit below 0.25: the data has no pronounced natural clusters. k=3 was fixed for interpretability; read the clusters through the axes below, not as "the market's natural structure". The damage signal still appearing independently across the hedonic model, PCA and KMeans is a robustness check.
+
+![k selection — Elbow + Silhouette](figures/en-24-k-selection.png)
+
+![PCA — PC1 19.7% × PC2 12.4%](figures/en-22-pca-scatter.png)
+
+![PCA — PC1 19.7% × PC3 11.0%](figures/en-23-pca-scatter-13.png)
+
+### Axes separating the clusters
+
+| cluster | listings | top 3 axes vs the mean |
+|---|---:|---|
+| Older, high-km economy · 5% heavy damage | 9,046 | Mileage ↑ · Fender Local Paint ↑ · Engine (cc) ↑ |
+| Newer, clean premium | 15,976 | Mileage ↓ · Age (years) ↓ · Engine (cc) ↓ |
+| Older, high-km economy · 13% heavy damage | 4,966 | Door Painted ↑ · Fender Painted ↑ · Fender Changed ↑ |
+
+↑/↓ = cluster mean above/below the overall mean (top 3 by z-score magnitude). Clusters the producer gave the same name separate in this column.
+
+### PCA loadings
+
+| PC | variance | top 4 loadings |
+|---|---:|---|
+| PC1 | 19.7% | Mileage (+0.46) · Age (years) (+0.45) · Fender Painted (+0.41) · Door Painted (+0.41) |
+| PC2 | 12.4% | Power (hp) (+0.65) · Engine (cc) (+0.61) · Fender Painted (-0.24) · Door Painted (-0.24) |
+| PC3 | 11.0% | Fender Local Paint (+0.58) · Door Local Paint (+0.57) · Power (hp) (-0.28) · Bumper Local Paint (+0.22) |
+
+The first 3 components explain 43.1% of variance. PC1 ≈ Mileage + Age (years) · PC2 ≈ Power (hp) + Engine (cc) · PC3 ≈ Fender Local Paint + Door Local Paint.
+
+## 6. Hedonic model — controlled effects
 
 The hedonic regression gives each driver's *controlled* effect on price (all else equal) — R² **0.9309**, n **29,554**. Coefficients carry bootstrap confidence intervals; all 10 terms have a 95% CI excluding zero → each driver is reliably significant.
 
@@ -180,17 +228,6 @@ Overall correlation 0.73. The relationship varies by fuel — weakest for Hybrid
 
 Highest **engine (L) 3.19** — all below 5; collinearity is not distorting the coefficients.
 
-### Period effect
-
-| snapshot | price level vs 01-18 |
-|---|---:|
-| 01-18 (base) | 0.00% |
-| 01-27 | +1.54% |
-| 03-21 | +3.17% |
-| 06-27 | +5.30% |
-
-The hedonic model controls for time with period dummies: for the same car the price level moved **+5.3%** across 4 snapshots. The report's model (LightGBM) is time-blind — it takes no period feature.
-
 ### Assumption tests
 
 Breusch-Pagan (equal variance) p = **<0.001** · Jarque-Bera (normality) p = **<0.001** → both violated. Inference therefore does not use naive OLS p-values but **HC3** robust standard errors + **1000×** bootstrap.
@@ -201,7 +238,7 @@ LOFO is a second, independent method: drop each feature and measure how much CV 
 
 > **Note — flat LOFO.** The raw `methodology.lofo` mixes single-feature and group removals; plotting both on one axis double-counts (`DAMAGE_COLS` competes with its own 13 members). The chart above is reduced to **non-overlapping** groups covering 19 of 25 features. The remaining 6 categorical features (`brand`, `kb_body_type`, `kb_drivetrain`, `segment`, `kb_transmission`, `kb_fuel`) are **never measured** by LOFO — the producer only traverses numeric and text features. Read "km and age dominate" within that limit.
 
-## 5. Model comparison and the noise floor
+## 7. Model comparison and the noise floor
 
 The report's model: **LightGBM (TF-IDF+SVD)** — MAPE **6.5%**, R² **0.9744**, MAE **₺110K**. Target `log1p(price)`, 25 features. 42% better than the model+year median baseline.
 
@@ -238,7 +275,7 @@ Ladder: (model, year) median → (model) median — all years → global median.
 
 > **These are best-case examples, not typical ones.** In each price tercile the producer picks the non-heavy-damaged listing with the smallest |OOF residual|. "dev." is the final model trained on all data (it saw the listing); the leak-free measure is "OOF resid.". For typical error see MAPE.
 
-## 6. Calibration, residuals and where it is weak
+## 8. Calibration, residuals and where it is weak
 
 OOF (leak-free) predictions vs actual — R² **0.9744**. Residual% centers on zero (mean -0.48%, std 9.31%) → no systematic bias.
 
@@ -326,9 +363,20 @@ Across 29,988 listings a few predictions landing within a few lira of the truth 
 
 In 6 of the worst 6 the model says **more** than the actual price; median age 20. Something invisible in the structured fields (damage history, project car, rare variant) is a plausible explanation — not verified listing by listing here. All predictions are OOF; the listing id (`ad_id`) is deliberately not published.
 
-## 7. Distribution drift and temporal backtest
+## 9. Time — period effect, distribution drift and backtest
 
 Two lines of evidence give the same call. Distribution drift: the period curves nearly overlap. Temporal backtest: train on an earlier period and test only on the next period's NEW listings (leak-free). Verdict: the market LEVEL shifted +5.3% but the SHAPE held → monthly retraining suffices.
+
+### Period effect
+
+| snapshot | price level vs 01-18 |
+|---|---:|
+| 01-18 (base) | 0.00% |
+| 01-27 | +1.54% |
+| 03-21 | +3.17% |
+| 06-27 | +5.30% |
+
+The hedonic model controls for time with period dummies: for the same car the price level moved **+5.3%** across 4 snapshots. The report's model (LightGBM) is time-blind — it takes no period feature.
 
 ### Temporal backtest
 
@@ -371,58 +419,9 @@ PSI thresholds: < 0.10 safe, > 0.25 retrain. Highest PSI **0.0049** — below th
 
 ![Log-price density by snapshot](figures/en-14-drift-kde.png)
 
-## 8. Segmentation — KMeans + PCA
-
-**k=3 was not chosen by silhouette.** Silhouette at k=3 is 0.146 — rank 7 of the 7 values tried; the highest is k=8 (0.211). All sit below 0.25: the data has no pronounced natural clusters. k=3 was fixed for interpretability; read the clusters through the axes below, not as "the market's natural structure". The damage signal still appearing independently across the hedonic model, PCA and KMeans is a robustness check.
-
-![k selection — Elbow + Silhouette](figures/en-24-k-selection.png)
-
-![PCA — PC1 19.7% × PC2 12.4%](figures/en-22-pca-scatter.png)
-
-![PCA — PC1 19.7% × PC3 11.0%](figures/en-23-pca-scatter-13.png)
-
-### Axes separating the clusters
-
-| cluster | listings | top 3 axes vs the mean |
-|---|---:|---|
-| Older, high-km economy · 5% heavy damage | 9,046 | Mileage ↑ · Fender Local Paint ↑ · Engine (cc) ↑ |
-| Newer, clean premium | 15,976 | Mileage ↓ · Age (years) ↓ · Engine (cc) ↓ |
-| Older, high-km economy · 13% heavy damage | 4,966 | Door Painted ↑ · Fender Painted ↑ · Fender Changed ↑ |
-
-↑/↓ = cluster mean above/below the overall mean (top 3 by z-score magnitude). Clusters the producer gave the same name separate in this column.
-
-### PCA loadings
-
-| PC | variance | top 4 loadings |
-|---|---:|---|
-| PC1 | 19.7% | Mileage (+0.46) · Age (years) (+0.45) · Fender Painted (+0.41) · Door Painted (+0.41) |
-| PC2 | 12.4% | Power (hp) (+0.65) · Engine (cc) (+0.61) · Fender Painted (-0.24) · Door Painted (-0.24) |
-| PC3 | 11.0% | Fender Local Paint (+0.58) · Door Local Paint (+0.57) · Power (hp) (-0.28) · Bumper Local Paint (+0.22) |
-
-The first 3 components explain 43.1% of variance. PC1 ≈ Mileage + Age (years) · PC2 ≈ Power (hp) + Engine (cc) · PC3 ≈ Fender Local Paint + Door Local Paint.
-
-## 9. Brand
-
-### Brand ablation
-
-| identity columns | MAPE | MAE | R² |
-|---|---:|---:|---:|
-| brand only | 7.17% | ₺125K | 0.9679 |
-| series + model | 6.50% | ₺110K | 0.9744 |
-| brand + series + model (the report's model) | 6.50% | ₺110K | 0.9744 |
-
-Only the identity columns change in the full model, everything else fixed; same 5-fold OOF. Giving brand alone instead of series+model worsens MAE by ₺15K. Adding brand on top of series+model changes MAE by ₺0 (MAPE delta 0.00 pts) → once model is known, brand carries no information. U(brand | model) = 1.00 in §3 is the dependence side of the same fact.
-
-## 10. Target and preprocessing
-
-Raw price is right-skewed (skew 1.62); a log transform pulls it toward symmetry (0.28). The model trains on `log1p(price)`: under squared loss the extremes were swallowing the whole error budget. A modelling decision, not a market finding.
-
-![Price histogram — all data (dashed line = median)](figures/en-25-price-hist.png)
-
-![Median price by body style](figures/en-01-body-median.png)
-
-## 11. Reproducibility
+## 10. Reproducibility
 
 - seed: `42` · row order: `ORDER BY ad_id` · LightGBM deterministic: `True` · CatBoost device: `CPU` · n_jobs: `16`
 
 To regenerate this report: `python clean/car_price_report/build_report.py`. To regenerate the data itself: `python clean/build_site_data.py`.
+

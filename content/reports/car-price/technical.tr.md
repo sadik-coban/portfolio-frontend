@@ -93,7 +93,7 @@ En çok tekrar eden ilanlar:
 
 İlan sayfası aynı bilgiyi iki sekmede taşıyabiliyor. İkizi olan 1 alanda dolu taraf (kb) kullanıldı; ikizi olmayan 3 alan (sigorta/vergi) %40 eşiğini aştığı için atıldı.
 
-## 3. Fazlalık ve bağıntı kontrolleri
+## 3. Fazlalık, bağıntı ve marka
 
 Cramér's V ilişkinin gücünü (simetrik), Theil's U yönünü (asimetrik) verir. Asimetri bulgunun kendisi: `model` diğerlerini neredeyse tam belirliyor ama tersi değil — yani `seri`, `model`in kabalaştırılmış hâli, bağımsız bilgi değil.
 
@@ -112,9 +112,9 @@ Cramér's V ilişkinin gücünü (simetrik), Theil's U yönünü (asimetrik) ver
 | U(marka \| model) | model bilinince marka | 1.000 |
 | U(marka \| seri) | seri bilinince marka | 1.000 |
 
-Model seriyi 1.00 belirliyor, seri modeli yalnız 0.39. Marka hem modelden hem seriden tamamen okunuyor → marka ayrı bilgi taşımaz (§9'daki ablasyon aynı sonucu ölçer).
+Model seriyi 1.00 belirliyor, seri modeli yalnız 0.39. Marka hem modelden hem seriden tamamen okunuyor → marka ayrı bilgi taşımaz (aşağıdaki marka ablasyonu aynı sonucu ölçer).
 
-Sayısal öznitelikler arası korelasyon — yukarıdaki kategorik bağıntının sayısal karşılığı. |r|>0.5 çiftler çoklu-bağlantı için işaretlendi (VIF ile de kontrol edildi, §4).
+Sayısal öznitelikler arası korelasyon — yukarıdaki kategorik bağıntının sayısal karşılığı. |r|>0.5 çiftler çoklu-bağlantı için işaretlendi (VIF ile de kontrol edildi, §6).
 
 ![Pearson](figures/tr-20-pearson.png)
 
@@ -128,7 +128,55 @@ Sayısal öznitelikler arası korelasyon — yukarıdaki kategorik bağıntını
 | Motor Gücü (hp) | Motor Hacmi (cc) | 0.730 |
 | Kapı Boyalı | Çamurluk Boyalı | 0.670 |
 
-## 4. Hedonik model — kontrollü etkiler
+### Marka ablasyonu
+
+| kimlik kolonları | MAPE | MAE | R² |
+|---|---:|---:|---:|
+| yalnız marka | %7.17 | ₺125K | 0.9679 |
+| seri + model | %6.50 | ₺110K | 0.9744 |
+| marka + seri + model (rapordaki model) | %6.50 | ₺110K | 0.9744 |
+
+Tam modelde yalnız kimlik kolonları değişiyor, diğer öznitelikler sabit; aynı 5-fold OOF. Seri+model yerine yalnız marka verilince MAE ₺15K kötüleşiyor. Seri+modelin üzerine marka eklemek MAE'yi ₺0 değiştiriyor (MAPE farkı 0.00 puan) → model verildiğinde marka bilgi taşımıyor. Yukarıdaki U(marka | model) = 1.00 aynı şeyin bağıntı tarafı.
+
+## 4. Hedef ve önişleme
+
+Ham fiyat sağa çarpık (çarpıklık 1.62); log dönüşümü simetriğe yaklaştırıyor (0.28). Model `log1p(price)` üzerinde eğitildi: uç değerler kareli kayıpta tüm hata bütçesini yutuyordu. Bu bir modelleme kararı, piyasa bulgusu değil.
+
+![Fiyat histogramı — tüm veri (kesikli çizgi = medyan)](figures/tr-25-price-hist.png)
+
+![Kasa tipine göre medyan fiyat](figures/tr-01-body-median.png)
+
+## 5. Piyasa yapısı — segmentasyon (KMeans + PCA)
+
+**k=3 silhouette ile seçilmedi.** k=3 için silhouette 0.146 — denenen 7 değer içinde 7. sırada; en yüksek k=8 (0.211). Hepsi 0.25'in altında: veride belirgin doğal küme yok. k=3 yorumlanabilirlik için sabit seçildi; kümeler aşağıdaki eksenleriyle okunmalı, "piyasanın doğal yapısı" olarak değil. Hasar sinyalinin hedonik model, PCA ve KMeans'te bağımsızca çıkması yine de bir sağlamlık teşhisi.
+
+![k seçimi — Elbow + Silhouette](figures/tr-24-k-selection.png)
+
+![PCA — PC1 %19.7 × PC2 %12.4](figures/tr-22-pca-scatter.png)
+
+![PCA — PC1 %19.7 × PC3 %11.0](figures/tr-23-pca-scatter-13.png)
+
+### Kümeleri ayıran eksenler
+
+| küme | ilan | ortalamadan en çok ayrıldığı 3 eksen |
+|---|---:|---|
+| Yaşlı & yüksek-km ekonomik · ağır hasar %5 | 9.046 | Kilometre ↑ · Çamurluk Lokal Boya ↑ · Motor Hacmi (cc) ↑ |
+| Genç & temiz premium | 15.976 | Kilometre ↓ · Yaş (yıl) ↓ · Motor Hacmi (cc) ↓ |
+| Yaşlı & yüksek-km ekonomik · ağır hasar %13 | 4.966 | Kapı Boyalı ↑ · Çamurluk Boyalı ↑ · Çamurluk Değişen ↑ |
+
+↑/↓ = kümenin ortalaması genelin üstünde/altında (z-skoru büyüklüğüne göre ilk 3). Üreticinin aynı adı verdiği kümeler bu sütunda ayrışıyor.
+
+### PCA yükleri
+
+| PC | varyans | en büyük 4 yük |
+|---|---:|---|
+| PC1 | %19.7 | Kilometre (+0.46) · Yaş (yıl) (+0.45) · Çamurluk Boyalı (+0.41) · Kapı Boyalı (+0.41) |
+| PC2 | %12.4 | Motor Gücü (hp) (+0.65) · Motor Hacmi (cc) (+0.61) · Çamurluk Boyalı (-0.24) · Kapı Boyalı (-0.24) |
+| PC3 | %11.0 | Çamurluk Lokal Boya (+0.58) · Kapı Lokal Boya (+0.57) · Motor Gücü (hp) (-0.28) · Tampon Lokal Boya (+0.22) |
+
+İlk 3 bileşenin açıkladığı varyans: %43.1. PC1 ≈ Kilometre + Yaş (yıl) · PC2 ≈ Motor Gücü (hp) + Motor Hacmi (cc) · PC3 ≈ Çamurluk Lokal Boya + Kapı Lokal Boya.
+
+## 6. Hedonik model — kontrollü etkiler
 
 Hedonik regresyon her sürücünün *kontrollü* (diğer her şey sabitken) fiyat etkisini verir — R² **0.9309**, n **29.554**. Katsayılar bootstrap ile güven aralıklı; 10 terimin hepsinin %95 GA'sı sıfırı dışlıyor → her sürücü güvenilir şekilde anlamlı.
 
@@ -180,17 +228,6 @@ Genel korelasyon 0.73. İlişki yakıta göre değişiyor — en zayıf Hibrit (
 
 En yüksek **motor (L) 3.19** — hepsi 5'in altında; çoklu bağlantı katsayıları bozmuyor.
 
-### Dönem etkisi
-
-| dönem | fiyat seviyesi (taban 01-18) |
-|---|---:|
-| 01-18 (taban) | %0.00 |
-| 01-27 | +%1.54 |
-| 03-21 | +%3.17 |
-| 06-27 | +%5.30 |
-
-Hedonik model dönem kuklalarıyla zamanı kontrol eder: aynı araç için fiyat seviyesi 4 dönemde **+%5.3** kaydı. Rapordaki model (LightGBM) zamansızdır — dönem özniteliği almaz.
-
 ### Varsayım testleri
 
 Breusch-Pagan (eşit varyans) p = **<0.001** · Jarque-Bera (normallik) p = **<0.001** → ikisi de ihlal. Bu yüzden çıkarım çıplak OLS p-değeriyle değil, **HC3** robust standart hata + **1000×** bootstrap ile yapıldı.
@@ -201,7 +238,7 @@ LOFO ikinci ve bağımsız bir yöntem: her özniteliği çıkarıp CV hatasın�
 
 > **Not — düz LOFO.** Ham `methodology.lofo` hem tekil hem grup çıkarmaları bir arada taşıyor; ikisini aynı eksende basmak çift sayım olur (`DAMAGE_COLS` kendi 13 üyesiyle yarışır). Yukarıdaki grafik **çakışmayan** 5 gruba indirgenmiştir ve 25 özniteliğin 19'unu kapsar. Kalan 6 kategorik öznitelik (`brand`, `kb_body_type`, `kb_drivetrain`, `segment`, `kb_transmission`, `kb_fuel`) LOFO'da **hiç ölçülmemiştir** — üretici yalnız sayısal ve metin özniteliklerini geziyor. "km ve yaş baskın" sonucu bu sınır içinde okunmalıdır.
 
-## 5. Model karşılaştırma ve gürültü tabanı
+## 7. Model karşılaştırma ve gürültü tabanı
 
 Rapordaki model: **LightGBM (TF-IDF+SVD)** — MAPE **%6.5**, R² **0.9744**, MAE **₺110K**. Hedef `log1p(price)`, 25 öznitelik. Model+yıl medyan tabanına göre %42 daha iyi.
 
@@ -238,7 +275,7 @@ Merdiven: (model, yıl) medyanı → (model) medyanı — tüm yıllar → globa
 
 > **Bunlar tipik değil, en iyi durum örnekleri.** Üretici her fiyat tercilinde ağır hasarsız ve |OOF artık|'ı en küçük ilanı seçer. "sapma" tüm veriyle eğitilmiş final modelin tahminidir (ilanı eğitimde görmüştür); sızıntısız ölçü "OOF artık". Tipik hata için MAPE'ye bakın.
 
-## 6. Kalibrasyon, artıklar ve zayıflık
+## 8. Kalibrasyon, artıklar ve zayıflık
 
 OOF (sızıntısız) tahminler gerçek fiyata karşı — R² **0.9744**. Artık% sıfır etrafında (ort. %-0.48, std %9.31) → sistematik yanlılık yok.
 
@@ -326,9 +363,20 @@ Zayıflık fiyata bağlı: medyan hata en ucuz çeyrekte %6.97, en pahalıda %3.
 
 En kötü 6 ilanın 6 tanesinde model gerçek fiyatın **üstünü** söylüyor; medyan yaş 20. Yapısal alanlarda görünmeyen bir durum (hasar geçmişi, proje araç, nadir varyant) olası açıklama — bu raporda ilan ilan doğrulanmadı. Tüm tahminler OOF; ilan kimliği (`ad_id`) bilerek yazılmadı.
 
-## 7. Dağılım kayması ve zamansal backtest
+## 9. Zaman — dönem etkisi, dağılım kayması ve backtest
 
 İki kanıt aynı kararı veriyor. Dağılım kayması: dönemler arası eğriler neredeyse çakışık. Zamansal backtest: eski dönemde eğit, sonraki dönemin yalnızca YENİ ilanlarında test et (sızıntısız). Sonuç: piyasa SEVİYESİ +%5.3 kaydı ama ŞEKİL sabit → aylık yeniden eğitim yeter.
+
+### Dönem etkisi
+
+| dönem | fiyat seviyesi (taban 01-18) |
+|---|---:|
+| 01-18 (taban) | %0.00 |
+| 01-27 | +%1.54 |
+| 03-21 | +%3.17 |
+| 06-27 | +%5.30 |
+
+Hedonik model dönem kuklalarıyla zamanı kontrol eder: aynı araç için fiyat seviyesi 4 dönemde **+%5.3** kaydı. Rapordaki model (LightGBM) zamansızdır — dönem özniteliği almaz.
 
 ### Zamansal backtest
 
@@ -371,58 +419,9 @@ PSI eşikleri: < 0.10 güvenli, > 0.25 yeniden eğitim. En yüksek PSI **0.0049*
 
 ![Log-fiyat yoğunluğu — dönemlere göre](figures/tr-14-drift-kde.png)
 
-## 8. Segmentasyon — KMeans + PCA
-
-**k=3 silhouette ile seçilmedi.** k=3 için silhouette 0.146 — denenen 7 değer içinde 7. sırada; en yüksek k=8 (0.211). Hepsi 0.25'in altında: veride belirgin doğal küme yok. k=3 yorumlanabilirlik için sabit seçildi; kümeler aşağıdaki eksenleriyle okunmalı, "piyasanın doğal yapısı" olarak değil. Hasar sinyalinin hedonik model, PCA ve KMeans'te bağımsızca çıkması yine de bir sağlamlık teşhisi.
-
-![k seçimi — Elbow + Silhouette](figures/tr-24-k-selection.png)
-
-![PCA — PC1 %19.7 × PC2 %12.4](figures/tr-22-pca-scatter.png)
-
-![PCA — PC1 %19.7 × PC3 %11.0](figures/tr-23-pca-scatter-13.png)
-
-### Kümeleri ayıran eksenler
-
-| küme | ilan | ortalamadan en çok ayrıldığı 3 eksen |
-|---|---:|---|
-| Yaşlı & yüksek-km ekonomik · ağır hasar %5 | 9.046 | Kilometre ↑ · Çamurluk Lokal Boya ↑ · Motor Hacmi (cc) ↑ |
-| Genç & temiz premium | 15.976 | Kilometre ↓ · Yaş (yıl) ↓ · Motor Hacmi (cc) ↓ |
-| Yaşlı & yüksek-km ekonomik · ağır hasar %13 | 4.966 | Kapı Boyalı ↑ · Çamurluk Boyalı ↑ · Çamurluk Değişen ↑ |
-
-↑/↓ = kümenin ortalaması genelin üstünde/altında (z-skoru büyüklüğüne göre ilk 3). Üreticinin aynı adı verdiği kümeler bu sütunda ayrışıyor.
-
-### PCA yükleri
-
-| PC | varyans | en büyük 4 yük |
-|---|---:|---|
-| PC1 | %19.7 | Kilometre (+0.46) · Yaş (yıl) (+0.45) · Çamurluk Boyalı (+0.41) · Kapı Boyalı (+0.41) |
-| PC2 | %12.4 | Motor Gücü (hp) (+0.65) · Motor Hacmi (cc) (+0.61) · Çamurluk Boyalı (-0.24) · Kapı Boyalı (-0.24) |
-| PC3 | %11.0 | Çamurluk Lokal Boya (+0.58) · Kapı Lokal Boya (+0.57) · Motor Gücü (hp) (-0.28) · Tampon Lokal Boya (+0.22) |
-
-İlk 3 bileşenin açıkladığı varyans: %43.1. PC1 ≈ Kilometre + Yaş (yıl) · PC2 ≈ Motor Gücü (hp) + Motor Hacmi (cc) · PC3 ≈ Çamurluk Lokal Boya + Kapı Lokal Boya.
-
-## 9. Marka
-
-### Marka ablasyonu
-
-| kimlik kolonları | MAPE | MAE | R² |
-|---|---:|---:|---:|
-| yalnız marka | %7.17 | ₺125K | 0.9679 |
-| seri + model | %6.50 | ₺110K | 0.9744 |
-| marka + seri + model (rapordaki model) | %6.50 | ₺110K | 0.9744 |
-
-Tam modelde yalnız kimlik kolonları değişiyor, diğer öznitelikler sabit; aynı 5-fold OOF. Seri+model yerine yalnız marka verilince MAE ₺15K kötüleşiyor. Seri+modelin üzerine marka eklemek MAE'yi ₺0 değiştiriyor (MAPE farkı 0.00 puan) → model verildiğinde marka bilgi taşımıyor. §3'teki U(marka | model) = 1.00 aynı şeyin bağıntı tarafı.
-
-## 10. Hedef ve önişleme
-
-Ham fiyat sağa çarpık (çarpıklık 1.62); log dönüşümü simetriğe yaklaştırıyor (0.28). Model `log1p(price)` üzerinde eğitildi: uç değerler kareli kayıpta tüm hata bütçesini yutuyordu. Bu bir modelleme kararı, piyasa bulgusu değil.
-
-![Fiyat histogramı — tüm veri (kesikli çizgi = medyan)](figures/tr-25-price-hist.png)
-
-![Kasa tipine göre medyan fiyat](figures/tr-01-body-median.png)
-
-## 11. Yeniden üretilebilirlik
+## 10. Yeniden üretilebilirlik
 
 - seed: `42` · satır sırası: `ORDER BY ad_id` · LightGBM deterministik: `True` · CatBoost cihazı: `CPU` · n_jobs: `16`
 
 Bu raporu yeniden üretmek: `python clean/car_price_report/build_report.py`. Verinin kendisini yeniden üretmek: `python clean/build_site_data.py`.
+

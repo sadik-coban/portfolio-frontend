@@ -59,7 +59,32 @@ Sınıf tanımı: `ağır=pert/ağır-hasar VEYA 3+ değişen panel · orta=1-2 
 
 Ters yön toplamda **3.964 ilan**: metin hasar anlatıyor, sayaç boş — yapısal alanın eksik olduğu yer. Tablolarda ham metin yok, yalnız dedektörün eşleştirdiği kelimeler; ilan kimliği (`ad_id`) kaynakta olduğu hâlde bilerek yazılmadı.
 
-## 3. "Temiz" beyanının fiyatı
+## 3. LangExtract ile kapsam doğrulama
+
+İlan metinleri bir kez **offline** olarak Google **LangExtract** ile yapılandırılmış çıkarıma sokuldu (çıkarım modeli Gemini 3.1 Flash Lite): **13.904 ilan · 41.866 çıkarım** (ilan başına ort. 3.0), bunların 13.867 tanesi analiz kümesinde → kapsama **%46.2**. `match_exact` hizalama oranı %95.9.
+
+| sınıf | çıkarım | nitelikler | en sık örnek: girdi → çıktı |
+|---|---:|---|---|
+| Hasar | 19.800 | parça · durum | "sağ ön çamurluk değişen" → durum: değişmiş · parça: sağ ön çamurluk (90×) |
+| Bakım | 14.086 | parça · durum | "lastikleri yeni durumda" → durum: sıfır/yeni · parça: lastik (197×) |
+| Modifiye | 4.433 | parça · durum | "m direksiyon" → durum: sonradan takılmış · parça: direksiyon (40×) |
+| Beygir | 3.547 | güç | "170 hp" → güç: 170 (382×) |
+
+Örnek = sınıf başına **en sık** görülen (ifade, nitelik) çifti, dosyadan hesaplanır; en az 10 kez görülmediyse yazılmaz. Böylece tek bir ilana ait ifade rapora girmez.
+
+### Durum sözlüğü (Hasar sınıfı, en sık 5)
+
+| durum | çıkarım | Hasar durumlarındaki pay |
+|---|---:|---:|
+| boyalı | 5.141 | %26.0 |
+| tramer kayıtlı | 3.856 | %19.5 |
+| lokal boyalı | 3.057 | %15.4 |
+| değişmiş | 2.705 | %13.7 |
+| hasar kayıtlı | 1.550 | %7.8 |
+
+**Rolü.** LLM'in durum sözlüğü regex dedektörlerine damıtıldı (`steps/build_text_insights.py` hasar sözlüğü + modifiye dedektörü). Üretimde koşan **regex**'tir; LLM fiyat özniteliği değildir ve pipeline'da çalışmaz. Kapsam 13.867/29.988 = %46.2 olduğu için LLM etiketleri **kısmi** yer-gerçeğidir: regex'e karşı ölçülecek precision "regex hatası" değil, **uyum oranıdır**. Sözlük LLM'den damıtıldığı için bu ölçüm kısmen döngüseldir (uyumu şişirir) — bağımsız doğruluk kanıtı değil, regresyon testi olarak okunmalı. O test (`obselete/clean-oncesi/code/llm_coverage_test.py`) temiz zincirin parçası değil ve bu raporda koşulmadı.
+
+## 4. "Temiz" beyanının fiyatı
 
 Zincir aynı iddia için birden çok sayı üretir; aşağıda hepsi hangi modelden geldiğiyle birlikte. Her basamak bir öncekine kontrol ekler; primin basamaklar boyunca nasıl kaydığı karıştırıcının (confounding) kendisidir.
 
@@ -83,7 +108,7 @@ Zincir aynı iddia için birden çok sayı üretir; aşağıda hepsi hangi model
 | C · + seri | B + seri | %0.0 | -%0.5 … +%0.5 | 0.925 | 2.847 |
 | LightGBM OOF artık | bayraksız model (model/seri kategorik), bayraklıların ort. artığı · 400× bootstrap GA | -%0.2 | -%0.5 … +%0.1 | — | 2.856 |
 
-**Hangi sayı nereden.** Karar notundaki +%1.4 = birinci merdivenin **C** basamağı (p 0.19). LightGBM kolu aynı büyüklüğü veriyor ama GA'sı +%0.1 … +%2.9 — sıfırı dışlıyor, sınırda anlamlı. §4'teki katsayı tablosundaki +%1.9 (n 161) ise **üçüncü bir model**: tüm metin sinyalleri aynı regresyonda eşzamanlı; kontrol seti ve eş-değişkenler farklı olduğu için merdivenle birebir aynı çıkmaz. İkinci popülasyonda prim yalnız A basamağında görünür; hasar sayaçları girince kaybolur → başlıktaki "temiz" sözcüğünün kendi primi yok, fark hasar kompozisyonundan.
+**Hangi sayı nereden.** Karar notundaki +%1.4 = birinci merdivenin **C** basamağı (p 0.19). LightGBM kolu aynı büyüklüğü veriyor ama GA'sı +%0.1 … +%2.9 — sıfırı dışlıyor, sınırda anlamlı. §5'teki katsayı tablosundaki +%1.9 (n 161) ise **üçüncü bir model**: tüm metin sinyalleri aynı regresyonda eşzamanlı; kontrol seti ve eş-değişkenler farklı olduğu için merdivenle birebir aynı çıkmaz. İkinci popülasyonda prim yalnız A basamağında görünür; hasar sayaçları girince kaybolur → başlıktaki "temiz" sözcüğünün kendi primi yok, fark hasar kompozisyonundan.
 
 ### Hasar durumu — 3 grup (tüm ilanlar)
 
@@ -95,7 +120,7 @@ Zincir aynı iddia için birden çok sayı üretir; aşağıda hepsi hangi model
 
 **Betimleyici.** Medyan fiyatları yan yana okumak yanıltır: temiz beyanlı araçlar zaten daha genç, düşük km'li ve üst segmentte. Kontrollü fark (yaş · log km · HP · hasar sayaçları · segment · marka, HC3) +%2.7 — bu **6.004 temiz beyanlı ilanın tamamı** için, hasardan bahsetmeyenlere göre; yukarıdaki 163 çelişkili ilanın primi değildir.
 
-## 4. Kontrollü katsayı tablosu
+## 5. Kontrollü katsayılar ve donanım
 
 Tüm metin sinyalleri **tek** hedonik log-OLS'te eşzamanlı, HC3 robust SE ile. n **29.562**, R² **0.9308**. Kontroller: yaş · log_km · hp · segment · kasa · yakıt · çekiş · hasar sayaçları · series (HC3 robust SE)
 
@@ -118,15 +143,21 @@ Tüm metin sinyalleri **tek** hedonik log-OLS'te eşzamanlı, HC3 robust SE ile.
 
 > **Kontrollü ≠ ham.** Ham fark büyük ölçüde kompozisyondan gelir; her fiyat iddiası araç özellikleri sabitlenerek verilir. Bunlar **ilişki**, nedensellik değil. HC3 ve bootstrap aralıkları neredeyse aynı → tahminler kararlı.
 
-## 5. Residual sinyalleri (triyaj)
+### Donanım kapsaması
+
+Donanım alanları yapısal şemada yok → metin tek kaynak. 15 terim, olumsuzluk-güvenli eşleşme ("sunroof yok" pozitif sayılmaz), Türkçe `ı/i` toleranslı.
+
+![Donanım anılma oranı (metin tek kaynak)](figures/tr-04-equipment.png)
+
+## 6. Triyaj — nerede şaşıyor, hangi ilanlar incelenmeli
+
+### Residual sinyalleri
 
 Modelin en çok *düşük* tahmin ettiği %5'lik dilimde (1.500 ilan) hangi metin sinyalleri beklenenden fazla görünüyor? Lift = gözlenen / beklenen.
 
 ![Under-predict sinyalleri — en yüksek %5'te yoğunlaşma (lift)](figures/tr-06-residual-signals.png)
 
 > Kaynakta 1 sinyal daha var ama **robust değil** — rapora alınmadı. Sağlamlık testini geçmeyen sinyal triyaj listesine giremez.
-
-## 6. Anomali ve alan çelişkileri
 
 ### Anomali kuyruğu
 
@@ -168,38 +199,7 @@ Her sinyal tek başına gürültülü; kesişim büyüdükçe aday güçlenir. S
 
 İnceleme kuyruğunda 48 satır var (alan başına eşit örnek); tabloda alan başına biri. Toplam çelişki sayıları: model 795 · yıl 253 · vites 221 · yakıt 86 · hp 73 · çekiş 53 · motor hacmi 22 · kasa 10. km bilerek dışarıda: metindeki km servis/satın alma/politika km'sinden desenle ayrılamıyor. Çoğu satıcı hatası ya da swap/dönüşüm işareti — kanıt değil.
 
-## 7. Donanım kapsaması
-
-Donanım alanları yapısal şemada yok → metin tek kaynak. 15 terim, olumsuzluk-güvenli eşleşme ("sunroof yok" pozitif sayılmaz), Türkçe `ı/i` toleranslı.
-
-![Donanım anılma oranı (metin tek kaynak)](figures/tr-04-equipment.png)
-
-## 8. LangExtract ile kapsam doğrulama
-
-İlan metinleri bir kez **offline** olarak Google **LangExtract** ile yapılandırılmış çıkarıma sokuldu (çıkarım modeli Gemini 3.1 Flash Lite): **13.904 ilan · 41.866 çıkarım** (ilan başına ort. 3.0), bunların 13.867 tanesi analiz kümesinde → kapsama **%46.2**. `match_exact` hizalama oranı %95.9.
-
-| sınıf | çıkarım | nitelikler | en sık örnek: girdi → çıktı |
-|---|---:|---|---|
-| Hasar | 19.800 | parça · durum | "sağ ön çamurluk değişen" → durum: değişmiş · parça: sağ ön çamurluk (90×) |
-| Bakım | 14.086 | parça · durum | "lastikleri yeni durumda" → durum: sıfır/yeni · parça: lastik (197×) |
-| Modifiye | 4.433 | parça · durum | "m direksiyon" → durum: sonradan takılmış · parça: direksiyon (40×) |
-| Beygir | 3.547 | güç | "170 hp" → güç: 170 (382×) |
-
-Örnek = sınıf başına **en sık** görülen (ifade, nitelik) çifti, dosyadan hesaplanır; en az 10 kez görülmediyse yazılmaz. Böylece tek bir ilana ait ifade rapora girmez.
-
-### Durum sözlüğü (Hasar sınıfı, en sık 5)
-
-| durum | çıkarım | Hasar durumlarındaki pay |
-|---|---:|---:|
-| boyalı | 5.141 | %26.0 |
-| tramer kayıtlı | 3.856 | %19.5 |
-| lokal boyalı | 3.057 | %15.4 |
-| değişmiş | 2.705 | %13.7 |
-| hasar kayıtlı | 1.550 | %7.8 |
-
-**Rolü.** LLM'in durum sözlüğü regex dedektörlerine damıtıldı (`steps/build_text_insights.py` hasar sözlüğü + modifiye dedektörü). Üretimde koşan **regex**'tir; LLM fiyat özniteliği değildir ve pipeline'da çalışmaz. Kapsam 13.867/29.988 = %46.2 olduğu için LLM etiketleri **kısmi** yer-gerçeğidir: regex'e karşı ölçülecek precision "regex hatası" değil, **uyum oranıdır**. Sözlük LLM'den damıtıldığı için bu ölçüm kısmen döngüseldir (uyumu şişirir) — bağımsız doğruluk kanıtı değil, regresyon testi olarak okunmalı. O test (`obselete/clean-oncesi/code/llm_coverage_test.py`) temiz zincirin parçası değil ve bu raporda koşulmadı.
-
-## 9. Satıcı, başlık ve ilan dili
+## 7. Satıcı, başlık ve ilan dili
 
 ### Satıcı üslubu
 
@@ -221,7 +221,7 @@ Betimleyici — satıcı tipine göre (`gb_seller_type`). Nedensel iddia yok.
 | durum/övgü | %8.0 |
 | aciliyet/promo | %1.0 |
 
-Bir başlık birden çok kanca taşıyabilir (paylar toplamı %100'ü aşar). Ortalama **8.5 kelime**. Başlıkta "temiz" ama sayaçta hasar: **2.856 ilan**. Başlıktaki yıl ≠ alan yılı: **530 ilan**. Başlığında temiz sözcüğü geçen **tüm** ilanların kontrollü farkı (yaş · log km · HP · hasar sayaçları · segment · marka, HC3) **+%2.1** — hasar şartı yok, geçmeyenlere göre; §3'teki çelişkili başlık popülasyonunun primi değildir.
+Bir başlık birden çok kanca taşıyabilir (paylar toplamı %100'ü aşar). Ortalama **8.5 kelime**. Başlıkta "temiz" ama sayaçta hasar: **2.856 ilan**. Başlıktaki yıl ≠ alan yılı: **530 ilan**. Başlığında temiz sözcüğü geçen **tüm** ilanların kontrollü farkı (yaş · log km · HP · hasar sayaçları · segment · marka, HC3) **+%2.1** — hasar şartı yok, geçmeyenlere göre; §4'teki çelişkili başlık popülasyonunun primi değildir.
 
 ### İlan dili temaları (NMF) — k=3
 
@@ -233,10 +233,11 @@ Bir başlık birden çok kanca taşıyabilir (paylar toplamı %100'ü aşar). Or
 
 Temalar ilanın **üslubu** — fiyat arketipi değil. Satıcı tipiyle Cramér's V **0.339**: orta düzey ilişki; temaların bir kısmı satıcı tipini yeniden türetiyor, yeni fiyat bilgisi değil. Tema başına fiyat bilerek verilmedi (metin fiyata artımsal bilgi katmıyor, §1). Boş metinli 167 ilan temalara girmedi.
 
-## 10. Gizlilik ve kapsam dışı bırakılanlar
+## 8. Gizlilik ve kapsam dışı bırakılanlar
 
 - **Ham ilan metni hiç girmez.** Örnek tablolarında yalnız dedektörün eşleştirdiği kelimeler; LangExtract örneğinde yalnız sınıf başına en az 10 kez görülmüş jenerik ifade.
 - **`ad_id` hiç yazılmaz.** Kaynak JSON'da var; üreteç düşürür.
 - **İlan düzeyindeki satırlar bilinçli olarak yayımlanır** (model · fiyat · sayaçlar · HP) — eski sayfayla aynı sütunlar. Kimlik ve metin olmadan bir satır tek başına ilanı göstermez; ama nadir bir model + tam fiyat birleşimi aramayla bulunabilir. Bu risk kabul edilmiş bir karar, yok sayılmış değil.
 - `residual_keywords` bloğu **kullanılmaz** — inceleme sonucu reddedildi (donanım/renk artefaktı).
 - Robust olmayan residual sinyalleri dışarıda.
+
