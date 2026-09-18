@@ -101,9 +101,17 @@ export function buildReportFigures(d: any, lang: Lang): Record<string, Fig> {
     put('03-bootstrap-ci', boot.length ? [{ type: 'scatter', mode: 'markers', y: boot.map((b: any) => hedoTerm(b.terim)), x: boot.map((b: any) => b.nokta), error_x: { type: 'data', symmetric: false, array: boot.map((b: any) => b.ci_hi - b.nokta), arrayminus: boot.map((b: any) => b.nokta - b.ci_lo), color: '#b8b6ae', thickness: 1.5, width: 5 }, marker: { size: 9, color: boot.map((b: any) => (b.nokta >= 0 ? theme.accent : '#ef4444')) }, hovertemplate: '%{y}: β=%{x:.3f}<extra></extra>' }] : null,
         base({ margin: { t: 8, r: 16, b: 32, l: 8 }, xaxis: { zeroline: true, zerolinecolor: theme.muted, title: { text: L('katsayı (log-fiyat)', 'coefficient (log-price)'), font: { size: 10 } } } }), 320);
 
-    const lofo = met.lofo ? [...met.lofo].sort((a: any, b: any) => a[1] - b[1]) : null;
-    put('04-lofo-flat', lofo ? [{ type: 'bar', orientation: 'h', y: lofo.map((r: any) => r[0]), x: lofo.map((r: any) => r[1]), marker: { color: lofo.map((r: any) => (r[1] >= 0 ? green : '#ef4444')) }, hovertemplate: '%{y}: %{x:+,.0f} ΔRMSE<extra></extra>' }] : null,
-        base({ margin: { t: 8, r: 16, b: 28, l: 8 }, xaxis: { zeroline: true, zerolinecolor: theme.muted } }), 360);
+    // methodology.lofo holds 22 rows: 19 single-feature removals AND 3 group removals. Drawing all
+    // of them on one axis double-counts — DAMAGE_COLS competes with its own 13 members — which is
+    // exactly what the note under this figure says the chart must not do. So the same five
+    // non-overlapping keys the generator picks (build_report.py, `flat_keys`), in its order, on its
+    // ₺-thousand axis.
+    const LOFO_FLAT = ['gb_mileage', 'vehicle_age', 'DAMAGE_COLS', 'MODEL_SERIES', 'ENGINE'];
+    const lofoBy: Record<string, number> = Object.fromEntries((met.lofo || []).map((r: any) => [r[0], r[1]]));
+    // reversed: Plotly draws the first horizontal bar at the bottom, the generator's first at the top
+    const lofo = LOFO_FLAT.filter((k) => lofoBy[k] != null).reverse();
+    put('04-lofo-flat', lofo.length ? [{ type: 'bar', orientation: 'h', y: lofo, x: lofo.map((k) => lofoBy[k] / 1000), marker: { color: lofo.map((k) => (lofoBy[k] >= 0 ? green : '#ef4444')) }, hovertemplate: '%{y}: %{x:+,.1f}<extra></extra>' }] : null,
+        base({ margin: { t: 8, r: 16, b: 34, l: 8 }, xaxis: { zeroline: true, zerolinecolor: theme.muted, title: { text: L('ΔRMSE (₺bin)', 'ΔRMSE (₺k)'), font: { size: 10 } } } }), 300);
 
     // ---------- depreciation curves (median, plus mean when the export carries it) ----------
     const curve = (rows: any[], xUnit: 'age' | 'km', colour: string) => {

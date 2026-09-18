@@ -236,7 +236,17 @@ LOFO ikinci ve bağımsız bir yöntem: her özniteliği çıkarıp CV hatasın�
 
 ![LOFO — öznitelik çıkınca ΔRMSE (çakışmayan gruplar)](figures/tr-04-lofo-flat.png)
 
-> **Not — düz LOFO.** Ham `methodology.lofo` hem tekil hem grup çıkarmaları bir arada taşıyor; ikisini aynı eksende basmak çift sayım olur (`DAMAGE_COLS` kendi 13 üyesiyle yarışır). Yukarıdaki grafik **çakışmayan** 5 gruba indirgenmiştir ve 25 özniteliğin 19'unu kapsar. Kalan 6 kategorik öznitelik (`brand`, `kb_body_type`, `kb_drivetrain`, `segment`, `kb_transmission`, `kb_fuel`) LOFO'da **hiç ölçülmemiştir** — üretici yalnız sayısal ve metin özniteliklerini geziyor. "km ve yaş baskın" sonucu bu sınır içinde okunmalıdır.
+Grafik 5 çubuk gösteriyor, model 25 öznitelik kullanıyor. Kapsam:
+
+| kapsam | öznitelik | nerede |
+|---|---:|---|
+| tekil ölçüldü | 19 | 2'si kendi çubuğunda, 17'si grupların içinde |
+| grup olarak ölçüldü | 3 | `DAMAGE_COLS` · `MODEL_SERIES` · `ENGINE` |
+| **hiç ölçülmedi** | **6** | `brand` · `kb_body_type` · `kb_drivetrain` · `segment` · `kb_transmission` · `kb_fuel` |
+
+> **Not — LOFO neyi kapsamıyor.** Yukarıdaki 6 öznitelik LOFO'da **hiç ölçülmedi**: üreteç yalnız sayısal ve metin özniteliklerini geziyor, kategorikler döngüye hiç girmiyor. Yani "km ve yaş baskın" sonucu ölçülen öznitelikler arasında geçerli; marka, segment ya da kasa tipi bu yarışa hiç sokulmadı. Bağıntı tarafı bunu kısmen kapatıyor (§3: marka ablasyonu, U(marka | model) = 1.00), LOFO kapatmıyor.
+>
+> Çubuk sayısının az olmasının ayrı bir sebebi var: ham `methodology.lofo` hem tekil hem grup çıkarmalarını bir arada taşıyor ve ikisini aynı eksende basmak çift sayım olur (`DAMAGE_COLS` kendi 13 üyesiyle yarışır). Grafik bu yüzden **çakışmayan** gruplara indirgendi.
 
 ## 7. Model karşılaştırma ve gürültü tabanı
 

@@ -236,7 +236,17 @@ LOFO is a second, independent method: drop each feature and measure how much CV 
 
 ![LOFO — ΔRMSE when a feature is removed (non-overlapping groups)](figures/en-04-lofo-flat.png)
 
-> **Note — flat LOFO.** The raw `methodology.lofo` mixes single-feature and group removals; plotting both on one axis double-counts (`DAMAGE_COLS` competes with its own 13 members). The chart above is reduced to **non-overlapping** groups covering 19 of 25 features. The remaining 6 categorical features (`brand`, `kb_body_type`, `kb_drivetrain`, `segment`, `kb_transmission`, `kb_fuel`) are **never measured** by LOFO — the producer only traverses numeric and text features. Read "km and age dominate" within that limit.
+The chart shows 5 bars while the model uses 25 features. Coverage:
+
+| coverage | features | where |
+|---|---:|---|
+| measured singly | 19 | 2 as their own bar, 17 inside the groups |
+| measured as a group | 3 | `DAMAGE_COLS` · `MODEL_SERIES` · `ENGINE` |
+| **never measured** | **6** | `brand` · `kb_body_type` · `kb_drivetrain` · `segment` · `kb_transmission` · `kb_fuel` |
+
+> **Note — what LOFO leaves out.** The 6 features above are **never measured** by LOFO: the producer only traverses numeric and text features, and the categoricals never enter the loop. So "km and age dominate" holds among the features that were measured; brand, segment and body type were never put in that race. The dependence side covers part of it (§3: the brand ablation, U(brand | model) = 1.00); LOFO does not.
+>
+> The small number of bars has a separate cause: the raw `methodology.lofo` mixes single and group removals, and plotting both on one axis double-counts (`DAMAGE_COLS` competes with its own 13 members). The chart is therefore reduced to **non-overlapping** groups.
 
 ## 7. Model comparison and the noise floor
 
