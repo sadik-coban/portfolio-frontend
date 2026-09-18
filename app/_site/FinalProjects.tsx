@@ -1,9 +1,9 @@
 "use client";
 
-import Link from 'next/link';
-import { useLang, localize } from './i18n';
+import { useLang } from './i18n';
 import PaperShell from './PaperShell';
 import { HOME_PROJECTS } from './home/content';
+import ProjectLink from './home/ProjectLink';
 import { site } from './site-config';
 
 type Bi = { en: string; tr: string };
@@ -34,9 +34,10 @@ export default function FinalProjects({ stats }: { stats: Record<string, Bi> }) 
                 {HOME_PROJECTS.map((p, i) => {
                     const live = p.kind === 'live';
                     return (
-                        <Link
+                        <ProjectLink
                             key={p.title}
-                            href={localize(p.href, lang)}
+                            href={p.href}
+                            lang={lang}
                             className="group block border-t border-[#e9e7e2] py-9 pl-2 pr-3 transition-colors hover:bg-[#fdfcf9] md:py-11 md:pr-6"
                         >
                             {/* index · domain · state · year */}
@@ -48,7 +49,7 @@ export default function FinalProjects({ stats }: { stats: Record<string, Bi> }) 
                                         <span className={`absolute inset-0 ${live ? 'rounded-full bg-[#059669] motion-safe:animate-[pulseDot_2.4s_ease-in-out_infinite]' : 'rounded-[1px] bg-[#86857e]'}`} />
                                         <span className={`absolute inset-0 ${live ? 'rounded-full bg-[#059669]' : 'rounded-[1px] bg-[#86857e]'}`} />
                                     </span>
-                                    {t(live ? 'home.live' : 'home.case')}
+                                    {t(live ? 'home.live' : p.kind === 'package' ? 'home.package' : 'home.case')}
                                 </span>
                                 {/* ml-auto only once the line has room for it — below sm the year
                                     would wrap to its own line and hang right, orphaned from the meta. */}
@@ -82,11 +83,11 @@ export default function FinalProjects({ stats }: { stats: Record<string, Bi> }) 
                                         );
                                     })}
                                     <span className="mt-4 inline-block whitespace-nowrap text-[13px] font-medium text-[#047857]">
-                                        {t('home.viewProject')} <span className="inline-block transition-transform group-hover:translate-x-0.5">↗</span>
+                                        {t(p.kind === 'package' ? 'home.viewPackage' : 'home.viewProject')} <span className="inline-block transition-transform group-hover:translate-x-0.5">↗</span>
                                     </span>
                                 </div>
                             </div>
-                        </Link>
+                        </ProjectLink>
                     );
                 })}
 

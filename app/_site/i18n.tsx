@@ -117,7 +117,9 @@ const en: Dict = {
     'home.allPosts': 'All posts →',
     'home.live': 'LIVE DEMO',
     'home.case': 'CASE STUDY',
+    'home.package': 'CRAN PACKAGE',
     'home.viewProject': 'View project',
+    'home.viewPackage': 'View on CRAN',
 
     'blog.title': 'Writing',
     'blog.subtitle': 'Notes on data science, MLOps pipelines, and the systems behind them.',
@@ -395,7 +397,9 @@ const tr: Dict = {
     'home.allPosts': 'Tüm yazılar →',
     'home.live': 'CANLI DEMO',
     'home.case': 'VAKA ÇALIŞMASI',
+    'home.package': 'CRAN PAKETİ',
     'home.viewProject': 'Projeyi gör',
+    'home.viewPackage': 'CRAN’de gör',
 
     'blog.title': 'Yazılar',
     'blog.subtitle': 'Veri bilimi, MLOps iş akışları ve arkalarındaki sistemler üzerine notlar.',

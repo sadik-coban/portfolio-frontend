@@ -14,9 +14,14 @@ export interface ProjectMetric {
     accent?: boolean;
 }
 
+/** An absolute URL: a project that lives outside this site (a published package, say).
+ *  Such an href must skip localize() — it would prefix /tr onto the URL — and be rendered as a
+ *  plain anchor with target/rel rather than a next/link route. */
+export const isExternalHref = (href: string) => /^https?:\/\//.test(href);
+
 export interface HomeProject {
     domain: string;
-    kind: 'live' | 'case';
+    kind: 'live' | 'case' | 'package';
     title: string;
     description: Bi;
     stack: string;
@@ -76,6 +81,36 @@ export const HOME_PROJECTS: HomeProject[] = [
             { label: { en: 'Overview', tr: 'Genel bakış' }, href: '/projects/car-price' },
             { label: { en: 'Report', tr: 'Rapor' }, href: '/projects/car-price/report' },
             { label: { en: 'Dashboard', tr: 'Pano' }, href: '/projects/car-price/dashboard' },
+        ],
+    },
+    // MFF — the one entry that lives off-site: the work is the CRAN release, so every link
+    // (row, surfaces) points at cran.r-project.org and there is no local project page.
+    // Authorship is stated plainly: DESCRIPTION lists Nihat Tak as author/maintainer and
+    // Sadık Çoban as contributor (ctb), so the card says contributor, not author.
+    {
+        domain: 'Open source · R',
+        kind: 'package',
+        title: 'MFF — Meta Fuzzy Functions',
+        description: {
+            en: 'An R package on CRAN for fuzzy meta-ensembles. It takes the validation predictions of several base learners — penalised regression, random forest, XGBoost, LightGBM — learns membership weights over that prediction space with Fuzzy C-Means, possibilistic FCM, Gustafson–Kessel or k-means, and fits one regression per cluster, tuned by grid search on validation loss. Nihat Tak is the author; I am a contributor (ctb).',
+            tr: 'CRAN’de yayımlanan, bulanık meta-topluluklar için bir R paketi. Birden çok temel öğrenicinin — cezalı regresyon, rastgele orman, XGBoost, LightGBM — doğrulama tahminlerini alıyor, bu uzayda Fuzzy C-Means, olabilirlikçi FCM, Gustafson–Kessel ya da k-ortalamalar ile üyelik ağırlıkları öğreniyor ve her küme için doğrulama kaybına göre ayarlanmış ayrı bir regresyon kuruyor. Paketin yazarı Nihat Tak; ben katkıda bulunan (ctb) olarak yer alıyorum.',
+        },
+        stack: 'R · glmnet · xgboost · lightgbm · ppclust',
+        cover: 'chart',
+        href: 'https://cran.r-project.org/package=MFF',
+        metric: 'v0.2.4',
+        metricLabel: { en: 'on CRAN · MIT', tr: 'CRAN’de · MIT' },
+        year: '2026',
+        tags: ['R', 'Fuzzy C-Means', 'PFCM', 'Gustafson–Kessel', 'glmnet', 'xgboost', 'lightgbm'],
+        // Literal values: a package release has no site_data.json metrics.
+        metrics: [
+            { value: '0.2.4', label: { en: 'CRAN version', tr: 'CRAN sürümü' }, accent: true },
+            { value: '4', label: { en: 'clustering engines', tr: 'kümeleme motoru' } },
+            { value: 'MIT', label: { en: 'license', tr: 'lisans' } },
+        ],
+        surfaces: [
+            { label: { en: 'CRAN page', tr: 'CRAN sayfası' }, href: 'https://cran.r-project.org/package=MFF' },
+            { label: { en: 'Reference manual', tr: 'Referans kılavuzu' }, href: 'https://cran.r-project.org/web/packages/MFF/MFF.pdf' },
         ],
     },
     // mRFEI case study — deactivated (hidden from listings; route 404s). Source kept

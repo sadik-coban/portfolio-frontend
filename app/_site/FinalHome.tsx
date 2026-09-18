@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useLang, localize } from './i18n';
 import PaperShell from './PaperShell';
 import { HOME_RIBBON, HOME_PROJECTS, HOME_ARSENAL } from './home/content';
+import ProjectLink from './home/ProjectLink';
 import { site } from './site-config';
 
 // Editorial homepage: a full-width statement instead of a hero chart, an identity ribbon
@@ -82,7 +83,7 @@ export default function FinalHome({ recentPosts }: { recentPosts: any[] }) {
                                         <span className={`absolute inset-0 ${live ? 'rounded-full bg-[#059669] motion-safe:animate-[pulseDot_2.4s_ease-in-out_infinite]' : 'rounded-[1px] bg-[#86857e]'}`} />
                                         <span className={`absolute inset-0 ${live ? 'rounded-full bg-[#059669]' : 'rounded-[1px] bg-[#86857e]'}`} />
                                     </span>
-                                    {t(live ? 'home.live' : 'home.case')}
+                                    {t(live ? 'home.live' : p.kind === 'package' ? 'home.package' : 'home.case')}
                                 </span>
                                 <div className="ml-auto text-right sm:ml-0 sm:mt-auto sm:pt-5 sm:text-left">
                                     <div className="font-mono text-[17px] font-medium tabular-nums tracking-[-0.025em] text-[#1a1a1a] sm:text-[20px]">{p.metric}</div>
@@ -96,16 +97,16 @@ export default function FinalHome({ recentPosts }: { recentPosts: any[] }) {
                             <div>
                                 <div className="mb-3.5 font-mono text-[11px] font-medium uppercase tracking-[0.14em] text-[#047857]">{p.domain}</div>
                                 <h3 className="m-0 mb-3.5 text-[24px] font-semibold leading-[1.1] tracking-[-0.038em] text-[#1a1a1a] sm:text-[34px]">
-                                    <Link href={localize(p.href, lang)} className="after:absolute after:inset-0 after:content-['']">{p.title}</Link>
+                                    <ProjectLink href={p.href} lang={lang} className="after:absolute after:inset-0 after:content-['']">{p.title}</ProjectLink>
                                 </h3>
                                 <p className="m-0 mb-[22px] max-w-[600px] text-[16px] leading-[1.6] text-[#5f5f5a] sm:text-[17px]">{p.description[lang]}</p>
                                 {/* The surfaces this one system actually ships — the row used to spend this
                                     line on the stack string, which the arsenal grid repeats 200px below. */}
                                 <div className="relative z-10 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-[#ece9e3] pt-[18px]">
                                     {p.surfaces.map((s) => (
-                                        <Link key={s.href} href={localize(s.href, lang)} className="text-[13px] font-medium text-[#047857] transition-colors hover:text-[#1a1a1a]">
+                                        <ProjectLink key={s.href} href={s.href} lang={lang} className="text-[13px] font-medium text-[#047857] transition-colors hover:text-[#1a1a1a]">
                                             {s.label[lang]} <span aria-hidden="true">↗</span>
-                                        </Link>
+                                        </ProjectLink>
                                     ))}
                                 </div>
                             </div>
