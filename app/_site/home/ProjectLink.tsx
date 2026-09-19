@@ -25,3 +25,31 @@ export default function ProjectLink({ href, lang, className, children }: {
     }
     return <Link href={localize(href, lang)} className={className}>{children}</Link>;
 }
+
+/** `[label](href)` inside a description — the copy sometimes credits a person or a source and
+ *  that name should be reachable. Markdown's own syntax, so the string stays readable in
+ *  content.ts, and only this one form is understood: no parser, no other markup. */
+const LINK = /\[([^\]]+)\]\(([^)]+)\)/g;
+
+/**
+ * A project description with those links rendered.
+ *
+ * `relative z-10` on each anchor is what makes it clickable at all: both work rows cover
+ * themselves with the title link's ::after overlay so the whole row is one target, and an
+ * inline anchor would otherwise sit underneath it.
+ */
+export function ProjectText({ value, lang }: { value: string; lang: Lang }) {
+    const parts: React.ReactNode[] = [];
+    let at = 0;
+    for (const m of value.matchAll(LINK)) {
+        if (m.index > at) parts.push(value.slice(at, m.index));
+        parts.push(
+            <ProjectLink key={m.index} href={m[2]} lang={lang} className="relative z-10 font-medium text-[#047857] transition-colors hover:text-[#1a1a1a] hover:underline">
+                {m[1]}
+            </ProjectLink>,
+        );
+        at = m.index + m[0].length;
+    }
+    parts.push(value.slice(at));
+    return <>{parts}</>;
+}

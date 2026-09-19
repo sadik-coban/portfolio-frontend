@@ -3,7 +3,7 @@
 import { useLang } from './i18n';
 import PaperShell from './PaperShell';
 import { HOME_PROJECTS } from './home/content';
-import ProjectLink from './home/ProjectLink';
+import ProjectLink, { ProjectText } from './home/ProjectLink';
 import { site } from './site-config';
 
 type Bi = { en: string; tr: string };
@@ -33,12 +33,13 @@ export default function FinalProjects({ stats }: { stats: Record<string, Bi> }) 
             <section className="pb-8">
                 {HOME_PROJECTS.map((p, i) => {
                     const live = p.kind === 'live';
+                    // The title carries the row's link and its ::after overlay makes the whole row
+                    // clickable. The row itself can't be one anchor: a description that credits
+                    // someone puts a link inside this copy, and that would nest anchors.
                     return (
-                        <ProjectLink
+                        <div
                             key={p.title}
-                            href={p.href}
-                            lang={lang}
-                            className="group block border-t border-[#e9e7e2] py-9 pl-2 pr-3 transition-colors hover:bg-[#fdfcf9] md:py-11 md:pr-6"
+                            className="group relative block border-t border-[#e9e7e2] py-9 pl-2 pr-3 transition-colors hover:bg-[#fdfcf9] md:py-11 md:pr-6"
                         >
                             {/* index · domain · state · year */}
                             <div className="mb-5 flex flex-wrap items-center gap-x-3.5 gap-y-2">
@@ -58,8 +59,10 @@ export default function FinalProjects({ stats }: { stats: Record<string, Bi> }) 
 
                             <div className="grid grid-cols-1 gap-7 lg:grid-cols-[1fr_300px] lg:items-start lg:gap-12">
                                 <div>
-                                    <h2 className="m-0 mb-4 text-[26px] font-semibold leading-[1.08] tracking-[-0.042em] text-[#1a1a1a] sm:text-[32px] lg:text-[38px]">{p.title}</h2>
-                                    <p className="m-0 mb-5 max-w-[560px] text-[16px] leading-[1.65] text-[#5f5f5a] sm:text-[17px]">{p.description[lang]}</p>
+                                    <h2 className="m-0 mb-4 text-[26px] font-semibold leading-[1.08] tracking-[-0.042em] text-[#1a1a1a] sm:text-[32px] lg:text-[38px]">
+                                        <ProjectLink href={p.href} lang={lang} className="after:absolute after:inset-0 after:content-['']">{p.title}</ProjectLink>
+                                    </h2>
+                                    <p className="m-0 mb-5 max-w-[560px] text-[16px] leading-[1.65] text-[#5f5f5a] sm:text-[17px]"><ProjectText value={p.description[lang]} lang={lang} /></p>
                                     <div className="flex flex-wrap gap-[7px]">
                                         {p.tags.map((tag) => (
                                             <span key={tag} className="rounded-[6px] border border-[#e4e2dd] bg-[#fdfcf9] px-2.5 py-1 font-mono text-[11px] font-medium text-[#565650]">{tag}</span>
@@ -87,7 +90,7 @@ export default function FinalProjects({ stats }: { stats: Record<string, Bi> }) 
                                     </span>
                                 </div>
                             </div>
-                        </ProjectLink>
+                        </div>
                     );
                 })}
 

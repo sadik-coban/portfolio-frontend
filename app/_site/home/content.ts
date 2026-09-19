@@ -23,6 +23,7 @@ export interface HomeProject {
     domain: string;
     kind: 'live' | 'case' | 'package';
     title: string;
+    /** Rendered by ProjectText: plain copy, except `[label](href)` becomes a link. */
     description: Bi;
     stack: string;
     cover: 'chart' | 'choropleth';
@@ -92,8 +93,8 @@ export const HOME_PROJECTS: HomeProject[] = [
         kind: 'package',
         title: 'MFF — Meta Fuzzy Functions',
         description: {
-            en: 'An R package on CRAN for fuzzy meta-ensembles. It takes the validation predictions of several base learners — penalised regression, random forest, XGBoost, LightGBM — learns membership weights over that prediction space with Fuzzy C-Means, possibilistic FCM, Gustafson–Kessel or k-means, and fits one regression per cluster, tuned by grid search on validation loss. Nihat Tak is the author; I am a contributor (ctb).',
-            tr: 'CRAN’de yayımlanan, bulanık meta-topluluklar için bir R paketi. Birden çok temel öğrenicinin — cezalı regresyon, rastgele orman, XGBoost, LightGBM — doğrulama tahminlerini alıyor, bu uzayda Fuzzy C-Means, olabilirlikçi FCM, Gustafson–Kessel ya da k-ortalamalar ile üyelik ağırlıkları öğreniyor ve her küme için doğrulama kaybına göre ayarlanmış ayrı bir regresyon kuruyor. Paketin yazarı Nihat Tak; ben katkıda bulunan (ctb) olarak yer alıyorum.',
+            en: 'An R package on CRAN for fuzzy meta-ensembles. It takes the validation predictions of several base learners — penalised regression, random forest, XGBoost, LightGBM — learns membership weights over that prediction space with Fuzzy C-Means, possibilistic FCM, Gustafson–Kessel or k-means, and fits one regression per cluster, tuned by grid search on validation loss. [Nihat Tak](https://www.nihattak.com) is the author; I am a contributor (ctb).',
+            tr: 'CRAN’de yayımlanan, bulanık meta-topluluklar için bir R paketi. Birden çok temel öğrenicinin — cezalı regresyon, rastgele orman, XGBoost, LightGBM — doğrulama tahminlerini alıyor, bu uzayda Fuzzy C-Means, olabilirlikçi FCM, Gustafson–Kessel ya da k-ortalamalar ile üyelik ağırlıkları öğreniyor ve her küme için doğrulama kaybına göre ayarlanmış ayrı bir regresyon kuruyor. Paketin yazarı [Nihat Tak](https://www.nihattak.com); ben katkıda bulunan (ctb) olarak yer alıyorum.',
         },
         stack: 'R · glmnet · xgboost · lightgbm · ppclust',
         cover: 'chart',

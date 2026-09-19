@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useLang, localize } from './i18n';
 import PaperShell from './PaperShell';
 import { HOME_RIBBON, HOME_PROJECTS, HOME_ARSENAL } from './home/content';
-import ProjectLink from './home/ProjectLink';
+import ProjectLink, { ProjectText } from './home/ProjectLink';
 import { site } from './site-config';
 
 // Editorial homepage: a full-width statement instead of a hero chart, an identity ribbon
@@ -99,7 +99,7 @@ export default function FinalHome({ recentPosts }: { recentPosts: any[] }) {
                                 <h3 className="m-0 mb-3.5 text-[24px] font-semibold leading-[1.1] tracking-[-0.038em] text-[#1a1a1a] sm:text-[34px]">
                                     <ProjectLink href={p.href} lang={lang} className="after:absolute after:inset-0 after:content-['']">{p.title}</ProjectLink>
                                 </h3>
-                                <p className="m-0 mb-[22px] max-w-[600px] text-[16px] leading-[1.6] text-[#5f5f5a] sm:text-[17px]">{p.description[lang]}</p>
+                                <p className="m-0 mb-[22px] max-w-[600px] text-[16px] leading-[1.6] text-[#5f5f5a] sm:text-[17px]"><ProjectText value={p.description[lang]} lang={lang} /></p>
                                 {/* The surfaces this one system actually ships — the row used to spend this
                                     line on the stack string, which the arsenal grid repeats 200px below. */}
                                 <div className="relative z-10 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-[#ece9e3] pt-[18px]">
