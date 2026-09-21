@@ -159,6 +159,51 @@ const tableStyle = () => (tree: HastNode) => {
     walk(tree);
 };
 
+/**
+ * Marks foreign product names inside the two elements this file sets in CSS capitals — the
+ * chapter bands and the table headers.
+ *
+ * CSS capitals follow the element's language, and they should: under lang="tr" a Latin "i"
+ * becomes "İ", which is right for "öznitelik" and wrong for "LightGBM" — a Turkish table header
+ * was painting LİGHTGBM and CATBOOST (NATİVE). The generator writes plain markdown, so the only
+ * place to say "this word is English" is here: each name gets its own <span lang="en"> and the
+ * Turkish around it keeps Turkish casing.
+ *
+ * Only names carrying an "i" actually need this; the rest are listed so the next product name
+ * someone adds lands in the right place. Longest first, so "scikit-learn" is not cut at "scikit".
+ */
+const FOREIGN_NAMES = ['scikit-learn', 'LightGBM', 'CatBoost', 'XGBoost', 'FastAPI', 'DuckDB', 'Plotly', 'native'];
+const FOREIGN_RE = new RegExp(`(${FOREIGN_NAMES.map((n) => n.replace(/[.*+?^${}()|[]\]/g, '\const toHtml = async (md: string, counter: { h2: number; h3: number }) => {')).join('|')})`, 'i');
+
+const foreignNames = () => (tree: HastNode) => {
+    const mark = (node: HastNode) => {
+        if (!node.children) return;
+        const out: HastNode[] = [];
+        for (const child of node.children) {
+            if (child.type === 'text' && FOREIGN_RE.test(String((child as { value?: string }).value ?? ''))) {
+                // split keeps the capture group, so odd indices are the names themselves
+                for (const [i, part] of String((child as { value?: string }).value).split(FOREIGN_RE).entries()) {
+                    if (!part) continue;
+                    out.push(i % 2
+                        ? { type: 'element', tagName: 'span', properties: { lang: 'en' }, children: [{ type: 'text', value: part } as HastNode] }
+                        : ({ type: 'text', value: part } as HastNode));
+                }
+            } else {
+                mark(child);
+                out.push(child);
+            }
+        }
+        node.children = out;
+    };
+    const walk = (node: HastNode) => {
+        for (const child of node.children || []) {
+            if (child.type === 'element' && (child.tagName === 'th' || child.tagName === 'h2')) mark(child);
+            else walk(child);
+        }
+    };
+    walk(tree);
+};
+
 const toHtml = async (md: string, counter: { h2: number; h3: number }) => {
     if (!md.trim()) return '';
     const file = await unified()
@@ -168,6 +213,7 @@ const toHtml = async (md: string, counter: { h2: number; h3: number }) => {
         .use(headings(counter))
         .use(methodNotes)
         .use(tableStyle)
+        .use(foreignNames)
         .use(rehypeStringify)
         .process(md);
     return String(file);

@@ -353,12 +353,13 @@ export default function FinalOverview({ initialData, initialNlp }: Props) {
                         { v: fmtN(meta.n_raw, loc), k: L('ham snapshot', 'raw snapshots') },
                         { v: String(keptCols), k: L('kullanılan değişken', 'features used') },
                         pd && { v: fmtM(pd.median), k: L('medyan fiyat', 'median price') },
-                        meta.brands && { v: fmtN(meta.brands.bmw, loc), k: 'BMW' },
-                        meta.brands && { v: fmtN(meta.brands.audi, loc), k: 'Audi' },
+                        // en: a brand name uppercased under Turkish rules reads "AUDİ".
+                        meta.brands && { v: fmtN(meta.brands.bmw, loc), k: 'BMW', en: true },
+                        meta.brands && { v: fmtN(meta.brands.audi, loc), k: 'Audi', en: true },
                     ].filter(Boolean).map((p: any) => (
                         <div key={p.k} className={`${S.card} px-[13px] py-[13px]`}>
                             <div className={`${S.mono} text-[19px] font-bold leading-none text-[#1a1a1a]`}>{p.v}</div>
-                            <div className="mt-[7px] font-mono text-[9.5px] uppercase tracking-[0.04em] text-[#86857e]">{p.k}</div>
+                            <div lang={p.en ? 'en' : undefined} className="mt-[7px] font-mono text-[9.5px] uppercase tracking-[0.04em] text-[#86857e]">{p.k}</div>
                         </div>
                     ))}
                 </div>

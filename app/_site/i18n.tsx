@@ -79,7 +79,7 @@ const en: Dict = {
     'about.do4': 'Interactive dashboards & data viz',
     'about.cta': 'Get in touch',
     'about.eyebrow': 'About',
-    'about.factBasedIn': 'Based in', 'about.factBasedInV': 'İstanbul · remote-friendly',
+    'about.factBasedIn': 'Based in', 'about.factBasedInV': 'Istanbul · remote-friendly',
     'about.factFocus': 'Focus', 'about.factFocusV': 'ML engineering & MLOps',
     'about.factCurrent': 'Currently', 'about.factCurrentV': 'Open to new roles',
     'about.factLangs': 'Languages', 'about.factLangsV': 'Türkçe · English',

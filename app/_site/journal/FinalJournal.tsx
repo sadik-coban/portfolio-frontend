@@ -17,7 +17,7 @@ export default function FinalJournal({ posts }: { posts: any[] }) {
             <div className="flex flex-col max-w-3xl">
                 {posts.length > 0 ? posts.map((post) => (
                     <Link key={post.slug} href={localize(`/blog/${post.slug}`, lang)} className="group block border-t border-[#e9e7e2] py-7">
-                        <div className="mb-2.5 font-mono text-[11px] uppercase tracking-[0.04em] text-[#047857]">{categoryOf(post)}</div>
+                        <div lang="en" className="mb-2.5 font-mono text-[11px] uppercase tracking-[0.04em] text-[#047857]">{categoryOf(post)}</div>
                         <h2 className="m-0 mb-2 text-[21px] md:text-[23px] font-semibold leading-[1.25] tracking-[-0.026em] text-[#1a1a1a] group-hover:text-[#047857] transition-colors">{post.meta.title}</h2>
                         <p className="m-0 mb-4 max-w-[640px] text-[15px] leading-[1.6] text-[#5f5f5a]">{post.meta.description}</p>
                         <div className="flex items-center gap-[14px] font-mono text-[13px] font-medium text-[#565650]">

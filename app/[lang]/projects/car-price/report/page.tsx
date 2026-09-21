@@ -23,7 +23,7 @@ export default async function Page({ params }: LangParams) {
         <ReportView
             kind="car-price"
             active="report-business"
-            kicker={tr ? 'Car Price · Rapor' : 'Car Price · Report'}
+            kicker={tr ? 'Araç Fiyatı · Rapor' : 'Car Price · Report'}
             title={tr ? 'Karar notu' : 'Decision note'}
             doc={doc}
         />

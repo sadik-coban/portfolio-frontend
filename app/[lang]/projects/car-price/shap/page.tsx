@@ -26,7 +26,7 @@ export default async function Page({ params }: LangParams) {
         <ReportView
             kind="car-price"
             active="report-shap"
-            kicker={tr ? 'Car Price · Rapor' : 'Car Price · Report'}
+            kicker={tr ? 'Araç Fiyatı · Rapor' : 'Car Price · Report'}
             title={tr ? 'SHAP raporu' : 'SHAP report'}
             doc={doc}
         />

@@ -43,7 +43,7 @@ export default function FinalAbout() {
                     <p className="m-0 mb-7 max-w-[380px] text-[17px] leading-[1.6] text-[#5f5f5a]">{t('about.contactLead')}</p>
                     {CHANNELS.map((c) => (
                         <a key={c.label} href={c.href} target={c.href.startsWith('http') ? '_blank' : undefined} rel="noopener noreferrer" className="flex items-center justify-between gap-4 border-t border-[#e9e7e2] py-4 group">
-                            <span className="font-mono text-[12px] uppercase tracking-[0.04em] text-[#86857e]">{c.label}</span>
+                            <span lang="en" className="font-mono text-[12px] uppercase tracking-[0.04em] text-[#86857e]">{c.label}</span>
                             <span className="text-[15px] font-medium text-[#1a1a1a] group-hover:text-[#047857] transition-colors">{c.value} ↗</span>
                         </a>
                     ))}

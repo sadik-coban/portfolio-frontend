@@ -29,7 +29,7 @@ export default function ArticleShell({ frontmatter, children }: { frontmatter: a
                 </div>
 
                 <div className="mb-5 flex flex-wrap items-center gap-3">
-                    {category && <span className="font-mono text-[11px] uppercase tracking-[0.05em] text-[#047857]">{category}</span>}
+                    {category && <span lang="en" className="font-mono text-[11px] uppercase tracking-[0.05em] text-[#047857]">{category}</span>}
                     {category && <span className="h-[3px] w-[3px] rounded-full bg-[#c4c2bb]" />}
                     <span className="font-mono text-[12px] text-[#86857e]">{frontmatter.date}</span>
                     {frontmatter.readTime && <><span className="h-[3px] w-[3px] rounded-full bg-[#c4c2bb]" /><span className="font-mono text-[12px] text-[#86857e]">{frontmatter.readTime} {t('blog.min')}</span></>}

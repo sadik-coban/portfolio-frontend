@@ -44,7 +44,7 @@ export interface HomeProject {
 export const HOME_RIBBON: { label: Bi; value: Bi; live?: boolean; accent?: boolean }[] = [
     { label: { en: 'Status', tr: 'Durum' }, value: { en: 'Open to roles', tr: 'Yeni rollere açık' }, live: true, accent: true },
     { label: { en: 'Role', tr: 'Rol' }, value: { en: 'Data Scientist · MLOps', tr: 'Veri Bilimci · MLOps' } },
-    { label: { en: 'Based', tr: 'Konum' }, value: { en: 'İstanbul', tr: 'İstanbul' } },
+    { label: { en: 'Based', tr: 'Konum' }, value: { en: 'Istanbul', tr: 'İstanbul' } },
 ];
 
 // Kept in sync with public/site_data.json (domain.final_results.model_karsilastirma

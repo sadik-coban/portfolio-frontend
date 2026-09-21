@@ -74,7 +74,7 @@ export default function FinalBlog({ posts }: { posts: any[] }) {
                 </div>
                 {rest.length > 0 ? rest.map((p) => (
                     <Link key={p.slug} href={href(p.slug)} className="group block border-t border-[#e9e7e2] py-7">
-                        <div className="mb-2.5 font-mono text-[11px] uppercase tracking-[0.04em] text-[#047857]">{categoryOf(p)}</div>
+                        <div lang="en" className="mb-2.5 font-mono text-[11px] uppercase tracking-[0.04em] text-[#047857]">{categoryOf(p)}</div>
                         <h3 className="m-0 mb-2 text-[21px] md:text-[23px] font-semibold leading-[1.25] tracking-[-0.026em] text-[#1a1a1a] group-hover:text-[#047857] transition-colors">{p.meta.title}</h3>
                         <p className="m-0 mb-4 max-w-[640px] text-[15px] leading-[1.6] text-[#5f5f5a]">{p.meta.description}</p>
                         <div className="flex items-center gap-[14px] font-mono text-[13px] font-medium text-[#565650]">
