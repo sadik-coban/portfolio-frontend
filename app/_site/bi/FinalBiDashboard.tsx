@@ -294,8 +294,10 @@ export default function FinalBiDashboard() {
     const selCls = 'rounded-[8px] border border-[#d8d6d0] bg-[#fdfcf9] px-2 py-[6px] font-mono text-[12px] text-[#5f5f5a] focus:border-[#047857] focus:outline-none';
     const numCls = 'w-[58px] rounded-[8px] border border-[#d8d6d0] bg-[#fdfcf9] px-2 py-[6px] font-mono text-[12px] text-[#5f5f5a] focus:border-[#047857] focus:outline-none';
 
+    // The header used to repeat the listing count and announce "live filters"; the filter bar below
+    // says both, and the count it carries is the filtered one, which is the honest number here.
     return (
-        <FinalShell active="dashboard" kicker={kicker} title={title} meta={L(`BMW + Audi · ${nf(meta.n_unique)} ilan · canlı filtre`, `BMW + Audi · ${nf(meta.n_unique)} listings · live filters`)}>
+        <FinalShell active="dashboard" kicker={kicker} title={title} meta="BMW + Audi">
             {/* filter bar — edits stay local; the API is hit only on Apply (or Enter) */}
             <div className="mb-4 rounded-[12px] border border-[#e4e2dd] bg-[#fdfcf9] p-3" onKeyDown={(e) => { if (e.key === 'Enter' && dirty) applyFilters(); }}>
                 <div className="flex flex-wrap items-center gap-2.5">
