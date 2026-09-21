@@ -27,6 +27,17 @@ export type Block =
     | { type: 'figure'; slug: string; caption: string; fallback: string };
 
 const DIR = path.join(process.cwd(), 'content', 'reports');
+/**
+ * The provenance stamp the generator puts under a document's title: which JSON it read and
+ * which script wrote it. That line is addressed to whoever opens the .md on disk — on the site
+ * it names internal paths a reader has no use for, and the decision note is the only one of the
+ * three documents carrying it.
+ *
+ * Dropped here rather than in the generator, so the copy under content/ stays byte-identical to
+ * the generator output and a re-sync stays a plain file copy.
+ */
+const PROVENANCE_LINE = /^>\s*(?:Üretilmiş dosya|Generated file)\b/;
+
 const FIGURE_LINE = /^!\[([^\]]*)\]\(figures\/(?:tr|en)-([a-z0-9-]+)\.png\)\s*$/;
 
 type HastNode = { type: string; tagName?: string; properties?: Record<string, unknown>; children?: HastNode[] };
@@ -249,6 +260,7 @@ export const getReport = cache(async (
     };
 
     for (const line of raw.split('\n')) {
+        if (PROVENANCE_LINE.test(line)) continue;
         const hit = line.match(FIGURE_LINE);
         if (hit) {
             await flush();
