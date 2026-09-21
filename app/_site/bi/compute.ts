@@ -27,7 +27,7 @@ export interface Rows {
     dict: { series: { b: number; name: string }[]; city: string[]; district: string[]; model: string[]; body: string[] };
     cols: {
         p: number[]; y: number[]; km: number[]; f: number[]; s: number[]; b: number[]; se: number[];
-        ci: number[]; di: number[]; md: number[]; bt: number[]; ld: number[]; hd: number[]; dmg: number[];
+        ci: number[]; di: number[]; md: number[]; bt: number[]; hd: number[]; dmg: number[];
     };
 }
 
@@ -92,7 +92,6 @@ export interface Agg {
     segmentPrice: { seg: string; avg: number; median: number; n: number }[];
     matrix: { buckets: string[]; rows: { series: string; brand: string; cells: number[]; total: number }[]; colTotals: number[]; grandTotal: number };
     recent: { id: number; brand: string; model: string; year: number; km: number; fuel: string; city: string; damaged: boolean; price: number }[];
-    dailyVolume: { days: string[]; counts: number[]; highlightIdx: number; thisWeek: number; lastWeek: number };
     fuelYear: { years: string[]; series: { name: string; color: string; data: number[] }[] };
     fuelDonut: { name: string; value: number; color: string }[];
     brandRange: { brand: string; min: number; q1: number; median: number; q3: number; max: number }[];
@@ -108,11 +107,6 @@ export interface Agg {
 }
 
 const BRANDS = ['BMW', 'Audi'];
-const dayToISO = (base: string, off: number) => {
-    const d = new Date(Date.parse(base) + off * 86400000);
-    return d.toISOString().slice(0, 10);
-};
-
 export function computeAgg(raw: Rows, idx: number[]): Agg {
     const c = raw.cols;
     const n = idx.length;
@@ -174,19 +168,6 @@ export function computeAgg(raw: Rows, idx: number[]): Agg {
         year: c.y[i], km: c.km[i], fuel: raw.meta.fuels[c.f[i]] || '—',
         city: c.ci[i] >= 0 ? raw.dict.city[c.ci[i]] : '—', damaged: c.hd[i] === 1, price: c.p[i],
     }));
-
-    // daily volume — last 15 days of the global window
-    let maxLd = 0; for (let i = 0; i < c.ld.length; i++) if (c.ld[i] > maxLd) maxLd = c.ld[i];
-    const winStart = maxLd - 14;
-    const dayCounts = new Array(15).fill(0);
-    for (const i of idx) { const off = c.ld[i]; if (off >= winStart && off <= maxLd) dayCounts[off - winStart]++; }
-    const highlightIdx = dayCounts.indexOf(Math.max(...dayCounts));
-    const dailyVolume = {
-        days: Array.from({ length: 15 }, (_, k) => dayToISO(raw.meta.base_date, winStart + k)),
-        counts: dayCounts, highlightIdx,
-        thisWeek: dayCounts.slice(-7).reduce((a, b) => a + b, 0),
-        lastWeek: dayCounts.slice(-14, -7).reduce((a, b) => a + b, 0),
-    };
 
     // fuel × year (clustered)
     const fuelYearGrid = FUEL.map(() => MATRIX_YEARS.map(() => 0));
@@ -272,7 +253,7 @@ export function computeAgg(raw: Rows, idx: number[]): Agg {
     return {
         n, kpi: { avgPrice, medianPrice, avgAge, medianKm, cleanPct, damagedN, priceSpark, kmSpark, sparkYears },
         segmentPrice, matrix: { buckets: BUCKETS.map((b) => b.label), rows: matrixRows, colTotals, grandTotal: colTotals.reduce((a, b) => a + b, 0) },
-        recent, dailyVolume, fuelYear, fuelDonut, brandRange, priceByYear: priceByYear.map((r) => ({ year: r.year, price: r.price })), density, scatter, provinces, provMax,
+        recent, fuelYear, fuelDonut, brandRange, priceByYear: priceByYear.map((r) => ({ year: r.year, price: r.price })), density, scatter, provinces, provMax,
         priceHist, bodyBox, damageImpact, damageBySeg,
     };
 }

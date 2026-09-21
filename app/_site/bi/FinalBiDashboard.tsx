@@ -175,9 +175,9 @@ export default function FinalBiDashboard() {
         series: [{ type: 'line', smooth: true, symbol: 'circle', symbolSize: 5, data: agg.priceByYear.map((d) => d.price), lineStyle: { color: G, width: 2.5 }, itemStyle: { color: G }, areaStyle: { color: G, opacity: 0.1 } }],
     };
     const volOpt = { animation: false,
-        grid: { left: 34, right: 8, top: 10, bottom: 20 }, tooltip: { ...tip, trigger: 'axis', axisPointer: { type: 'shadow' }, formatter: (ps: any) => `${agg.dailyVolume.days[ps[0].dataIndex]?.slice(5)}<br/>${nf(ps[0].value)} ${L('ilan', 'listings')}` },
-        xAxis: { type: 'category', data: agg.dailyVolume.days.map((_, i) => i), ...axisCommon, axisLabel: { show: false } },
-        yAxis: { type: 'value', ...axisCommon }, series: [{ type: 'bar', barWidth: '62%', data: agg.dailyVolume.counts.map((v, i) => ({ value: v, itemStyle: { color: i === agg.dailyVolume.highlightIdx ? GD : '#bfe6d3', borderRadius: [2, 2, 0, 0] } })) }],
+        grid: { left: 40, right: 8, top: 10, bottom: 24 }, tooltip: { ...tip, trigger: 'axis', axisPointer: { type: 'shadow' }, formatter: (ps: any) => `${meta.snapshots[ps[0].dataIndex]?.date}<br/>${nf(ps[0].value)} ${L('ilan', 'listings')}` },
+        xAxis: { type: 'category', data: meta.snapshots.map((s) => s.date.slice(5)), ...axisCommon },
+        yAxis: { type: 'value', ...axisCommon, axisLabel: { ...ax, formatter: (v: number) => nf(v) } }, series: [{ type: 'bar', barWidth: '46%', data: meta.snapshots.map((s, i) => ({ value: s.n, itemStyle: { color: i === meta.snapshots.length - 1 ? GD : '#bfe6d3', borderRadius: [2, 2, 0, 0] } })) }],
     };
     const fuelOpt = { animation: false,
         grid: { left: 34, right: 8, top: 8, bottom: 20 }, tooltip: { ...tip, trigger: 'axis', axisPointer: { type: 'shadow' } },
@@ -220,7 +220,7 @@ export default function FinalBiDashboard() {
         grid: { left: 40, right: 12, top: 14, bottom: 26 },
         tooltip: { ...tip, trigger: 'axis', axisPointer: { type: 'shadow' }, formatter: (ps: any) => `₺${agg.priceHist.labels[ps[0].dataIndex]}M<br/>${nf(ps[0].value)} ${L('ilan', 'listings')}` },
         xAxis: { type: 'category', data: agg.priceHist.labels, ...axisCommon, splitLine: { show: false }, axisLabel: { ...ax, interval: 1 } },
-        yAxis: { type: 'value', ...axisCommon },
+        yAxis: { type: 'value', ...axisCommon, axisLabel: { ...ax, formatter: (v: number) => nf(v) } },
         series: [{ type: 'bar', data: agg.priceHist.counts, itemStyle: { color: G, borderRadius: [3, 3, 0, 0] } }],
     };
     const bodyOpt = { animation: false,
@@ -396,14 +396,14 @@ export default function FinalBiDashboard() {
                             <div className="mt-1 h-[200px] w-full"><ReactECharts option={comboOpt} style={{ height: '100%', width: '100%' }} opts={eOpts} notMerge /></div>
                         </Card>
                     )}
-                    {/* daily volume — listings */}
+                    {/* listings per snapshot */}
                     {show('listings') && (
                         <Card span="col-span-2 md:col-span-6" cls="px-[18px] pb-3 pt-4">
-                            <CTitle t={L('Günlük İlan Hacmi', 'Daily Listing Volume')} s={L('Son 15 gün.', 'Last 15 days.')} />
+                            <CTitle t={L('Çekim başına ilan sayısı', 'Listings per snapshot')} s={L('Her taramanın yakaladığı ilan. Tüm veri — filtreden etkilenmez.', 'What each scrape captured. Whole dataset — the filters do not move it.')} />
                             <div className="mt-2 h-[150px] w-full"><ReactECharts option={volOpt} style={{ height: '100%', width: '100%' }} opts={eOpts} notMerge /></div>
                             <div className="mt-1 flex gap-5 border-t border-[#ece9e3] pt-2.5">
-                                <div><div className="text-[15px] font-bold tracking-[-0.03em] text-[#1a1a1a]">{nf(agg.dailyVolume.thisWeek)}</div><div className="font-mono text-[10px] uppercase text-[#86857e]">{L('Bu hafta', 'This week')}</div></div>
-                                <div><div className="text-[15px] font-bold tracking-[-0.03em] text-[#5f5f5a]">{nf(agg.dailyVolume.lastWeek)}</div><div className="font-mono text-[10px] uppercase text-[#86857e]">{L('Geçen hafta', 'Last week')}</div></div>
+                                <div><div className="text-[15px] font-bold tracking-[-0.03em] text-[#1a1a1a]">{nf(meta.snapshots.reduce((a, s) => a + s.n, 0))}</div><div className="font-mono text-[10px] uppercase text-[#86857e]">{L('Toplam satır', 'Rows scraped')}</div></div>
+                                <div><div className="text-[15px] font-bold tracking-[-0.03em] text-[#5f5f5a]">{nf(meta.n_unique)}</div><div className="font-mono text-[10px] uppercase text-[#86857e]">{L('Tekil ilan', 'Unique listings')}</div></div>
                             </div>
                         </Card>
                     )}
