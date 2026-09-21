@@ -130,10 +130,10 @@ export const site = {
             },
         },
         '/projects/car-price/shap': {
-            title: { en: 'SHAP Analysis', tr: 'SHAP Analizi' },
+            title: { en: 'SHAP Report', tr: 'SHAP Raporu' },
             description: {
-                en: 'SHAP explainability for the car-price model — which features push each prediction up or down.',
-                tr: 'Araç fiyat modeli için SHAP açıklanabilirliği — her tahmini hangi öznitelik yukarı, hangisi aşağı itiyor.',
+                en: 'How the car-price model builds a price: exact TreeExplainer attributions over all 29,988 listings, out of fold, grouped and read as price multipliers.',
+                tr: 'Araç fiyat modeli fiyatı neye bakarak kuruyor: 29.988 ilanın tamamında, out-of-fold, exact TreeExplainer atıfları — gruplanmış ve fiyat çarpanı olarak okunmuş.',
             },
         },
         // The v1 report has no route any more (app/[lang]/.../report-v1 removed). Its

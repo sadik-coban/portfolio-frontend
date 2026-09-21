@@ -19,7 +19,7 @@ import rehypeStringify from 'rehype-stringify';
 // figure alone on its line (verified across all eight documents).
 
 export type ReportKind = 'car-price' | 'text-analysis';
-export type ReportVariant = 'business' | 'technical';
+export type ReportVariant = 'business' | 'technical' | 'shap';
 export type ReportLang = 'tr' | 'en';
 
 export type Block =
@@ -187,7 +187,11 @@ export const getReport = cache(async (
     // Prefixed by hand rather than through localize(): this runs on the server, and a Turkish
     // reader following an unprefixed link would land back in English mid-report.
     const pre = lang === 'tr' ? '/tr' : '';
-    const route = { business: `${pre}/projects/car-price/report`, technical: `${pre}/projects/car-price/report/technical` };
+    const route = {
+        business: `${pre}/projects/car-price/report`,
+        technical: `${pre}/projects/car-price/report/technical`,
+        shap: `${pre}/projects/car-price/shap`,
+    };
 
     const blocks: Block[] = [];
     let buffer: string[] = [];
@@ -210,17 +214,18 @@ export const getReport = cache(async (
                 fallback: `/report-figures/${kind}/${lang}-${hit[2]}.png`,
             });
         } else {
-            // The two documents cross-reference each other as sibling files — right on disk,
+            // The documents cross-reference each other as sibling files — right on disk,
             // a dead link on the site. Both the target and the label are rewritten: "technical.tr.md"
             // is a filename, not something a reader clicks. The language suffix is dropped
             // because the page is served in the reader's language already.
             const label = {
                 business: lang === 'tr' ? 'karar notu' : 'decision note',
                 technical: lang === 'tr' ? 'teknik rapor' : 'technical report',
+                shap: lang === 'tr' ? 'SHAP raporu' : 'SHAP report',
             };
             buffer.push(line.replace(
-                /\[(?:business|technical)\.(?:tr|en)\.md\]\((business|technical)\.(?:tr|en)\.md\)/g,
-                (_m, doc: 'business' | 'technical') => `[${label[doc]}](${route[doc]})`,
+                /\[(?:business|technical|shap)\.(?:tr|en)\.md\]\((business|technical|shap)\.(?:tr|en)\.md\)/g,
+                (_m, doc: 'business' | 'technical' | 'shap') => `[${label[doc]}](${route[doc]})`,
             ));
         }
     }

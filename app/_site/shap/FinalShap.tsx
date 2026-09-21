@@ -5,6 +5,11 @@ import { Info, ArrowUpRight, ArrowDownRight, HelpCircle } from 'lucide-react';
 import FinalShell from '../FinalShell';
 import { useLang } from '../i18n';
 
+// UNROUTED since the generated SHAP report took over /projects/car-price/shap. Kept, like
+// app/_site/report/ and app/_site/text-analysis/, because the page still works: to restore it,
+// point that route back at <FinalShap /> and drop the shap entry from ReportVariant. The six
+// PNGs in public/shap/ belong to this file alone — they go when it goes, and not before.
+//
 // The 3 model variants' SHAP plots, served as static images (public/shap/*.png,
 // copied from site_pipeline/full_data/shap_plots/). Two views per model: the grouped
 // mean-|SHAP| bar (global importance) and the beeswarm (per-listing value spread).

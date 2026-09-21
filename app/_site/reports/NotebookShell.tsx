@@ -27,6 +27,7 @@ type Lang = 'tr' | 'en';
 const REPORTS = [
     { key: 'report-business', href: '/projects/car-price/report', tr: 'Karar notu', en: 'Decision note' },
     { key: 'report-technical', href: '/projects/car-price/report/technical', tr: 'Teknik rapor', en: 'Technical report' },
+    { key: 'report-shap', href: '/projects/car-price/shap', tr: 'SHAP', en: 'SHAP' },
 ] as const;
 
 export type ReportKey = (typeof REPORTS)[number]['key'];
