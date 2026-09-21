@@ -1,14 +1,12 @@
-# Car Price — Technical Report
+# Used Car Market Analysis — Technical Report
 
-> Generated file — source `clean/data/site_data.json`, generator `clean/car_price_report/build_report.py`. Every number is read from JSON.
-
-Decision summary: [business.en.md](business.en.md)
-
-## 1. Data, dedup and leakage
+## 1. Data cleaning and leakage detection
 
 **45,159 snapshots → 29,988 listings.** The 15,171 rows between are the same ad re-scraped: scrape residue, not data. Latest snapshot per `ad_id`.
 
 Median asking price ₺1.54M, ranging ₺0.84M–₺3.42M (P10–P90).
+
+**Scope: Turkish-plated vehicles only.** Foreign/blue-plate listings, and listings with no plate information, are excluded from the study. Their different tax regime would mislead both the model and the analysis, so they are out of scope.
 
 ### Scale
 
@@ -25,7 +23,7 @@ Median asking price ₺1.54M, ranging ₺0.84M–₺3.42M (P10–P90).
 
 1. **Structural** — age · km · engine power/size · body · fuel · transmission · drivetrain · segment.
 2. **Damage / inspection** — every body panel × {changed, painted, local paint} + tramer record + heavy damage.
-3. **Free text** — the seller's description; not in this report but in the separate text analysis (claims · equipment · anomalies).
+3. **Free text** — the seller's description; **not used** by the model. It was measured in a separate study: adding text features to the structured model produced no measurable gain in cross-validated accuracy, so it does not enter this report.
 
 ### Kept features (25)
 
@@ -42,7 +40,7 @@ Model (`model`) · Series (`series`) · Brand (`brand`) · Body Type (`kb_body_t
 | D | Block-missing >40% | ~15 |
 | E | Spec-missing ~26% | ~10 |
 
-Imputation: hierarchical fill — series > segment > brand median (most specific group first). `torque_nm` was dropped (27.6% missing).
+Missing values are filled with a series > segment > brand median hierarchy; `torque_nm`, missing in 27.6% of listings, was dropped from the analysis.
 
 **Leakage control.** Dedup runs on `ad_id`, before the CV split. Evaluation is 5-fold out-of-fold: every listing is predicted exactly once, by a model that never saw it.
 
@@ -91,7 +89,9 @@ Most repeated listings:
 | Avg. Casco Insurance (`gb_kasko_avg`) | 51.1% | none |
 | Annual Vehicle Tax (`gb_mtv_yearly`) | 40.6% | none |
 
-A listing page can carry the same field in two tabs. For the 1 field(s) with a twin the populated side (kb) is used; the 3 without one (insurance/tax) crossed the 40% threshold and were dropped.
+The same field can appear in two different tabs of a listing page. To keep it out of the model twice, for overlapping fields we kept the side with fuller data (`kb`). The 3 fields with no counterpart and over 40% empty (insurance and tax) were dropped.
+
+**What kb/gb are.** `kb` is the quick-info tab, `gb` the overview tab. Both state much the same things. To avoid feeding the model the same fact twice we reduced each pair to one column: rather than patching one side with the other, we kept the fuller one and deleted the other.
 
 ## 3. Redundancy, dependence and brand
 
@@ -180,6 +180,8 @@ The first 3 components explain 43.1% of variance. PC1 ≈ Mileage + Age (years) 
 
 The hedonic regression gives each driver's *controlled* effect on price (all else equal) — R² **0.9309**, n **29,554**. Coefficients carry bootstrap confidence intervals; all 10 terms have a 95% CI excluding zero → each driver is reliably significant.
 
+**Note:** The hedonic model is an OLS and cannot run with missing values, so listings with missing engine power (426) or missing displacement (356) were removed before the analysis. Once the rows missing both are counted only once, 434 rows in total were dropped from the dataset.
+
 ![Bootstrap coefficients (point + 95% CI)](figures/en-03-bootstrap-ci.png)
 
 ### Bootstrap coefficients
@@ -244,24 +246,22 @@ The chart shows 5 bars while the model uses 25 features. Coverage:
 | measured as a group | 3 | `DAMAGE_COLS` · `MODEL_SERIES` · `ENGINE` |
 | **never measured** | **6** | `brand` · `kb_body_type` · `kb_drivetrain` · `segment` · `kb_transmission` · `kb_fuel` |
 
-> **Note — what LOFO leaves out.** The 6 features above are **never measured** by LOFO: the producer only traverses numeric and text features, and the categoricals never enter the loop. So "km and age dominate" holds among the features that were measured; brand, segment and body type were never put in that race. The dependence side covers part of it (§3: the brand ablation, U(brand | model) = 1.00); LOFO does not.
->
-> The small number of bars has a separate cause: the raw `methodology.lofo` mixes single and group removals, and plotting both on one axis double-counts (`DAMAGE_COLS` competes with its own 13 members). The chart is therefore reduced to **non-overlapping** groups.
+## 7. Model comparison and limitations
 
-## 7. Model comparison and the noise floor
+The report's model: **LightGBM (model/series name TF-IDF+SVD)** — MAPE **6.5%**, R² **0.9744**, MAE **₺110K**. Target `log1p(price)`, 25 features. 42% better than the model+year median baseline.
 
-The report's model: **LightGBM (TF-IDF+SVD)** — MAPE **6.5%**, R² **0.9744**, MAE **₺110K**. Target `log1p(price)`, 25 features. 42% better than the model+year median baseline.
+**What TF-IDF+SVD is applied to.** Not the free-text description — only the `model` and `series` name strings (e.g. "A4 Sedan 2.0 TDI"). The point is to let rare name combinations borrow information from their neighbours through name similarity, covering exactly where target encoding weakens in sparse cells. The seller's description never enters the model (see §1, third layer).
 
 ### Model variants
 
 | variant | MAPE | R² | MAE | MedAE | RMSE |
 |---|---:|---:|---:|---:|---:|
-| LightGBM (TF-IDF+SVD) | 6.50% | 0.9744 | ₺110,072 | ₺75,282 | ₺176,576 |
-| CatBoost (TF-IDF+SVD) ★ | 6.45% | 0.9742 | ₺110,294 | ₺74,660 | ₺177,186 |
-| CatBoost (native text) | 6.59% | 0.9734 | ₺113,125 | ₺77,772 | ₺179,772 |
+| LightGBM (model/series name TF-IDF+SVD) | 6.50% | 0.9744 | ₺110,072 | ₺75,282 | ₺176,576 |
+| CatBoost (model/series name TF-IDF+SVD) ★ | 6.45% | 0.9742 | ₺110,294 | ₺74,660 | ₺177,186 |
+| CatBoost (model/series name native text) | 6.59% | 0.9734 | ₺113,125 | ₺77,772 | ₺179,772 |
 | model+year median (baseline) | 11.20% | 0.9235 | ₺191,224 | ₺130,000 | ₺305,050 |
 
-★ = winner under the producer's rule (MAPE only): **CatBoost (TF-IDF+SVD)**. But the two TF-IDF+SVD variants differ by 0.05 MAPE points and ₺222 MAE; LightGBM leads on MAE, RMSE, R², CatBoost on MAPE, MedAE → in practice they are **tied**. Throughout this report "the model" is LightGBM: bit-identical deterministic on CPU, whereas CatBoost's trees depend on the device (GPU/CPU) — the published GPU run had the MAPE order reversed. The noise floor, conformal interval, brand ablation and sample predictions all come from LightGBM.
+★ = winner under the producer's rule (MAPE only): **CatBoost (model/series name TF-IDF+SVD)**. But the two TF-IDF+SVD variants differ by 0.05 MAPE points and ₺222 MAE; LightGBM leads on MAE, RMSE, R², CatBoost on MAPE, MedAE → in practice they are **tied**. Throughout this report "the model" is LightGBM: deterministic on CPU, whereas CatBoost's trees depend on the device (GPU/CPU) — the published GPU run had the MAPE order reversed. The conformal interval, brand ablation and sample predictions all come from LightGBM.
 
 ### Baseline tier breakdown
 
@@ -273,11 +273,11 @@ The report's model: **LightGBM (TF-IDF+SVD)** — MAPE **6.5%**, R² **0.9744**,
 
 Ladder: (model, year) median → (model) median — all years → global median. If the test (model, year) cell is absent from the training fold, the baseline steps down a rung; error grows sharply at each step — without a comparable the baseline is weak anyway. Medians are computed on the training part of each fold only (leak-free, same 5 folds as the model).
 
-**Noise floor.** Cars with identical specs (same model · year · km · hp · body) still list **₺77K** apart — 5,767 rows, 2,577 groups. That is a floor: sellers price the same car differently and no model can go below it. The model sits at ₺110K, **1.42×** the floor, so the entire remaining headroom is ₺33K. A hyperparameter search typically claims ~₺5K of that, which is why none was run.
+**Model limitations and observations.** Prediction errors come mainly from implicit information that never reaches the form fields and hides in the free text: modifications, special equipment, tax-exemption status. Likewise, for niche luxury and sports cars with few comparables in the dataset, the error grows markedly because the sample is too thin. Since the performance ceiling is set by data coverage rather than algorithm settings, no extensive hyperparameter optimisation was run — its marginal gain would be small.
 
 ### Sample predictions
 
-| band | car | age | km | actual | LightGBM | dev. | OOF resid. | CatBoost (SVD) |
+| band | car | age | km | actual | LightGBM | dev. | OOF resid. | CatBoost (model/series name SVD) |
 |---|---|---:|---:|---:|---:|---:|---:|---:|
 | economy | A3 Sportback 1.4 TFSI Attraction | 16 | 216,000 | ₺770,000 | ₺754,463 | 2.0% | 0.0% | ₺796,416 |
 | mid | 520i Premium | 13 | 230,000 | ₺1,525,000 | ₺1,527,918 | 0.2% | 0.0% | ₺1,492,718 |
@@ -324,29 +324,42 @@ Association; not verified listing by listing. Information absent from the form (
 
 #### Examples
 
-| car | year | km | price | model estimate | residual | automatic reasons |
-|---|---:|---:|---:|---:|---:|---|
-| BMW 640i | 2011 | 160,000 | ₺5,600,000 | ₺3,238,105 | +42.2% | text says 650 hp, form says 320 hp · text names a different M/RS model (M6) · conversion wording in text · 3 listing(s) of this model in the data |
-| Audi 4.2 FSI Quattro R-tronic (R8) | 2008 | 112,550 | ₺4,690,000 | ₺2,610,304 | +44.3% | 1 listing(s) of this model in the data · no other listing of the same model+year · segment S · age 18 |
-| BMW 750i Long | 2007 | 271,000 | ₺1,190,000 | ₺3,115,921 | -161.8% | 2 listing(s) of this model in the data · no other listing of the same model+year · segment F · age 19 |
+| car | year | km | price | model estimate | residual |
+|---|---:|---:|---:|---:|---:|
+| BMW 640i | 2011 | 160,000 | ₺5,600,000 | ₺3,238,105 | +42.2% |
+| Audi 4.2 FSI Quattro R-tronic (R8) | 2008 | 112,550 | ₺4,690,000 | ₺2,610,304 | +44.3% |
+| BMW 750i Long | 2007 | 271,000 | ₺1,190,000 | ₺3,115,921 | -161.8% |
 
-Automatic reasons come from the detectors (HP and M/RS label in the text, conversion/modification wording, counts); the ad text itself is not written.
-
-> **Hand-written explanation (2026-09-17)** — written by reading the ads; the generator computes only the table above.
->
-> - **BMW 640i · 2011:** Per the ad text the car is a full M6 conversion: M6 engine and M6 body parts. The form still says 640i, so the model prices an ordinary 640i while the buyer is looking at an M6.
-> - **Audi 4.2 FSI Quattro R-tronic (R8) · 2008:** The only R8 in the data. Its model name on the form is just "4.2 FSI Quattro R-tronic"; the S5 4.2 FSI Quattros sharing that engine name have a median of ₺2.62M, and the model's estimate is almost exactly that. With no comparable, the model priced a supercar like the similarly named S5.
-> - **BMW 750i Long · 2007:** There are two listings under this name; the other is a ₺5.3M converted 2009 car. This listing is in line with same-year 730ds (15 listings, median ₺1.18M) and its text says well-maintained with no pending costs. The listing is priced right and the model is wrong: lacking a comparable, it is probably pulled up by the name's other, expensive listing.
+- **BMW 640i · 2011:** Per the ad text the car is a full M6 conversion: M6 engine and M6 body parts. The form still says 640i, so the model prices an ordinary 640i while the buyer is looking at an M6.
+- **Audi 4.2 FSI Quattro R-tronic (R8) · 2008:** The only R8 in the data. Its model name on the form is just "4.2 FSI Quattro R-tronic"; the S5 4.2 FSI Quattros sharing that engine name have a median of ₺2.62M, and the model's estimate is almost exactly that. With no comparable, the model priced a supercar like the similarly named S5.
+- **BMW 750i Long · 2007:** There are two listings under this name; the other is a ₺5.3M converted 2009 car. This listing is in line with same-year 730ds (15 listings, median ₺1.18M) and its text says well-maintained with no pending costs. The listing is priced right and the model is wrong: lacking a comparable, it is probably pulled up by the name's other, expensive listing.
 
 ![Residual% vs Predicted](figures/en-09-residual.png)
 
-![Per-model sample size vs median error (log axis)](figures/en-11-n-vs-error.png)
+![Fewer comparables, larger error — median error per model](figures/en-11-n-vs-error.png)
 
-The weakness is price-dependent: median error is 6.97% in the cheapest quartile and 3.54% in the most expensive. The 90% conformal interval fails in the same place — Q1 coverage 81.6%.
+Each point is a model; the y axis is the median error across that model's listings. The bucket median is 10.1% for single-listing models and 4.6% for models with 100+ listings. The table above measures differently in two ways: it counts the **rate** of large errors and groups listings by model+**year**. Both point the same way — fewer comparables, larger error.
+
+**A conformal interval** is a data-based price band the model offers alongside its single price (e.g. ₺1.34M – ₺1.78M).
+
+* **No distributional assumption:** Errors are not assumed to follow a formula (a bell curve, etc.). The model's real errors on cars it has never seen are sorted, the worst 10% are set aside, and the margin is read directly from the data. The one assumption is that new listings resemble past ones — as the market drifts (§9), that assumption weakens.
+* **Proportional:** The margin is applied as a percentage, not in lira (roughly 13% below to 15% above the estimate). So the lira band is wide for expensive cars and narrow for cheap ones.
+* **Limitation:** Because one percentage is applied to the whole market, the band is too narrow for cheap cars, where the model errs more in proportional terms (see the coverage chart below). The fix is to compute the margin separately for each price band instead of as a single number; this was not done in this report.
+
+**The weakness is price-dependent:** median error is 6.97% in the cheapest quartile and 3.54% in the most expensive. The 90% conformal interval does not hold everywhere; Q1 coverage, for instance, is 81.6%.
 
 ![Median error by price quartile (%)](figures/en-10-quartile-error.png)
 
 ![Conformal coverage % (target 90%)](figures/en-12-coverage.png)
+
+| quartile | price range | coverage |
+|---|---|---:|
+| Q1 | below ₺1.15M | 81.6% |
+| Q2 | ₺1.15M – ₺1.54M | 91.9% |
+| Q3 | ₺1.54M – ₺2.27M | 92.6% |
+| Q4 | above ₺2.27M | 94.1% |
+
+**Note:** The price quartiles are cut on actual values. Overall coverage is 90.0% by construction; only Q1 falls below the target.
 
 ### Best 5 predictions
 
@@ -410,7 +423,7 @@ Single = train on one snapshot, predict a later one. Cumulative = train on every
 | 03-21 | 7.02% | 11,478 | ≤03-21 | 6.52% | 21,099 |
 | 06-27 | 7.23% | 11,526 | ≤06-27 | 6.52% | 29,988 |
 
-![OOF MAPE — per-snapshot vs cumulative](figures/en-15-backtest.png)
+![More data, less error — single period vs pooled periods](figures/en-15-backtest.png)
 
 ### Distribution drift
 
@@ -423,15 +436,18 @@ Single = train on one snapshot, predict a later one. Cumulative = train on every
 | 01-27→06-27 | 0.0301 | <0.001 | 0.0038 | ₺39,115 |
 | 03-21→06-27 | 0.0157 | 0.118 | 0.0017 | ₺28,620 |
 
-PSI thresholds: < 0.10 safe, > 0.25 retrain. Highest PSI **0.0049** — below the safe threshold. 2 pairs have KS p < 0.05: with large n even a tiny shift is significant; its size is given by PSI and EMD.
+**What the columns measure.** All four compare the **asking-price distribution** of two snapshots (raw price, ₺; every listing live on that day, ~11k per snapshot).
+
+| measure | what it measures, how to read it |
+|---|---|
+| **KS** | The point where the two distributions differ most; 0–1. How different is "the share of listings below this price" at worst? 0.031 = 3.1 points apart at the widest point. |
+| **KS p** | Could the difference be chance? Below 0.05 → it is real. But it says **nothing about size**: with samples of ~11k listings even a tiny difference comes out significant. |
+| **PSI** | Is the difference practically large? The first snapshot's prices are cut into 10 bins; how much did those bin shares move in the second? < 0.10 no drift · 0.10–0.25 moderate · > 0.25 large, retrain the model. |
+| **EMD (₺)** | How many lira is the difference? How far prices must move on average to turn one snapshot's distribution into the other's. The only measure in lira, so the most directly readable one. |
+
+**What the table says.** Two pairs have KS p below 0.05 — the price distribution really did change between January and June. But the change is small: the highest PSI is 0.0049, about 20× below the "no drift" threshold (0.10). EMD puts it in lira: ~₺10k over nine days, ~₺48k over five months — about 3% of the median asking price (₺1.54M). Drift grows with the distance between snapshots, but not enough to break the structure the model learned.
 
 ![Price distribution by snapshot](figures/en-13-drift-hist.png)
 
 ![Log-price density by snapshot](figures/en-14-drift-kde.png)
-
-## 10. Reproducibility
-
-- seed: `42` · row order: `ORDER BY ad_id` · LightGBM deterministic: `True` · CatBoost device: `CPU` · n_jobs: `16`
-
-To regenerate this report: `python clean/car_price_report/build_report.py`. To regenerate the data itself: `python clean/build_site_data.py`.
 

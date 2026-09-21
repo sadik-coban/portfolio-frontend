@@ -178,9 +178,39 @@ export function buildReportFigures(d: any, lang: Lang): Record<string, Fig> {
     put('10-quartile-error', qe.length ? [{ type: 'bar', x: qe.map((r: any) => r[0]), y: qe.map((r: any) => r[1]), marker: { color: green }, text: qe.map((r: any) => r[1].toFixed(1)), textposition: 'outside', hovertemplate: '%{x}: %{y:.1f}% ' + L('medyan mutlak hata', 'median absolute error') + '<extra></extra>' }] : null,
         base({ margin: { t: 24, r: 16, b: 24, l: 8 }, yaxis: { title: { text: L('medyan mutlak hata %', 'median absolute error %'), font: { size: 10 } } } }), 260);
 
-    const rvn = dom.residual_vs_n || [];
-    put('11-n-vs-error', rvn.length ? [{ type: 'scatter', mode: 'markers', x: rvn.map((r: any) => r[0]), y: rvn.map((r: any) => r[1]), marker: { size: 6, color: green, opacity: 0.5 }, hovertemplate: '%{x} ' + L('ilan', 'listings') + ' · %{y:.1f}<extra></extra>' }] : null,
-        base({ margin: { t: 8, r: 16, b: 32, l: 8 }, xaxis: { title: { text: L('ilan adedi', 'listings'), font: { size: 10 } } }, yaxis: { type: 'log' } }), 260);
+    // Error against how many listings a model has. Three series and a bucket line, as the generator
+    // draws it: models with 1–4 listings are hollow, because their median comes from a handful of
+    // ads and is mostly noise; the few models above the 40% cap sit as triangles on the edge rather
+    // than stretching the axis; the red line is the median of those per-model medians per bucket.
+    //
+    // per_model_error carries all 745 models — site_data's residual_vs_n keeps only the 5+ ones, so
+    // the hollow points exist only in the generator's metrics file (merged by shrink-site-data).
+    const CAP = 40;
+    const pme: number[][] = dom.per_model_error?.length ? dom.per_model_error : (dom.residual_vs_n || []).map((r: any) => [r[0], r[1]]);
+    const buckets = dom.per_model_buckets || [];
+    const nTick = (v: number) => v.toLocaleString(loc);
+    const pick = (f: (n: number, m: number) => boolean) => pme.filter(([n, m]) => f(n, m));
+    const many = pick((n, m) => n >= 5 && m <= CAP), few = pick((n, m) => n < 5 && m <= CAP), over = pick((_n, m) => m > CAP);
+    const bLine = buckets
+        .map((b: any) => {
+            const ns = pme.filter(([n]) => n >= b.lo && n <= b.hi).map(([n]) => n).sort((x, y) => x - y);
+            if (!ns.length) return null;
+            const mid = ns.length >> 1;
+            return { x: ns.length % 2 ? ns[mid] : (ns[mid - 1] + ns[mid]) / 2, y: b.median_of_medians, bin: b.bin };
+        })
+        .filter(Boolean) as { x: number; y: number; bin: string }[];
+    const dot = (rows: number[][], extra: any) => ({ type: 'scatter', mode: 'markers', x: rows.map((r) => r[0]), y: rows.map((r) => r[1]), hovertemplate: '%{x} ' + L('ilan', 'listings') + ' · %{y:.1f}%<extra></extra>', ...extra });
+    put('11-n-vs-error', pme.length ? [
+        many.length && dot(many, { name: L('model (5+ ilan)', 'model (5+ listings)'), marker: { size: 6, color: green, opacity: 0.45 } }),
+        few.length && dot(few, { name: L('model (1–4 ilan: medyanı birkaç ilandan, gürültülü)', 'model (1–4 listings: median from a few ads, noisy)'), marker: { size: 7, color: 'rgba(0,0,0,0)', line: { color: green, width: 1 } } }),
+        over.length && { type: 'scatter', mode: 'markers', x: over.map((r) => r[0]), y: over.map(() => CAP + 1.5), name: L(`%${CAP} üstü: ${over.length} model (kenarda)`, `above ${CAP}%: ${over.length} models (at edge)`), marker: { size: 8, color: '#86857e', symbol: 'triangle-up' }, customdata: over.map((r) => r[1]), hovertemplate: '%{x} ' + L('ilan', 'listings') + ' · %{customdata:.1f}%<extra></extra>' },
+        bLine.length && { type: 'scatter', mode: 'lines+markers+text', x: bLine.map((b) => b.x), y: bLine.map((b) => b.y), name: L('kova medyanı (1 · 2–4 · 5–19 · 20–99 · 100+ ilan)', 'bucket median (1 · 2–4 · 5–19 · 20–99 · 100+ listings)'), line: { color: '#b91c1c', width: 2.4 }, marker: { size: 7, color: '#b91c1c' }, text: bLine.map((b) => (lang === 'tr' ? `%${b.y.toFixed(1)}` : `${b.y.toFixed(1)}%`)), textposition: 'top center', textfont: { size: 10, color: '#b91c1c' }, customdata: bLine.map((b) => b.bin), hovertemplate: '%{customdata} ' + L('ilan', 'listings') + ' · %{y:.1f}%<extra></extra>' },
+    ] : null,
+        base({
+            margin: { t: 8, r: 16, b: 40, l: 8 }, showlegend: true, legend: { font: { size: 9 }, orientation: 'h', y: -0.26 },
+            xaxis: { type: 'log', tickmode: 'array', tickvals: [1, 2, 5, 10, 20, 50, 100, 200, 500, 1000], ticktext: [1, 2, 5, 10, 20, 50, 100, 200, 500, 1000].map(nTick), title: { text: L('modeldeki ilan sayısı (log)', 'listings per model (log)'), font: { size: 10 } } },
+            yaxis: { range: [0, CAP + 4], ticksuffix: '%', title: { text: L('model başına medyan hata', 'median error per model'), font: { size: 10 } } },
+        }), 320);
 
     const cf = dom.conformal;
     const cfHedef = cf?.coverage_hedef ?? 90;
@@ -210,11 +240,16 @@ export function buildReportFigures(d: any, lang: Lang): Record<string, Fig> {
 
     const btIns = met.backtest?.insample, btPer = met.backtest?.per_snapshot;
     const btLabels = btPer ? btPer.map((r: any) => r[0]) : (btIns ? btIns.map((r: any) => String(r[0]).replace('→', '')) : []);
+    // What separates the two lines is how many listings each was trained on, so the pooled line
+    // carries that count under each point and the per-period line states its range — the generator
+    // made the same change, after the old "per-snapshot vs cumulative" labels left the reader to
+    // guess why pooling helps.
+    const btN = btPer ? btPer.map((r: any) => r[2]) : [];
     put('15-backtest', (btIns || btPer) ? [
-        btPer && { type: 'scatter', mode: 'lines+markers', name: L('Dönem başına (bağımsız)', 'Per-snapshot (standalone)'), x: btLabels, y: btPer.map((r: any) => r[1]), line: { color: '#e08a1e', width: 2 }, marker: { size: 6 }, text: btPer.map((r: any) => fmtN(r[2])), hovertemplate: L('dönem', 'snapshot') + ' %{x}: %{y:.2f}% · %{text} ' + L('ilan', 'listings') + '<extra></extra>' },
-        btIns && { type: 'scatter', mode: 'lines+markers', name: L('Kümülatif (t’ye kadar)', 'Cumulative (up to t)'), x: btLabels, y: btIns.map((r: any) => r[1]), line: { color: deep, width: 2, shape: 'spline' as const }, marker: { size: 7, color: green }, text: btIns.map((r: any) => fmtN(r[2])), hovertemplate: L('kümülatif →', 'cumulative →') + '%{x}: %{y:.2f}% · %{text} ' + L('ilan', 'listings') + '<extra></extra>' },
+        btPer && { type: 'scatter', mode: 'lines+markers', name: L(`yalnız o dönemin ilanları (${fmtN(Math.min(...btN))}–${fmtN(Math.max(...btN))} ilan)`, `that period's listings only (${fmtN(Math.min(...btN))}–${fmtN(Math.max(...btN))})`), x: btLabels, y: btPer.map((r: any) => r[1]), line: { color: '#e08a1e', width: 2 }, marker: { size: 6 }, text: btPer.map((r: any) => fmtN(r[2])), hovertemplate: L('dönem', 'period') + ' %{x}: %{y:.2f}% · %{text} ' + L('ilan', 'listings') + '<extra></extra>' },
+        btIns && { type: 'scatter', mode: 'lines+markers+text', name: L('o tarihe kadarki tüm dönemler birlikte', 'all periods up to that date, pooled'), x: btLabels, y: btIns.map((r: any) => r[1]), line: { color: deep, width: 2 }, marker: { size: 7, color: green }, text: btIns.map((r: any) => `${fmtN(r[2])} ${L('ilan', 'listings')}`), textposition: 'bottom center', textfont: { size: 9, color: theme.muted }, hovertemplate: L('birikmiş →', 'pooled →') + '%{x}: %{y:.2f}%<extra></extra>' },
     ] : null,
-        base({ margin: { t: 12, r: 16, b: 40, l: 34 }, yaxis: { ticksuffix: '%' }, showlegend: true, legend: { font: { size: 9 }, orientation: 'h', y: -0.25 } }), 260);
+        base({ margin: { t: 12, r: 16, b: 46, l: 34 }, yaxis: { ticksuffix: '%', title: { text: 'MAPE', font: { size: 10 } } }, xaxis: { title: { text: L('dönem', 'period'), font: { size: 10 } } }, showlegend: true, legend: { font: { size: 9 }, orientation: 'h', y: -0.3 } }), 280);
 
     // ---------- data quality ----------
     // Columns that share an identical missing rate are empty in the SAME rows — a co-missing

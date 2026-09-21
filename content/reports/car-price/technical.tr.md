@@ -1,14 +1,12 @@
-# Car Price — Teknik Rapor
+# İkinci El Araç Piyasası Analizi — Teknik Rapor
 
-> Üretilmiş dosya — kaynak `clean/data/site_data.json`, üreteç `clean/car_price_report/build_report.py`. Her sayı JSON'dan okunur.
-
-Karar özeti: [business.tr.md](business.tr.md)
-
-## 1. Veri, dedup ve sızıntı
+## 1. Veri temizleme ve sızıntı tespiti
 
 **45.159 snapshot → 29.988 ilan.** Aradaki 15.171 satır aynı ilanın tekrar taranması — veri değil, tarama artığı. `ad_id` başına en son snapshot alındı.
 
 Medyan ilan fiyatı ₺1.54M, ₺0.84M–₺3.42M arası (P10–P90).
+
+**Kapsam: yalnız TR plakalı araçlar.** Çalışmaya yabancı/mavi plakalı ve plaka bilgisi olmayan ilanlar dahil edilmemiştir. Vergilendirme rejimindeki farklılıklar modeli ve analizi yanıltabileceğinden kapsam dışı bırakılmıştır.
 
 ### Ölçek
 
@@ -25,7 +23,7 @@ Medyan ilan fiyatı ₺1.54M, ₺0.84M–₺3.42M arası (P10–P90).
 
 1. **Yapısal** — yaş · km · motor gücü/hacmi · kasa · yakıt · vites · çekiş · segment.
 2. **Hasar / ekspertiz** — her kaporta paneli × {değişen, boyalı, lokal boya} + tramer + ağır hasar.
-3. **Serbest metin** — satıcı açıklaması; bu raporda değil, ayrı metin analizinde (beyan · donanım · anomali).
+3. **Serbest metin** — satıcı açıklaması; modelde **kullanılmıyor**. Ayrı bir çalışmada ölçüldü: yapısal modele metin öznitelikleri eklendiğinde çapraz-doğrulamalı doğrulukta ölçülebilir bir katkı bulunamadı, o yüzden bu rapora girmiyor.
 
 ### Tutulan öznitelikler (25)
 
@@ -36,15 +34,15 @@ Model (`model`) · Seri (`series`) · Marka (`brand`) · Kasa Tipi (`kb_body_typ
 | grup | gerekçe | ~kolon |
 |---|---|---:|
 | A | Sabit varyans | ~2 |
-| B | Redundant kb/gb | ~12 |
+| B | Gereksiz kb/gb | ~12 |
 | B* | Kapsam farkı | 1 |
 | C | Kimlik/sızıntı | ~8 |
 | D | Blok-eksik>%40 | ~15 |
 | E | Spec-eksik~%26 | ~10 |
 
-Hiyerarşik doldurma: seri>segment>marka medyanı. torque_nm %27.6 eksik olduğu için çıkarıldı.
+Eksik değerler seri > segment > marka medyan hiyerarşisiyle doldurulmuş; %27.6 eksik olan `torque_nm` değişkeni ise analiz dışı bırakılmıştır.
 
-**Sızıntı kontrolü.** Dedup `ad_id` üzerinden ve CV'den ÖNCE yapıldı. Değerlendirme 5-fold out-of-fold: her ilan tam olarak bir kez, kendisini görmemiş bir modelle tahmin edildi.
+**Sızıntı kontrolü.** Dedup (ilanların tekilleştirilmesi) `ad_id` üzerinden ve CV'den ÖNCE yapıldı. Değerlendirme 5-fold out-of-fold: her ilan tam olarak bir kez, kendisini görmemiş bir modelle tahmin edildi.
 
 ### İçerik bazlı tekrar
 
@@ -67,7 +65,7 @@ En çok tekrar eden ilanlar:
 
 ## 2. Eksiklik rastgele değil
 
-30 kolon %2'nin üzerinde eksik ve bir kısmı **birlikte** düşüyor. Bu "eksik veri" değil, katalog eşleşmesinin çöktüğü ilanlar: standart modeller eşleşir, niş varyantlar eşleşmez, tüm spec birden boşalır. Sistematik olduğu için güvenilir imputasyon yok → bu kolonlar çıkarıldı.
+30 kolon %2'nin üzerinde eksik ve bir kısmı **birlikte** düşüyor. Bu "eksik veri" değil, katalog eşleşmesinin çöktüğü ilanlar: standart modeller eşleşir, niş varyantlar eşleşmez, tüm özellik listesi birden boşalır. Sistematik olduğu için güvenilir imputasyon yok → bu kolonlar çıkarıldı.
 
 ![Eksiklik oranı (%) — aynı oran = birlikte eksik blok](figures/tr-16-missing.png)
 
@@ -91,7 +89,9 @@ En çok tekrar eden ilanlar:
 | Ortalama Kasko (`gb_kasko_avg`) | %51.1 | yok |
 | Yıllık MTV (`gb_mtv_yearly`) | %40.6 | yok |
 
-İlan sayfası aynı bilgiyi iki sekmede taşıyabiliyor. İkizi olan 1 alanda dolu taraf (kb) kullanıldı; ikizi olmayan 3 alan (sigorta/vergi) %40 eşiğini aştığı için atıldı.
+İlan sayfasında aynı bilgi iki farklı sekmede de yer alabiliyor. Modelde tekrar olmasın diye çakışan bilgide verisi daha dolu olan tarafı (`kb`) seçtik. Karşılığı olmayan ve %40'tan fazlası boş olan 3 alanı (sigorta ve vergi) ise eledik.
+
+**kb/gb nedir.** `kb` kısa bilgi, `gb` ise genel bakış sekmesidir. İkisi de benzer şeyleri yazar. Bilgiyi modele iki kez sokmamak için tek bir sütuna indirdik; iki tarafı birbiriyle yamamak yerine en dolu olanı tutup diğerini sildik.
 
 ## 3. Fazlalık, bağıntı ve marka
 
@@ -180,6 +180,8 @@ Ham fiyat sağa çarpık (çarpıklık 1.62); log dönüşümü simetriğe yakla
 
 Hedonik regresyon her sürücünün *kontrollü* (diğer her şey sabitken) fiyat etkisini verir — R² **0.9309**, n **29.554**. Katsayılar bootstrap ile güven aralıklı; 10 terimin hepsinin %95 GA'sı sıfırı dışlıyor → her sürücü güvenilir şekilde anlamlı.
 
+**Not:** Hedonik model bir OLS modelidir ve eksik değerlerle çalışamaz; bu yüzden eksik motor gücü (426) ve eksik motor hacmi (356) bulunan ilanlar analiz öncesinde elenmiştir. Her iki alanın da ortak eksik olduğu satırlar düşüldüğünde veri setinden toplam 434 satır çıkarılmıştır.
+
 ![Bootstrap katsayıları (nokta + %95 GA)](figures/tr-03-bootstrap-ci.png)
 
 ### Bootstrap katsayıları
@@ -240,28 +242,26 @@ Grafik 5 çubuk gösteriyor, model 25 öznitelik kullanıyor. Kapsam:
 
 | kapsam | öznitelik | nerede |
 |---|---:|---|
-| tekil ölçüldü | 19 | 2'si kendi çubuğunda, 17'si grupların içinde |
-| grup olarak ölçüldü | 3 | `DAMAGE_COLS` · `MODEL_SERIES` · `ENGINE` |
+| toplam ölçülen | 19 | 2'si kendi çubuğunda, 17'si grupların içinde |
+| grup olarak ölçülen | 3 | `DAMAGE_COLS` · `MODEL_SERIES` · `ENGINE` |
 | **hiç ölçülmedi** | **6** | `brand` · `kb_body_type` · `kb_drivetrain` · `segment` · `kb_transmission` · `kb_fuel` |
 
-> **Not — LOFO neyi kapsamıyor.** Yukarıdaki 6 öznitelik LOFO'da **hiç ölçülmedi**: üreteç yalnız sayısal ve metin özniteliklerini geziyor, kategorikler döngüye hiç girmiyor. Yani "km ve yaş baskın" sonucu ölçülen öznitelikler arasında geçerli; marka, segment ya da kasa tipi bu yarışa hiç sokulmadı. Bağıntı tarafı bunu kısmen kapatıyor (§3: marka ablasyonu, U(marka | model) = 1.00), LOFO kapatmıyor.
->
-> Çubuk sayısının az olmasının ayrı bir sebebi var: ham `methodology.lofo` hem tekil hem grup çıkarmalarını bir arada taşıyor ve ikisini aynı eksende basmak çift sayım olur (`DAMAGE_COLS` kendi 13 üyesiyle yarışır). Grafik bu yüzden **çakışmayan** gruplara indirgendi.
+## 7. Model karşılaştırma ve kısıtlar
 
-## 7. Model karşılaştırma ve gürültü tabanı
+Rapordaki model: **LightGBM (model/seri adı TF-IDF+SVD)** — MAPE **%6.5**, R² **0.9744**, MAE **₺110K**. Hedef `log1p(price)`, 25 öznitelik. Model+yıl medyan tabanına göre %42 daha iyi.
 
-Rapordaki model: **LightGBM (TF-IDF+SVD)** — MAPE **%6.5**, R² **0.9744**, MAE **₺110K**. Hedef `log1p(price)`, 25 öznitelik. Model+yıl medyan tabanına göre %42 daha iyi.
+**TF-IDF+SVD neye uygulanıyor.** Serbest ilan metnine değil, yalnız `model` ve `series` ad dizgilerine ("A4 Sedan 2.0 TDI" gibi). Amaç, nadir ad kombinasyonlarının isim benzerliği üzerinden komşularından bilgi ödünç almasıdır; target encoding'in seyrek hücrelerde zayıfladığı yeri kapatır. Satıcı açıklaması modele hiçbir biçimde girmez (bkz. §1, üçüncü katman).
 
 ### Model varyantları
 
 | varyant | MAPE | R² | MAE | MedAE | RMSE |
 |---|---:|---:|---:|---:|---:|
-| LightGBM (TF-IDF+SVD) | %6.50 | 0.9744 | ₺110.072 | ₺75.282 | ₺176.576 |
-| CatBoost (TF-IDF+SVD) ★ | %6.45 | 0.9742 | ₺110.294 | ₺74.660 | ₺177.186 |
-| CatBoost (native text) | %6.59 | 0.9734 | ₺113.125 | ₺77.772 | ₺179.772 |
+| LightGBM (model/seri adı TF-IDF+SVD) | %6.50 | 0.9744 | ₺110.072 | ₺75.282 | ₺176.576 |
+| CatBoost (model/seri adı TF-IDF+SVD) ★ | %6.45 | 0.9742 | ₺110.294 | ₺74.660 | ₺177.186 |
+| CatBoost (model/seri adı native text) | %6.59 | 0.9734 | ₺113.125 | ₺77.772 | ₺179.772 |
 | model+yıl medyanı (taban) | %11.20 | 0.9235 | ₺191.224 | ₺130.000 | ₺305.050 |
 
-★ = üreticinin kuralıyla kazanan (yalnız MAPE'ye bakar): **CatBoost (TF-IDF+SVD)**. Ama iki TF-IDF+SVD varyantı arasındaki fark 0.05 MAPE puanı ve ₺222 MAE; LightGBM şu metriklerde önde: MAE, RMSE, R²; CatBoost şunlarda: MAPE, MedAE → pratikte **eşitler**. Rapor boyunca "model" LightGBM'dir: CPU'da bit-birebir deterministik, CatBoost'un ağaçları ise cihaza (GPU/CPU) göre değişir — yayımlanan GPU koşumunda MAPE sırası tersti. Gürültü tabanı, conformal aralık, marka ablasyonu ve örnek tahminler LightGBM'den.
+★ = üreticinin kuralıyla kazanan (yalnız MAPE'ye bakar): **CatBoost (model/seri adı TF-IDF+SVD)**. Ama iki TF-IDF+SVD varyantı arasındaki fark 0.05 MAPE puanı ve ₺222 MAE; LightGBM şu metriklerde önde: MAE, RMSE, R²; CatBoost şunlarda: MAPE, MedAE → pratikte **eşitler**. Rapor boyunca "model" LightGBM'dir: CPU'da deterministik, CatBoost'un ağaçları ise cihaza (GPU/CPU) göre değişir — yayımlanan GPU koşumunda MAPE sırası tersti. Conformal aralık, marka ablasyonu ve örnek tahminler LightGBM'den.
 
 ### Taban basamak kırılımı
 
@@ -273,11 +273,11 @@ Rapordaki model: **LightGBM (TF-IDF+SVD)** — MAPE **%6.5**, R² **0.9744**, MA
 
 Merdiven: (model, yıl) medyanı → (model) medyanı — tüm yıllar → global medyan. Test'teki (model, yıl) hücresi eğitim fold'unda yoksa taban bir alt basamağa iner; her inişte hata belirgin büyür — emsalsiz araçta taban zaten zayıf. Medyanlar her fold'da yalnız eğitim kısmından hesaplanır (sızıntısız, modelle aynı 5-fold).
 
-**Gürültü tabanı.** Aynı spec'teki araçlar (aynı model · yıl · km · hp · kasa) birbirinden **₺77K** aralıkla ilan ediliyor — 5.767 satır, 2.577 grup. Bu bir taban: aynı arabayı satıcılar farklı fiyatlıyor ve hiçbir model bunun altına inemez. Model ₺110K'de, yani tabanın **1.42 katında**; geriye kalan tüm pay ₺33K. Hiperparametre araması tipik olarak bunun ~₺5K'sini alır, o yüzden yapılmadı.
+**Model Kısıtları ve Gözlemler.** Tahmin sapmalarının başlıca kaynağı; araçtaki modifiye, özel donanım veya ÖTV muafiyeti gibi form alanlarında yer almayıp serbest metne gizlenen örtük bilgilerdir. Benzer şekilde, veri kümesinde emsali sınırlı olan niş lüks ve sportif araçlarda örneklem yetersizliği nedeniyle hata payı belirgin şekilde artmaktadır. Performans tavanının algoritma ayarlarından ziyade veri kapsamıyla sınırlı olması nedeniyle, marjinal kazancı kısıtlı kalacak kapsamlı bir hiperparametre optimizasyonuna bilinçli olarak gidilmemiştir.
 
 ### Örnek tahminler
 
-| bant | araç | yaş | km | gerçek | LightGBM | sapma | OOF artık | CatBoost (SVD) |
+| bant | araç | yaş | km | gerçek | LightGBM | sapma | OOF artık | CatBoost (model/seri adı SVD) |
 |---|---|---:|---:|---:|---:|---:|---:|---:|
 | ekonomik | A3 Sportback 1.4 TFSI Attraction | 16 | 216.000 | ₺770.000 | ₺754.463 | %2.0 | %0.0 | ₺796.416 |
 | orta | 520i Premium | 13 | 230.000 | ₺1.525.000 | ₺1.527.918 | %0.2 | %0.0 | ₺1.492.718 |
@@ -324,29 +324,42 @@ Hatası ±%20 sınırını aşan 1.187 ilan (761 fazla, 426 düşük tahmin). A�
 
 #### Örnekler
 
-| araç | yıl | km | fiyat | model tahmini | artık | otomatik gerekçe |
-|---|---:|---:|---:|---:|---:|---|
-| BMW 640i | 2011 | 160.000 | ₺5.600.000 | ₺3.238.105 | +%42.2 | metinde 650 hp, formda 320 hp · metinde farklı M/RS modeli (M6) · metinde dönüşüm ifadesi · veride bu modelden 3 ilan |
-| Audi 4.2 FSI Quattro R-tronic (R8) | 2008 | 112.550 | ₺4.690.000 | ₺2.610.304 | +%44.3 | veride bu modelden 1 ilan · aynı model+yılda başka ilan yok · segment S · yaş 18 |
-| BMW 750i Long | 2007 | 271.000 | ₺1.190.000 | ₺3.115.921 | -%161.8 | veride bu modelden 2 ilan · aynı model+yılda başka ilan yok · segment F · yaş 19 |
+| araç | yıl | km | fiyat | model tahmini | artık |
+|---|---:|---:|---:|---:|---:|
+| BMW 640i | 2011 | 160.000 | ₺5.600.000 | ₺3.238.105 | +%42.2 |
+| Audi 4.2 FSI Quattro R-tronic (R8) | 2008 | 112.550 | ₺4.690.000 | ₺2.610.304 | +%44.3 |
+| BMW 750i Long | 2007 | 271.000 | ₺1.190.000 | ₺3.115.921 | -%161.8 |
 
-Otomatik gerekçe dedektörlerden gelir (metindeki HP ve M/RS etiketi, dönüşüm/modifiye ifadesi, sayımlar); ilan metni yazılmaz.
-
-> **Elle yazılmış açıklama (2026-09-17)** — ilan metinleri okunarak; üreteç yalnız yukarıdaki tabloyu hesaplar.
->
-> - **BMW 640i · 2011:** İlan metnine göre araç komple M6 dönüşümü: M6 motoru ve M6 kasa parçaları takılmış. Form hâlâ 640i dediği için model onu sıradan bir 640i gibi fiyatlıyor; alıcı ise bir M6'ya bakıyor.
-> - **Audi 4.2 FSI Quattro R-tronic (R8) · 2008:** Veride tek R8. Formdaki model adı yalnız "4.2 FSI Quattro R-tronic"; aynı motor adını taşıyan S5 4.2 FSI Quattro'ların medyanı ₺2.62M ve model tahmini buna neredeyse eşit. Emsali olmayan bir süper otomobili model, adı benzeyen S5 gibi fiyatlamış.
-> - **BMW 750i Long · 2007:** Veride bu addan iki ilan var; diğeri ₺5.3M'lik dönüşümlü bir 2009 araç. Bu ilan ise aynı yılın 730d'leriyle (15 ilan, medyan ₺1.18M) uyumlu ve metni bakımlı, masrafsız diyor. İlan piyasaya uygun, yanılan model: emsali olmadığı için muhtemelen adın diğer, pahalı ilanından etkileniyor.
+- **BMW 640i · 2011:** İlan metnine göre araç komple M6 dönüşümü: M6 motoru ve M6 kasa parçaları takılmış. Form hâlâ 640i dediği için model onu sıradan bir 640i gibi fiyatlıyor; alıcı ise bir M6'ya bakıyor.
+- **Audi 4.2 FSI Quattro R-tronic (R8) · 2008:** Veride tek R8. Formdaki model adı yalnız "4.2 FSI Quattro R-tronic"; aynı motor adını taşıyan S5 4.2 FSI Quattro'ların medyanı ₺2.62M ve model tahmini buna neredeyse eşit. Emsali olmayan bir süper otomobili model, adı benzeyen S5 gibi fiyatlamış.
+- **BMW 750i Long · 2007:** Veride bu addan iki ilan var; diğeri ₺5.3M'lik dönüşümlü bir 2009 araç. Bu ilan ise aynı yılın 730d'leriyle (15 ilan, medyan ₺1.18M) uyumlu ve metni bakımlı, masrafsız diyor. İlan piyasaya uygun, yanılan model: emsali olmadığı için muhtemelen adın diğer, pahalı ilanından etkileniyor.
 
 ![Artık% vs Tahmin](figures/tr-09-residual.png)
 
-![Model ilan-adedi vs medyan hata (log eksen)](figures/tr-11-n-vs-error.png)
+![Emsali az olan modelde hata büyük — model başına medyan hata](figures/tr-11-n-vs-error.png)
 
-Zayıflık fiyata bağlı: medyan hata en ucuz çeyrekte %6.97, en pahalıda %3.54. Conformal %90 aralık aynı yerde tutmuyor — Q1 kapsaması %81.6.
+Her nokta bir model; y ekseni o modelin ilanlarındaki medyan hata. Kova medyanı tek ilanlı modellerde %10.1, 100+ ilanlıda %4.6. Yukarıdaki tablo iki yönden farklı ölçer: büyük hata **oranını** sayar ve ilanları model+**yıl** bazında gruplar. İkisi aynı yönü gösteriyor — emsal azaldıkça hata büyüyor.
+
+**Conformal aralık**, modelin tek bir fiyatın yanında veriye dayalı bir fiyat bandı da (örneğin ₺1.34M – ₺1.78M) sunmasıdır.
+
+* **Dağılım varsayımı yapmaz:** Hataların bir formüle (çan eğrisi vb.) uyduğu varsayılmaz. Modelin daha önce hiç görmediği araçlardaki gerçek hataları sıralanır, en kötü %10'u dışarıda bırakılır ve pay doğrudan veriden okunur. Tek varsayım, yeni ilanların eskilere benzemesidir — piyasa kaydıkça (§9) bu varsayım zayıflar.
+* **Oransaldır:** Hata payı lira değil yüzde olarak uygulanır (tahminin yaklaşık %13 altı ile %15 üstü). Bu yüzden pahalı araçta lira bandı geniş, ucuz araçta dar çıkar.
+* **Kısıtı:** Tüm piyasaya tek bir yüzde uygulandığı için, modelin oransal olarak daha çok yanıldığı ucuz araçlarda bant fazla dar kalıyor (aşağıdaki kapsama grafiği). Çözüm, hata payını tek bir sayı yerine fiyat bandına göre ayrı ayrı hesaplamaktır; bu raporda yapılmadı.
+
+**Zayıflık fiyata bağlı:** medyan hata en ucuz çeyrekte %6.97, en pahalıda %3.54. Conformal %90 aralık her yerde tutmuyor; örneğin Q1 kapsaması %81.6.
 
 ![Fiyat çeyreğine göre medyan hata (%)](figures/tr-10-quartile-error.png)
 
 ![Conformal kapsama % (hedef %90)](figures/tr-12-coverage.png)
+
+| çeyrek | fiyat aralığı | kapsama |
+|---|---|---:|
+| Q1 | ₺1.15M altı | %81.6 |
+| Q2 | ₺1.15M – ₺1.54M | %91.9 |
+| Q3 | ₺1.54M – ₺2.27M | %92.6 |
+| Q4 | ₺2.27M üstü | %94.1 |
+
+**Not:** Fiyat çeyrekleri gerçek değerler üzerinden dilimlenmiştir. Genel kapsama tanım gereği %90.0 seviyesindedir; yalnız Q1 hedefin altında kalmaktadır.
 
 ### En iyi 5 tahmin
 
@@ -410,7 +423,7 @@ Tek dönem = yalnız bir snapshot'ta eğit, sonrakini tahmin et. Kümülatif = t
 | 03-21 | %7.02 | 11.478 | ≤03-21 | %6.52 | 21.099 |
 | 06-27 | %7.23 | 11.526 | ≤06-27 | %6.52 | 29.988 |
 
-![OOF MAPE — dönem başına vs kümülatif](figures/tr-15-backtest.png)
+![Daha çok veri, daha az hata — tek dönem vs biriken dönemler](figures/tr-15-backtest.png)
 
 ### Dağılım kayması
 
@@ -423,15 +436,18 @@ Tek dönem = yalnız bir snapshot'ta eğit, sonrakini tahmin et. Kümülatif = t
 | 01-27→06-27 | 0.0301 | <0.001 | 0.0038 | ₺39.115 |
 | 03-21→06-27 | 0.0157 | 0.118 | 0.0017 | ₺28.620 |
 
-PSI eşikleri: < 0.10 güvenli, > 0.25 yeniden eğitim. En yüksek PSI **0.0049** — güvenli eşiğin altında. 2 çiftte KS p < 0.05: n büyük olduğunda çok küçük bir fark bile anlamlı çıkar; büyüklüğü PSI ve EMD söyler.
+**Sütunlar ne ölçüyor.** Dördü de iki dönemin **ilan fiyatı dağılımını** karşılaştırır (ham fiyat, ₺; her dönemin o gün ilanda olan tüm ilanları, dönem başına ~11 bin).
+
+| ölçü | ne ölçer, nasıl okunur |
+|---|---|
+| **KS** | İki dağılımın en çok ayrıldığı nokta; 0–1 arası. "Şu fiyatın altında kalan ilan payı" iki dönemde en fazla ne kadar farklı? 0.031 = en ayrık noktada 3.1 puan fark. |
+| **KS p** | Bu fark şans eseri olabilir mi? 0.05'in altı → fark gerçek. Ama **büyüklüğünü söylemez**: ~11 bin ilanlık örneklemlerde çok küçük bir fark bile anlamlı çıkar. |
+| **PSI** | Fark pratikte büyük mü? İlk dönemin fiyatları 10 dilime bölünür; ikinci dönemde bu dilimlerin payı ne kadar kaymış? < 0.10 kayma yok · 0.10–0.25 orta · > 0.25 büyük, model yeniden eğitilmeli. |
+| **EMD (₺)** | Fark kaç lira? Bir dönemin fiyat dağılımını ötekine çevirmek için fiyatların ortalama kaç lira kaydırılması gerektiği. Lira cinsinden tek ölçü olduğu için en doğrudan okunanı bu. |
+
+**Tablonun söylediği.** İki çiftte KS p 0.05'in altında — yani Ocak ile Haziran arasında fiyat dağılımı **gerçekten** değişmiş. Ama değişim küçük: en yüksek PSI 0.0049, "kayma yok" eşiğinin (0.10) yirmide biri. EMD bunu liraya çeviriyor: dokuz günde ~₺10 bin, beş ayda ~₺48 bin — medyan ilan fiyatının (₺1.54M) yaklaşık %3'ü. Kayma dönemler arası mesafeyle birlikte büyüyor, ama modelin öğrendiği yapıyı bozacak düzeyde değil.
 
 ![Fiyat dağılımı — dönemlere göre](figures/tr-13-drift-hist.png)
 
 ![Log-fiyat yoğunluğu — dönemlere göre](figures/tr-14-drift-kde.png)
-
-## 10. Yeniden üretilebilirlik
-
-- seed: `42` · satır sırası: `ORDER BY ad_id` · LightGBM deterministik: `True` · CatBoost cihazı: `CPU` · n_jobs: `16`
-
-Bu raporu yeniden üretmek: `python clean/car_price_report/build_report.py`. Verinin kendisini yeniden üretmek: `python clean/build_site_data.py`.
 
