@@ -297,7 +297,7 @@ export default function FinalBiDashboard() {
     // The header used to repeat the listing count and announce "live filters"; the filter bar below
     // says both, and the count it carries is the filtered one, which is the honest number here.
     return (
-        <FinalShell active="dashboard" kicker={kicker} title={title} meta="BMW + Audi">
+        <FinalShell active="dashboard" kicker={kicker} title={title} meta={L('BMW ve Audi araçları', 'BMW and Audi cars')}>
             {/* filter bar — edits stay local; the API is hit only on Apply (or Enter) */}
             <div className="mb-4 rounded-[12px] border border-[#e4e2dd] bg-[#fdfcf9] p-3" onKeyDown={(e) => { if (e.key === 'Enter' && dirty) applyFilters(); }}>
                 <div className="flex flex-wrap items-center gap-2.5">
@@ -636,11 +636,6 @@ export default function FinalBiDashboard() {
                     )}
                 </div>
             )}
-
-            <p className="mt-6 font-mono text-[11px] leading-relaxed text-[#9a9a92]">
-                {L(`ad_id başına son snapshot (${nf(meta.n_unique)} tekil ilan). Tüm grafikler ve harita filtrelere göre sunucuda (API) canlı hesaplanır; ham satırlar tarayıcıya gönderilmez. Konum, ilan adresinden ayrıştırıldı.`,
-                    `Latest snapshot per ad_id (${nf(meta.n_unique)} unique listings). Every chart and the map are computed live server-side (API) from the filters — no raw rows are sent to the browser. Location parsed from listing address.`)}
-            </p>
         </FinalShell>
     );
 }
