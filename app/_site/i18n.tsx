@@ -622,25 +622,28 @@ export function useLang() {
     return ctx;
 }
 
+// Each language is named in its own words, because a link to the Turkish site is announced
+// to the reader who is going there, not to the one leaving.
+const LANG_NAME: Record<Lang, string> = { en: 'English', tr: 'Türkçe' };
+
+// One button, showing the language you can move to rather than the one you are in: the reader
+// already knows which language the page is in, and the switch only has one thing to do. There
+// is no "you are here" state left to paint, so the green fill goes with it — this is an
+// action now, and it carries the weight the other nav links do.
 export function LangSwitch({ className }: { className?: string }) {
     const { lang } = useLang();
     const pathname = usePathname() || LOCALE_BASE;
     if (!I18N_ENABLED) return null; // Turkish deactivated → hide the EN/TR switch.
+    const other: Lang = lang === 'tr' ? 'en' : 'tr';
     return (
-        <div className={`inline-flex items-center rounded-full border border-[#e4e2dd] overflow-hidden text-xs font-medium ${className || ''}`}>
-            {(['en', 'tr'] as Lang[]).map((l) => (
-                <Link
-                    key={l}
-                    href={withLang(pathname, l)}
-                    hrefLang={l}
-                    className={`px-2.5 py-1 transition-colors ${lang === l
-                        ? 'bg-[#047857] text-white'
-                        : 'text-[#5f5f5a] hover:text-[#1a1a1a]'}`}
-                    aria-current={lang === l ? 'true' : undefined}
-                >
-                    {l.toUpperCase()}
-                </Link>
-            ))}
-        </div>
+        <Link
+            href={withLang(pathname, other)}
+            hrefLang={other}
+            lang={other}
+            aria-label={LANG_NAME[other]}
+            className={`inline-flex w-max items-center rounded-full border border-[#e4e2dd] px-2.5 py-1 text-xs font-medium text-[#5f5f5a] transition-colors hover:bg-[#f1efe9] hover:text-[#1a1a1a] ${className || ''}`}
+        >
+            {other.toUpperCase()}
+        </Link>
     );
 }
