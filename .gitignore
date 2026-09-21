@@ -73,3 +73,14 @@ next-env.d.ts
 /scripts
 
 report-*.md
+
+# Locally generated artefacts dropped at the repo root, not part of the app:
+# the report copies pulled out of the generator, and the dashboard screenshots.
+/car-price-export/
+/dashboard-ss/
+
+# playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
