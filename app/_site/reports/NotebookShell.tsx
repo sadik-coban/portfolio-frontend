@@ -5,30 +5,28 @@ import Link from 'next/link';
 import * as Dialog from '@radix-ui/react-dialog';
 import { Menu, X, ArrowLeft } from 'lucide-react';
 import { Monogram } from '../Monogram';
+import { localize, LangSwitch } from '../i18n';
 
-// The notebook shell the live report pages use — a sticky contents rail with a read-progress
-// bar on desktop, a title bar plus drawer on a phone — rebuilt for the generated-report previews.
+// The notebook shell the generated reports use — a sticky contents rail with a read-progress
+// bar on desktop, a title bar plus drawer on a phone.
 //
-// Modelled on FinalReportLab's shell rather than imported from it: the report and text-analysis
-// pages each carry their own TocNav and the two copies have drifted apart, so unifying them
-// would quietly change one of the published pages. This keeps the preview's change inside the
-// preview. The look is the live one, class for class: same ground, same rail, contents grouped
-// under chapter labels.
+// Modelled on FinalReportLab's shell rather than imported from it: the hand-written report and
+// text-analysis pages each carry their own TocNav and the two copies have drifted apart, so
+// unifying them would quietly change a published page. Both of those pages are closed now, but
+// their source is kept, so the copies stay apart. The look is the live one, class for class:
+// same ground, same rail, contents grouped under chapter labels.
 //
-// One addition over the live shell: a Reports switcher above the contents. The preview pages
-// used to sit inside the app shell, whose sidebar is how you moved between the four of them on
-// a phone. Dropping that for a contents list alone would have removed the only way across
-// without going back to the project.
+// One addition over that shell: a Reports switcher above the contents. These pages do not use
+// FinalShell, whose sidebar is how you move between the project's pages, so without it the only
+// way from one report to the other would be back out through the project.
 
 /** A chapter band (level 2, h2) or a section inside one (level 3, h3); see report-source.ts. */
 type TocItem = { id: string; title: string; level: 2 | 3; n: string };
 type Lang = 'tr' | 'en';
 
 const REPORTS = [
-    { key: 'report-business', href: '/projects/car-price/report-preview/business', tr: 'Karar notu', en: 'Decision note' },
-    { key: 'report-technical', href: '/projects/car-price/report-preview/technical', tr: 'Teknik rapor', en: 'Technical report' },
-    { key: 'text-business', href: '/projects/car-price/text-preview/business', tr: 'Metin · karar', en: 'Text · decision' },
-    { key: 'text-technical', href: '/projects/car-price/text-preview/technical', tr: 'Metin · teknik', en: 'Text · technical' },
+    { key: 'report-business', href: '/projects/car-price/report', tr: 'Karar notu', en: 'Decision note' },
+    { key: 'report-technical', href: '/projects/car-price/report/technical', tr: 'Teknik rapor', en: 'Technical report' },
 ] as const;
 
 export type ReportKey = (typeof REPORTS)[number]['key'];
@@ -158,7 +156,7 @@ export default function NotebookShell({
     }, [contentKey]);
 
     const back = (
-        <Link href="/projects/car-price" className="mb-4 flex items-center gap-2 font-mono text-[12px] text-[#86857e] transition-colors hover:text-[#5f5f5a]">
+        <Link href={localize('/projects/car-price', lang)} className="mb-4 flex items-center gap-2 font-mono text-[12px] text-[#86857e] transition-colors hover:text-[#5f5f5a]">
             <ArrowLeft size={14} /> {L('Proje', 'Project')}
         </Link>
     );
@@ -175,7 +173,7 @@ export default function NotebookShell({
                         return (
                             <li key={r.key}>
                                 <Link
-                                    href={r.href}
+                                    href={localize(r.href, lang)}
                                     onClick={() => setDrawer(false)}
                                     aria-current={on ? 'page' : undefined}
                                     className={`block w-full rounded-[6px] px-2.5 py-1.5 text-left leading-snug transition-colors ${on ? 'bg-[#e7f3ec] font-semibold text-[#047857]' : 'text-[#5f5f5a] hover:bg-[#f1efe9] hover:text-[#1a1a1a]'}`}
@@ -213,9 +211,10 @@ export default function NotebookShell({
                     <Dialog.Content lang={lang} aria-describedby={undefined} className="fixed inset-y-0 left-0 z-50 flex w-[82%] max-w-[300px] flex-col overflow-y-auto border-r border-[#e9e7e2] bg-[#fdfcf9] p-5 shadow-xl focus:outline-none md:hidden">
                         <div className="mb-4 flex items-center justify-between">
                             <Dialog.Title className="font-mono text-[11px] uppercase tracking-[0.14em] text-[#86857e]">{L('İçindekiler', 'Contents')}</Dialog.Title>
+                            <div className="flex items-center gap-2"><LangSwitch />
                             <Dialog.Close asChild>
                                 <button aria-label={L('Kapat', 'Close')} className="flex h-8 w-8 items-center justify-center rounded-lg text-[#5f5f5a] hover:bg-[#f1efe9]"><X size={18} /></button>
-                            </Dialog.Close>
+                            </Dialog.Close></div>
                         </div>
                         {back}
                         {nav}
@@ -226,7 +225,8 @@ export default function NotebookShell({
             <div className="mx-auto flex w-full max-w-[1280px]">
                 {/* desktop contents rail */}
                 <aside className="sticky top-0 hidden h-screen w-[264px] shrink-0 flex-col overflow-y-auto border-r border-[#e9e7e2] bg-[#fbfbf9] px-5 py-8 md:flex">
-                    <div className="mb-4"><Monogram /></div>
+                    {/* the site language, reachable from the report itself — these pages are outside FinalShell */}
+                    <div className="mb-4 flex items-center justify-between gap-2"><Monogram /><LangSwitch /></div>
                     {back}
                     <div className="mb-5 h-[3px] w-full overflow-hidden rounded-full bg-[#ece9e3]">
                         <div ref={progressRef} className="h-full rounded-full bg-[#047857]" style={{ width: '0%' }} />

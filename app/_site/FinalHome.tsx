@@ -150,7 +150,7 @@ export default function FinalHome({ recentPosts }: { recentPosts: any[] }) {
                             into the gap. Mono + tabular-nums keeps the column aligned across posts anyway. */}
                         <span className="shrink-0 font-mono text-[12px] font-medium tabular-nums text-[#565650]">{post.meta.date}</span>
                         <span className="flex-1 text-[15px] font-medium text-[#1a1a1a] transition-colors group-hover:text-[#047857] sm:text-[17px]">{post.meta.title}</span>
-                        {post.meta.readTime && <span className="shrink-0 font-mono text-[13px] text-[#86857e]">{post.meta.readTime} min</span>}
+                        {post.meta.readTime && <span className="shrink-0 font-mono text-[13px] text-[#86857e]">{post.meta.readTime} {t('blog.min')}</span>}
                     </Link>
                 )) : <p className="border-t border-[#e9e7e2] py-6 text-[15px] text-[#86857e]">{t('blog.empty')}</p>}
             </section>

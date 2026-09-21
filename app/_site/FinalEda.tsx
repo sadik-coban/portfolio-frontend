@@ -7,7 +7,8 @@ import { makeHybridTheme } from '../_charts/types';
 import { useLang } from './i18n';
 
 export default function FinalEda({ eda }: { eda: any }) {
-    const { t } = useLang();
+    const { t, lang } = useLang();
+    const n = eda.meta.totalRows.toLocaleString(lang === 'tr' ? 'tr-TR' : 'en-US');
     const theme = useMemo(() => makeHybridTheme(), []);
 
     const labels: EdaLabels = {
@@ -22,8 +23,8 @@ export default function FinalEda({ eda }: { eda: any }) {
     };
 
     return (
-        <FinalShell active="eda" kicker={t('dash.kicker')} title={t('eda.title')} meta={t('eda.meta', { n: eda.meta.totalRows.toLocaleString() })}>
-            <p className="mb-6 text-[15px] leading-[1.6] text-[#5f5f5a] max-w-[580px]">{t('eda.note', { n: eda.meta.totalRows.toLocaleString() })}</p>
+        <FinalShell active="eda" kicker={t('dash.kicker')} title={t('eda.title')} meta={t('eda.meta', { n })}>
+            <p className="mb-6 text-[15px] leading-[1.6] text-[#5f5f5a] max-w-[580px]">{t('eda.note', { n })}</p>
             <EChartsEdaPlots eda={eda} theme={theme} labels={labels} />
         </FinalShell>
     );

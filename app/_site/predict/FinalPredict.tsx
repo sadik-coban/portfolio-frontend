@@ -91,6 +91,7 @@ const buildPayload = (form: Form, panels: Record<string, PanelState>) => ({
 export default function FinalPredict() {
     const { t, lang } = useLang();
     const L = (tr: string, en: string) => (lang === 'tr' ? tr : en);
+    const loc = lang === 'tr' ? 'tr-TR' : 'en-US';
     const [loading, setLoading] = useState(false);
     // /api/predict response (backend: LightGBM · TF-IDF+SVD)
     const [result, setResult] = useState<{ price: number; price_range?: { min: number; max: number; margin_percent: number }; model?: string } | null>(null);
@@ -205,7 +206,8 @@ export default function FinalPredict() {
                                     on ? 'border-[#047857] bg-[#f1f8f4]' : 'border-[#e4e2dd] bg-[#fdfcf9] hover:border-[#b9d9c8]',
                                 )}
                             >
-                                {/* not CSS-uppercased: the site is lang="en", which would turn "Serisi" into "SERISI" */}
+                                {/* not CSS-uppercased: these are Turkish trim names on a page that is lang="en" in
+                                    English, which would turn "Serisi" into "SERISI" */}
                                 <span className="font-mono text-[11px] text-[#86857e]">{ex.input.series} · {L('segment', 'segment')} {ex.input.segment}</span>
                                 <span className="mt-1 text-[14px] font-semibold leading-snug text-[#1a1a1a]">{ex.title}</span>
                                 <span className="mt-1 font-mono text-[11px] text-[#5f5f5a]">{L(ex.subtitle.tr, ex.subtitle.en)}</span>
@@ -214,7 +216,7 @@ export default function FinalPredict() {
                                     <span className="text-[#86857e]">{L('ilan fiyatı', 'listing')}</span>
                                     <span className="flex items-center gap-1.5 font-semibold tabular-nums text-[#1a1a1a]">
                                         {on && loading && <Loader2 size={12} className="animate-spin text-[#047857]" />}
-                                        {ex.reference.listing_price.toLocaleString('en-US')}
+                                        {ex.reference.listing_price.toLocaleString(loc)}
                                     </span>
                                 </span>
                             </button>
@@ -334,11 +336,11 @@ export default function FinalPredict() {
                                 <h3 className="text-xs font-semibold text-[#5f5f5a] uppercase tracking-wider mb-3">{t('pr.result')}</h3>
                                 {result ? (
                                     <>
-                                        <div className="font-mono text-5xl font-bold tracking-[-0.03em] tabular-nums text-[#047857] mb-1">{result.price?.toLocaleString('en-US')}</div>
+                                        <div className="font-mono text-5xl font-bold tracking-[-0.03em] tabular-nums text-[#047857] mb-1">{result.price?.toLocaleString(loc)}</div>
                                         <span className="text-[#86857e] block mb-6">{t('pr.liras')}</span>
                                         <div className="grid grid-cols-2 gap-3 mb-4">
-                                            <div className="bg-[#f3f1ec] p-3 rounded-xl"><span className="text-[10px] font-medium text-[#86857e] uppercase block mb-1">{t('pr.min')}</span><span className="font-semibold tabular-nums">{result.price_range?.min?.toLocaleString('en-US')}</span></div>
-                                            <div className="bg-[#f3f1ec] p-3 rounded-xl"><span className="text-[10px] font-medium text-[#86857e] uppercase block mb-1">{t('pr.max')}</span><span className="font-semibold tabular-nums">{result.price_range?.max?.toLocaleString('en-US')}</span></div>
+                                            <div className="bg-[#f3f1ec] p-3 rounded-xl"><span className="text-[10px] font-medium text-[#86857e] uppercase block mb-1">{t('pr.min')}</span><span className="font-semibold tabular-nums">{result.price_range?.min?.toLocaleString(loc)}</span></div>
+                                            <div className="bg-[#f3f1ec] p-3 rounded-xl"><span className="text-[10px] font-medium text-[#86857e] uppercase block mb-1">{t('pr.max')}</span><span className="font-semibold tabular-nums">{result.price_range?.max?.toLocaleString(loc)}</span></div>
                                         </div>
                                         <div className="bg-[#f1f8f4] border border-[#cfe8dc] p-3 rounded-[12px] text-left">
                                             <div className="font-mono text-[11px] text-[#047857] font-semibold">{result.model}</div>
@@ -348,7 +350,7 @@ export default function FinalPredict() {
                                             <div className="mt-3 rounded-[12px] border border-[#e4e2dd] bg-[#f7f6f3] p-3 text-left">
                                                 <div className="flex items-baseline justify-between gap-3 font-mono text-[11px]">
                                                     <span className="text-[#86857e]">{L('Gerçek ilan fiyatı', 'Actual listing price')}</span>
-                                                    <span className="font-semibold tabular-nums text-[#1a1a1a]">{activeEx.reference.listing_price.toLocaleString('en-US')}</span>
+                                                    <span className="font-semibold tabular-nums text-[#1a1a1a]">{activeEx.reference.listing_price.toLocaleString(loc)}</span>
                                                 </div>
                                                 <div className="mt-1 flex items-baseline justify-between gap-3 font-mono text-[11px]">
                                                     <span className="text-[#86857e]">{L('Tahmin farkı', 'Prediction off by')}</span>

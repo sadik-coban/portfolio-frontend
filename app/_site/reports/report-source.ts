@@ -181,7 +181,13 @@ export const getReport = cache(async (
     const file = path.join(DIR, kind, `${variant}.${lang}.md`);
     const [raw, stat] = await Promise.all([fs.readFile(file, 'utf8'), fs.stat(file)]);
 
-    const routeBase = kind === 'car-price' ? '/projects/car-price/report-preview' : '/projects/car-price/text-preview';
+    // Where each variant is served. The decision note holds the project's /report address and
+    // the technical report sits under it; the text reports have no route while that page is
+    // closed, so their cross-links resolve to the two pages a reader can actually open.
+    // Prefixed by hand rather than through localize(): this runs on the server, and a Turkish
+    // reader following an unprefixed link would land back in English mid-report.
+    const pre = lang === 'tr' ? '/tr' : '';
+    const route = { business: `${pre}/projects/car-price/report`, technical: `${pre}/projects/car-price/report/technical` };
 
     const blocks: Block[] = [];
     let buffer: string[] = [];
@@ -207,14 +213,14 @@ export const getReport = cache(async (
             // The two documents cross-reference each other as sibling files — right on disk,
             // a dead link on the site. Both the target and the label are rewritten: "technical.tr.md"
             // is a filename, not something a reader clicks. The language suffix is dropped
-            // because the page carries its own TR/EN toggle.
+            // because the page is served in the reader's language already.
             const label = {
                 business: lang === 'tr' ? 'karar notu' : 'decision note',
                 technical: lang === 'tr' ? 'teknik rapor' : 'technical report',
             };
             buffer.push(line.replace(
                 /\[(?:business|technical)\.(?:tr|en)\.md\]\((business|technical)\.(?:tr|en)\.md\)/g,
-                (_m, doc: 'business' | 'technical') => `[${label[doc]}](${routeBase}/${doc})`,
+                (_m, doc: 'business' | 'technical') => `[${label[doc]}](${route[doc]})`,
             ));
         }
     }

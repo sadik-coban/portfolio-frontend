@@ -1,23 +1,19 @@
-import type { Metadata } from 'next';
-import FinalTextAnalysis from '@/app/_site/text-analysis/FinalTextAnalysis';
-import { getTextData } from '@/app/_site/text-analysis/text-data';
-import { pageSeo } from '@/app/_site/seo';
-import { site } from '@/app/_site/site-config';
+import { notFound } from 'next/navigation';
 
-const PATH = '/projects/car-price/text-analysis';
+// Text analysis — DEACTIVATED. The generator archived its reports (cardatasys clean/_arsiv/
+// text_analysis), so the page would show findings the pipeline no longer maintains. Everything
+// stays in place: app/_site/text-analysis/, public/text_data.json (still read by the project
+// overview), content/reports/text-analysis/ and its 14 figures.
+//
+// To restore: remove notFound() below, restore the import and render, put the site.pages entry
+// and the FinalShell sidebar entry back, and re-sync the reports from the pipeline.
+// import FinalTextAnalysis from '@/app/_site/text-analysis/FinalTextAnalysis';
+// import { getTextData } from '@/app/_site/text-analysis/text-data';
 
-// Static (SSG): prerender the analysis to HTML (AI-bot / no-JS readable); charts
-// hydrate client-side. Mirrors the report pattern — force-static empties the
-// cookies()/headers() from the parent layouts, and a page-level title keeps SEO right.
-export const dynamic = 'force-static';
+export const metadata = { title: 'Text Analysis' };
 
-export function generateMetadata(): Metadata {
-    const base = pageSeo('en', PATH);
-    const title = site.pages[PATH]?.title ?? '';
-    return { ...base, title: { absolute: site.title.template.replace('%s', title) } };
-}
-
-export default async function Page() {
-    const data = await getTextData();
-    return <FinalTextAnalysis initialData={data} />;
+export default function Page() {
+    notFound();
+    // const data = await getTextData();
+    // return <FinalTextAnalysis initialData={data} />;
 }

@@ -4,38 +4,32 @@ import { useEffect, useState } from 'react';
 import NotebookShell, { type ReportKey } from './NotebookShell';
 import type { Block, ReportLang } from './report-source';
 import { useReportFigures, ReportFigure } from './figures';
+import { useLang } from '../i18n';
 
 type Doc = { blocks: Block[]; words: number; figures: number; generated: string };
 
 // Renders one generated report inside the notebook shell the live report pages use — contents
 // rail, read progress, drawer on a phone.
 //
-// Both languages arrive already rendered from the server, so the toggle is a state flip with
-// no refetch — on a phone that is the difference between instant and a spinner. The prose is
-// in the HTML either way, so the page reads with JS disabled.
+// The report follows the site's language: the server renders the document for the locale in
+// the route, so the page carries one language's prose and the EN/TR control in the rail moves
+// the whole site, report included. The prose is in the HTML, so the page reads with JS off.
 //
 // The figures are the exception: they are drawn natively with Plotly from report-data.json,
 // fetched once on mount. That file is ~350 KB, which belongs in a cacheable request rather than
 // inlined into every page's HTML. Until it lands, each figure shows the PNG the pipeline
 // generated — so there is never an empty slot where a chart should be.
-//
-// The site is English-only (I18N_ENABLED is false), so this toggle is local to the page and
-// touches nothing global.
 
-export default function ReportPreview({
-    kind, active, kicker, title, docs, defaultLang = 'tr', note,
-}: {
+export default function ReportView({ kind, active, kicker, title, doc, note }: {
     kind: 'car-price' | 'text-analysis';
     active: ReportKey;
     kicker: string;
     title: string;
-    docs: Record<ReportLang, Doc>;
-    defaultLang?: ReportLang;
+    doc: Doc;
     note?: string;
 }) {
-    const [lang, setLang] = useState<ReportLang>(defaultLang);
+    const lang = useLang().lang as ReportLang;
     const [data, setData] = useState<Record<string, unknown> | null>(null);
-    const doc = docs[lang];
     const figures = useReportFigures(kind, data, lang);
 
     useEffect(() => {
@@ -58,22 +52,6 @@ export default function ReportPreview({
             </div>
 
             <div className="mb-7 flex flex-wrap items-center gap-x-4 gap-y-3 border-b border-[#e9e7e2] pb-5">
-                <div className="inline-flex rounded-[8px] border border-[#d8d6d0] p-[3px]" role="group" aria-label="Dil / Language">
-                    {(['tr', 'en'] as const).map((l) => (
-                        <button
-                            key={l}
-                            type="button"
-                            onClick={() => setLang(l)}
-                            aria-pressed={lang === l}
-                            className={`rounded-[6px] px-3 py-[5px] font-mono text-[12px] uppercase tracking-[0.08em] transition-colors ${
-                                lang === l ? 'bg-[#1a1a1a] text-[#f7f6f3]' : 'text-[#5f5f5a] hover:text-[#1a1a1a]'
-                            }`}
-                        >
-                            {l}
-                        </button>
-                    ))}
-                </div>
-
                 <span className="font-mono text-[11px] text-[#86857e]">
                     {doc.figures} {T('figür', 'figures')} · {doc.words.toLocaleString(lang === 'tr' ? 'tr-TR' : 'en-US')} {T('kelime', 'words')}
                     {data ? ` · ${T('etkileşimli', 'interactive')}` : ''}

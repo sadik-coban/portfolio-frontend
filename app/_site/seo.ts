@@ -11,14 +11,22 @@ import { site } from './site-config';
  */
 export function pageSeo(lang: string, sub: string): Metadata {
     const en = sub || '/';
-    const page = site.pages[en] as { title: string; description: string } | undefined;
+    const page = site.pages[en] as { title: Bi; description: Bi } | undefined;
+    const tr = lang === 'tr';
     const alternates: Metadata['alternates'] = I18N_ENABLED
-        ? { canonical: lang === 'tr' ? `/tr${sub}` : en, languages: { en, tr: `/tr${sub}`, 'x-default': en } }
+        ? { canonical: tr ? `/tr${sub}` : en, languages: { en, tr: `/tr${sub}`, 'x-default': en } }
         : { canonical: en, languages: { en, 'x-default': en } };
+    // The root layout declares one Open Graph locale for the whole site; a Turkish page has to
+    // correct it, or the preview a Turkish link produces announces itself as English.
+    const openGraph = { locale: tr ? 'tr_TR' : 'en_US' };
     // Only claim a title/description for known pages. For unknown paths (e.g. blog
     // posts) we omit them so the page's own metadata + the root brand template win.
-    if (!page) return { alternates };
-    return { title: page.title, description: page.description, alternates };
+    if (!page) return { alternates, openGraph };
+    const title = tr ? page.title.tr : page.title.en;
+    const description = tr ? page.description.tr : page.description.en;
+    return { title, description, alternates, openGraph: { ...openGraph, title, description } };
 }
+
+type Bi = { en: string; tr: string };
 
 export type LangParams = { params: Promise<{ lang: string }> };

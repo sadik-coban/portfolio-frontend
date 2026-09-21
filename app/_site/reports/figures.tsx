@@ -322,13 +322,18 @@ export function buildReportFigures(d: any, lang: Lang): Record<string, Fig> {
 /**
  * The seven text-analysis figures, from public/text_data.json.
  *
+ * Nothing renders these right now: the text report and the text-analysis page are both closed
+ * (app/[lang]/projects/car-price/text-analysis/page.tsx). The builder stays because the four md
+ * files and their figures are still in the repo — reopening that route is uncommenting it, not
+ * rewriting this. Delete this block only if the text report goes for good.
+ *
  * Every value these charts read matches the pipeline's metrics/*.json (checked field by field
  * against the 2026-09-16 run). One name does not: the pipeline renamed the contradiction flag,
  * so it is mapped below. Builders are the ones FinalTextAnalysis already uses.
  *
  * The labels are not lib/labels. Each chart sits next to a table the generator wrote, and the two
  * must name a signal the same way, so they mirror build_text_report.py (COEF_TR / COEF_EN,
- * CLAIM_EN, COUNT_KEY). lib/labels stays as it is — the live text-analysis page still uses it.
+ * CLAIM_EN, COUNT_KEY). lib/labels stays as it is — the dashboard and drift pages read it.
  */
 const COEF_RENAMED: Record<string, string> = {
     "Aldatıcı 'temiz' iddiası (gizli hasar)": "Çelişkili 'temiz' beyanı (satıcının formu hasar gösteriyor)",

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import { Inter, Geist_Mono } from "next/font/google";
 import { cn } from "@/lib/utils";
 import "./globals.css";
@@ -54,9 +55,14 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+// The locale lives in the route segment below this layout ([lang]), but <html lang> is set here,
+// above it. So it is read back off the path proxy.ts forwarded. It is not decoration: CSS
+// capitalises Turkish headings, and under lang="en" "veri" becomes "VERI" instead of "VERİ".
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const path = (await headers()).get('x-pathname') || '/';
+  const lang = path === '/tr' || path.startsWith('/tr/') ? 'tr' : 'en';
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang={lang} suppressHydrationWarning>
       {/* suppressHydrationWarning: browser extensions (e.g. Grammarly) inject
           data-gr-* attributes onto <body> before React hydrates, which would
           otherwise log a hydration mismatch. Only suppresses <body>'s own attrs. */}

@@ -2,15 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Rocket, LayoutDashboard, BrainCircuit, Activity, PieChart, NotebookText, MessageSquareText, BookOpen, Briefcase, FlaskConical, ArrowLeft, Menu, X, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { Rocket, LayoutDashboard, BrainCircuit, Activity, PieChart, BookOpen, Briefcase, FlaskConical, ArrowLeft, Menu, X, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { useLang, LangSwitch, localize } from './i18n';
 import { Monogram } from './Monogram';
 import { AppPageHeader } from './AppPageHeader';
 import { SIDEBAR_COLLAPSE_ENABLED } from './features';
 import { useSidebarCollapse } from './SidebarCollapse';
 
-type ActiveKey = 'overview' | 'dashboard' | 'eda' | 'predict' | 'drift' | 'shap' | 'report' | 'text-analysis' | 'journal'
-    | 'report-business' | 'report-technical' | 'text-business' | 'text-technical';
+type ActiveKey = 'overview' | 'dashboard' | 'eda' | 'predict' | 'drift' | 'shap' | 'report' | 'report-technical' | 'journal';
 
 export default function FinalShell({
     active, title, kicker, meta, children,
@@ -48,22 +47,12 @@ export default function FinalShell({
         { key: 'predict', label: t('sb.predict'), icon: BrainCircuit, href: '/projects/car-price/predict' },
         { key: 'drift', label: t('sb.drift'), icon: Activity, href: '/projects/car-price/drift' },
         { key: 'shap', label: t('sb.shap'), icon: PieChart, href: '/projects/car-price/shap' },
-        // The v1 report has no route any more; only its component source is kept
-        // (app/_site/report-v1/). The lab report below owns the plain "Report" name.
-        { key: 'report', label: t('sb.report'), icon: NotebookText, href: '/projects/car-price/report' },
-        { key: 'text-analysis', label: t('sb.textAnalysis'), icon: MessageSquareText, href: '/projects/car-price/text-analysis' },
+        // The two reports the analysis pipeline writes: the decision note holds the project's
+        // plain /report address, the technical report sits under it. Neither is hand-written any
+        // more — app/_site/report-v1/ and app/_site/report/ keep the older pages' source only.
+        { key: 'report', label: L('Karar notu', 'Decision note'), icon: Briefcase, href: '/projects/car-price/report' },
+        { key: 'report-technical', label: L('Teknik rapor', 'Technical report'), icon: FlaskConical, href: '/projects/car-price/report/technical' },
         { key: 'journal', label: t('sb.journal'), icon: BookOpen, href: '/projects/car-price/journal' },
-    ];
-
-    // The reports the analysis pipeline generates (clean/car_price_report, clean/text_analysis).
-    // They sit in their own group because they answer a different question from the pages above:
-    // those are the live app, these are the written findings — and each is split the way the
-    // generator splits it, business (what to do, in ₺) from technical (protocol and limits).
-    const previewNav = [
-        { key: 'report-business', label: L('Karar notu', 'Decision note'), icon: Briefcase, href: '/projects/car-price/report-preview/business' },
-        { key: 'report-technical', label: L('Teknik rapor', 'Technical report'), icon: FlaskConical, href: '/projects/car-price/report-preview/technical' },
-        { key: 'text-business', label: L('Metin · karar', 'Text · decision'), icon: Briefcase, href: '/projects/car-price/text-preview/business' },
-        { key: 'text-technical', label: L('Metin · teknik', 'Text · technical'), icon: FlaskConical, href: '/projects/car-price/text-preview/technical' },
     ];
 
     // Every row is [40px icon slot][label]. The icon slot is a fixed width, so the
@@ -75,18 +64,7 @@ export default function FinalShell({
     // that keeps icons static through the collapse while the label fades.
     const NavList = ({ onNavigate, mini = false, flat = false }: { onNavigate?: () => void; mini?: boolean; flat?: boolean }) => (
         <nav className="flex flex-col gap-1 overflow-y-auto overflow-x-hidden min-h-0">
-            {[...nav, { divider: true as const, key: '__reports' }, ...previewNav].map((n) => {
-                // Group label between the app pages and the generated reports. Collapsed to a
-                // plain rule in the icon rail, where there is no room for the word.
-                if ('divider' in n) {
-                    return (
-                        <div key={n.key} className="mt-4 mb-1 px-[10px]">
-                            {mini
-                                ? <span className="mx-auto block h-px w-8 bg-[#e9e7e2]" />
-                                : <span className="font-mono text-[9.5px] uppercase tracking-[0.14em] text-[#a8a7a0]">{L('Raporlar', 'Reports')}</span>}
-                        </div>
-                    );
-                }
+            {nav.map((n) => {
                 const on = n.key === active;
                 return (
                     <Link
@@ -115,7 +93,7 @@ export default function FinalShell({
         </nav>
     );
 
-    const activeLabel = [...nav, ...previewNav].find((n) => n.key === active)?.label ?? title;
+    const activeLabel = nav.find((n) => n.key === active)?.label ?? title;
 
     return (
         <div className="relative min-h-screen bg-[#f7f6f3] text-[#1a1a1a]">
@@ -195,8 +173,8 @@ export default function FinalShell({
                         {SIDEBAR_COLLAPSE_ENABLED && (
                             <button
                                 onClick={toggleCollapsed}
-                                aria-label={collapsed ? 'Kenar çubuğunu genişlet' : 'Kenar çubuğunu daralt'}
-                                title={collapsed ? 'Genişlet' : 'Daralt'}
+                                aria-label={collapsed ? L('Kenar çubuğunu genişlet', 'Expand sidebar') : L('Kenar çubuğunu daralt', 'Collapse sidebar')}
+                                title={collapsed ? L('Genişlet', 'Expand') : L('Daralt', 'Collapse')}
                                 className="flex h-9 w-[40px] items-center justify-center rounded-lg text-[#86857e] hover:bg-[#f1efe9] hover:text-[#5f5f5a] transition-colors"
                             >
                                 {collapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}

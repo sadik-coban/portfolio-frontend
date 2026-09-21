@@ -140,7 +140,7 @@ export default function FinalOverview({ initialData, initialNlp }: Props) {
                     {t('ov.tryPredict')} <ArrowRight size={17} />
                 </Link>
                 <Link href={localize('/projects/car-price/report', lang)} className="inline-flex h-[44px] items-center gap-2 rounded-[10px] border border-[#d8d6d0] bg-[#fdfcf9] px-5 text-[14px] font-semibold text-[#5f5f5a] transition-colors hover:border-[#86857e]">
-                    {L('Raporu oku', 'Read the report')} <ArrowRight size={16} />
+                    {L('Karar notunu oku', 'Read the decision note')} <ArrowRight size={16} />
                 </Link>
                 <a href="https://github.com/sadik-coban/car-price-prediction-pipeline" target="_blank" rel="noopener noreferrer" className="inline-flex h-[44px] items-center gap-2 rounded-[10px] border border-[#d8d6d0] bg-[#fdfcf9] px-5 text-[14px] font-semibold text-[#5f5f5a] transition-colors hover:border-[#86857e]">
                     <GithubIcon size={18} /> {t('ov.viewCode')}
@@ -390,12 +390,12 @@ export default function FinalOverview({ initialData, initialNlp }: Props) {
 
                 <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                     {[
-                        { href: '/projects/car-price/report', t: L('Analitik Rapor · Lab', 'Analytics Report · Lab'), d: L('tam etkileşimli defter', 'the full interactive notebook') },
+                        { href: '/projects/car-price/report', t: L('Karar notu', 'Decision note'), d: L('ne yapmalı, ne kadar para', 'what to do, and what it is worth') },
                         { href: '/projects/car-price/predict', t: L('Canlı tahmin', 'Live prediction'), d: L('/api/predict’i dene', 'try /api/predict') },
                         { href: '/projects/car-price/dashboard', t: L('Pazar panosu', 'Market dashboard'), d: L('sunucu-taraflı BI + TR haritası', 'server-side BI + TR map') },
                         { href: '/projects/car-price/drift', t: L('Veri kayması', 'Data drift'), d: 'KS + Wasserstein' },
                         { href: '/projects/car-price/shap', t: L('SHAP açıklamaları', 'SHAP explanations'), d: L('öznitelik katkıları', 'feature attributions') },
-                        { href: '/projects/car-price/text-analysis', t: L('Metin analizi', 'Text analysis'), d: L('metin ile form nerede ayrışıyor', 'where copy and form diverge') },
+                        { href: '/projects/car-price/report/technical', t: L('Teknik rapor', 'Technical report'), d: L('protokol, kontroller, sınırlar', 'protocol, checks, limits') },
                     ].map((l) => (
                         <Link key={l.href} href={localize(l.href, lang)} className={`${S.card} block px-[15px] py-3 transition-colors hover:border-[#cfe8dc]`}>
                             <div className="text-[13px] font-semibold text-[#1a1a1a]">{l.t} →</div>

@@ -72,7 +72,7 @@ export default function FinalDrift() {
 
     const snapItem = (s: Snapshot) => (
         <SelectItem key={s.date} value={s.date}>
-            {s.date} <span className="text-slate-400 text-xs ml-2">({s.specific_count.toLocaleString()})</span>
+            {s.date} <span className="text-slate-400 text-xs ml-2">({s.specific_count.toLocaleString(lang === 'tr' ? 'tr-TR' : 'en-US')})</span>
         </SelectItem>
     );
 
