@@ -23,9 +23,6 @@ export default async function Page({ params }: LangParams) {
             active="report-technical"
             kicker={tr ? 'Car Price · Rapor' : 'Car Price · Report'}
             title={tr ? 'Teknik rapor' : 'Technical report'}
-            note={tr
-                ? 'Protokol, kontroller ve sınırlar. Karar notuyla aynı hesaptan beslenir — bir rakam iki raporda farklı çıkamaz.'
-                : 'Protocol, checks and limits. It draws on the same computation as the decision note — one number cannot differ between the two.'}
             doc={doc}
         />
     );

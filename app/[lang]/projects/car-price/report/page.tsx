@@ -25,9 +25,6 @@ export default async function Page({ params }: LangParams) {
             active="report-business"
             kicker={tr ? 'Car Price · Rapor' : 'Car Price · Report'}
             title={tr ? 'Karar notu' : 'Decision note'}
-            note={tr
-                ? 'Analiz hattının ürettiği karar notu — ne yapmalı, ne kadar para. Yöntem adı geçmez; o teknik raporda.'
-                : 'The decision note the analysis pipeline generates — what to do, and what it is worth. No method names; those are in the technical report.'}
             doc={doc}
         />
     );

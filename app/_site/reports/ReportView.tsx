@@ -20,13 +20,12 @@ type Doc = { blocks: Block[]; words: number; figures: number; generated: string 
 // inlined into every page's HTML. Until it lands, each figure shows the PNG the pipeline
 // generated — so there is never an empty slot where a chart should be.
 
-export default function ReportView({ kind, active, kicker, title, doc, note }: {
+export default function ReportView({ kind, active, kicker, title, doc }: {
     kind: 'car-price' | 'text-analysis';
     active: ReportKey;
     kicker: string;
     title: string;
     doc: Doc;
-    note?: string;
 }) {
     const lang = useLang().lang as ReportLang;
     const [data, setData] = useState<Record<string, unknown> | null>(null);
@@ -42,31 +41,13 @@ export default function ReportView({ kind, active, kicker, title, doc, note }: {
         return () => { alive = false; };
     }, [kind]);
 
-    const T = (tr: string, en: string) => (lang === 'tr' ? tr : en);
 
     return (
         <NotebookShell active={active} lang={lang} title={title} contentKey={kind + ':' + active + ':' + lang}>
-            <div className="mb-7">
+            <div className="mb-7 border-b border-[#e9e7e2] pb-5">
                 <div className="mb-2 font-mono text-[12px] font-medium uppercase tracking-[0.14em] text-[#047857]">{kicker}</div>
                 <h1 className="text-[28px] font-bold tracking-[-0.041em] text-[#1a1a1a] md:text-[34px]">{title}</h1>
             </div>
-
-            <div className="mb-7 flex flex-wrap items-center gap-x-4 gap-y-3 border-b border-[#e9e7e2] pb-5">
-                <span className="font-mono text-[11px] text-[#86857e]">
-                    {doc.figures} {T('figür', 'figures')} · {doc.words.toLocaleString(lang === 'tr' ? 'tr-TR' : 'en-US')} {T('kelime', 'words')}
-                    {data ? ` · ${T('etkileşimli', 'interactive')}` : ''}
-                </span>
-
-                <span className="ml-auto font-mono text-[11px] text-[#9a9a92]">
-                    {T('üretim', 'generated')} {doc.generated}
-                </span>
-            </div>
-
-            {note && (
-                <p className="mb-7 max-w-[70ch] rounded-[10px] border border-[#e4e2dd] bg-[#fdfcf9] px-4 py-3 text-[13.5px] leading-[1.6] text-[#5f5f5a]">
-                    {note}
-                </p>
-            )}
 
             {/* The left padding is the live report's section gutter: the "[01]" of each section
                 sits in it, and the chapter bands pull back out across it. */}
