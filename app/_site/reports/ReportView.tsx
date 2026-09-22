@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import NotebookShell, { type ReportKey, type RailShape } from './NotebookShell';
+import NotebookShell, { type ReportKey } from './NotebookShell';
 import type { Block, ReportLang } from './report-source';
 import { useReportFigures, ReportFigure } from './figures';
 import { useLang } from '../i18n';
@@ -20,13 +20,12 @@ type Doc = { blocks: Block[]; words: number; figures: number; generated: string 
 // inlined into every page's HTML. Until it lands, each figure shows the PNG the pipeline
 // generated — so there is never an empty slot where a chart should be.
 
-export default function ReportView({ kind, active, kicker, title, doc, rail }: {
+export default function ReportView({ kind, active, kicker, title, doc }: {
     kind: 'car-price' | 'text-analysis';
     active: ReportKey;
     kicker: string;
     title: string;
     doc: Doc;
-    rail?: RailShape;
 }) {
     const lang = useLang().lang as ReportLang;
     const [data, setData] = useState<Record<string, unknown> | null>(null);
@@ -44,7 +43,7 @@ export default function ReportView({ kind, active, kicker, title, doc, rail }: {
 
 
     return (
-        <NotebookShell active={active} rail={rail} lang={lang} title={title} contentKey={kind + ':' + active + ':' + lang}>
+        <NotebookShell active={active} lang={lang} title={title} contentKey={kind + ':' + active + ':' + lang}>
             <div className="mb-7 border-b border-[#e9e7e2] pb-5">
                 <div className="mb-2 font-mono text-[12px] font-medium uppercase tracking-[0.14em] text-[#047857]">{kicker}</div>
                 <h1 className="text-[28px] font-bold tracking-[-0.041em] text-[#1a1a1a] md:text-[34px]">{title}</h1>

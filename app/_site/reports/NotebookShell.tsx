@@ -18,7 +18,9 @@ import { localize, LangSwitch } from '../i18n';
 //
 // One addition over that shell: links to the sibling reports. These pages do not use FinalShell,
 // whose sidebar is how you move between the project's pages, so without them the only way from
-// one report to another would be back out through the project. The `rail` prop picks the shape.
+// one report to another would be back out through the project. They sit on the floor of the rail:
+// TocNav is flex-1 and scrolls inside its own window, so a block after it stays on screen however
+// long the contents runs — the same place FinalShell parks its own secondary controls.
 
 /** A chapter band (level 2, h2) or a section inside one (level 3, h3); see report-source.ts. */
 type TocItem = { id: string; title: string; level: 2 | 3; n: string };
@@ -32,20 +34,10 @@ const REPORTS = [
 
 export type ReportKey = (typeof REPORTS)[number]['key'];
 
-/** Which shape the rail takes; see the `rail` prop below. */
-export type RailShape = 'full' | 'slim' | 'foot';
-
 export default function NotebookShell({
-    active, lang, title, contentKey, children, rail = 'full',
+    active, lang, title, contentKey, children,
 }: {
     active: ReportKey;
-    /** 'full' = the labelled Reports block above the contents (what the three live pages use).
-     *  'slim' = the other two as one quiet line under the back link, contents straight after.
-     *  'foot' = the other two under a label at the foot of the rail. TocNav is flex-1 and scrolls
-     *  inside itself, so a block after it sits on the floor of the rail and stays there however
-     *  long the contents runs — the same place FinalShell parks its own secondary controls.
-     *  Being tried on report/preview before any of this touches a published page. */
-    rail?: RailShape;
     lang: Lang;
     title: string;
     /** Changes whenever the rendered document changes (language switch), so contents rebuild. */
@@ -177,45 +169,7 @@ export default function NotebookShell({
     // sideways move they have; that is why the slim shape trims it rather than dropping it.
     const siblings = REPORTS.filter((r) => r.key !== active);
 
-    // full: a labelled block styled as one more chapter of the rail, above the contents.
-    // slim: one quiet line under the back link, so the contents starts immediately.
-    const reportsFull = (
-        <div className="mb-4 border-b border-[#ece9e3] pb-4">
-            <div className="mb-1.5 font-mono text-[10px] uppercase leading-snug tracking-[0.12em] text-[#86857e]">{L('Raporlar', 'Reports')}</div>
-            <ul className="space-y-0.5 text-[13px]">
-                {REPORTS.map((r) => {
-                    const on = r.key === active;
-                    return (
-                        <li key={r.key}>
-                            <Link
-                                href={localize(r.href, lang)}
-                                onClick={() => setDrawer(false)}
-                                aria-current={on ? 'page' : undefined}
-                                className={`block w-full rounded-[6px] px-2.5 py-1.5 text-left leading-snug transition-colors ${on ? 'bg-[#e7f3ec] font-semibold text-[#047857]' : 'text-[#5f5f5a] hover:bg-[#f1efe9] hover:text-[#1a1a1a]'}`}
-                            >
-                                {L(r.tr, r.en)}
-                            </Link>
-                        </li>
-                    );
-                })}
-            </ul>
-        </div>
-    );
-
-    const reportsSlim = (
-        <div className="mb-5 flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-[11px] text-[#9a9a92]">
-            {siblings.map((r, i) => (
-                <span key={r.key} className="flex items-center gap-2">
-                    {i > 0 && <span aria-hidden="true">·</span>}
-                    <Link href={localize(r.href, lang)} onClick={() => setDrawer(false)} className="transition-colors hover:text-[#047857]">
-                        {L(r.tr, r.en)}
-                    </Link>
-                </span>
-            ))}
-        </div>
-    );
-
-    const reportsFoot = (
+    const otherReports = (
         <div className="mt-auto shrink-0 border-t border-[#ece9e3] pt-4">
             <div className="mb-1.5 font-mono text-[10px] uppercase leading-snug tracking-[0.12em] text-[#86857e]">{L('Diğer raporlar', 'Other reports')}</div>
             <ul className="space-y-0.5 text-[13px]">
@@ -236,9 +190,8 @@ export default function NotebookShell({
 
     const nav = (
         <>
-            {rail === 'full' && reportsFull}
             <TocNav toc={toc} activeId={activeId} onGo={goTo} label={L('İçindekiler', 'Contents')} />
-            {rail === 'foot' && reportsFoot}
+            {otherReports}
         </>
     );
 
@@ -269,7 +222,6 @@ export default function NotebookShell({
                             </Dialog.Close></div>
                         </div>
                     {back}
-                    {rail === 'slim' && reportsSlim}
                         {nav}
                     </Dialog.Content>
                 </Dialog.Portal>
@@ -281,7 +233,6 @@ export default function NotebookShell({
                     {/* the site language, reachable from the report itself — these pages are outside FinalShell */}
                     <div className="mb-4 flex items-center justify-between gap-2"><Monogram /><LangSwitch /></div>
                     {back}
-                    {rail === 'slim' && reportsSlim}
                     <div className="mb-5 h-[3px] w-full overflow-hidden rounded-full bg-[#ece9e3]">
                         <div ref={progressRef} className="h-full rounded-full bg-[#047857]" style={{ width: '0%' }} />
                     </div>
