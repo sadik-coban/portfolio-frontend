@@ -1,18 +1,16 @@
 # İkinci El Araç Piyasası Analizi — Karar Notu
 
-> Üretilmiş dosya — kaynak `clean/data/site_data.json`, üreteç `clean/car_price_report/build_report.py`. Her sayı JSON'dan okunur.
-
-Teknik dayanak: [technical.tr.md](technical.tr.md)
+**Kime:** fiyatlama ekibi ve galeri. **Karar:** model, fiyat önerisi aracında birincil referans olarak kullanılabilir; ucuz (₺1.15M altı), emsalsiz ve 18 yaş üstü araçlarda tek başına kullanılmamalı. **Kazanç:** araç başına ~₺81K daha az fiyatlama hatası. **Sınır:** ilan fiyatını tahmin eder, satış fiyatını değil.
 
 ## Ne kadar değerinde?
 
-Galerinin refleksi — *aynı model, aynı yıl, medyana bak* — ortalama **₺191K** yanılıyor; model **₺110K** — **%42 daha iyi**, araç başına **₺81K**.
+Galerinin refleksi — *aynı model, aynı yıl, medyana bak* — ortalama **₺191K** yanılıyor; model **₺110K** — **%42 daha iyi**, araç başına **₺81K**. 100 araçlık bir stokta bu, yaklaşık **₺8M**'lik fiyatlama hatası farkı demek.
 
 Farkı kapatan, model ve yılın ötesi: kilometre, hasar, motor.
 
 ![Ortalama hata: galeri refleksi vs model](figures/tr-00-base-vs-model.png)
 
-**Emsal yoksa taban çöküyor** — en alt basamakta ortalama hata **6.1 katına** çıkıyor. Model de emsalsiz araçta zorlanıyor (aşağıda):
+**Emsal yoksa taban çöküyor** — en alt basamakta ortalama hata, model+yıl basamağının **6.1 katı**. Model de emsalsiz araçta zorlanıyor (aşağıda):
 
 | taban basamağı | ilan | pay | ortalama hata |
 |---|---:|---:|---:|
@@ -39,19 +37,7 @@ Yaş ve kilometre ayrı ama birbirine bağlı iki eksen. Düşük-km yaşlı ara
 
 ![Kilometreye göre fiyat (medyan + ort.)](figures/tr-06-km-price.png)
 
-Kümeleme piyasayı 3 profile ayırıyor (k=3 yorumlanabilirlik için sabit seçildi; veride belirgin doğal küme yok — bkz. teknik §5):
-
-| küme | ilan | medyan | yaş | km | motor (hp) | ağır hasar |
-|---|---:|---:|---:|---:|---:|---:|
-| Yaşlı & yüksek-km ekonomik · ağır hasar %5 | 9.046 | ₺1.32M | 14 | 253k | 177 | %5 |
-| Genç & temiz premium | 15.976 | ₺1.95M | 9 | 128k | 150 | %2 |
-| Yaşlı & yüksek-km ekonomik · ağır hasar %13 | 4.966 | ₺1.06M | 14 | 247k | 150 | %13 |
-
-> Not: otomatik adlandırma iki kümeye aynı adı vermiş; ayıran eksen **hasar yoğunluğu** — boyalı/değişen panel (teknik §5); tablodaki ağır hasar sütunu bunun görünen yüzü. Adlar elle düzeltilmedi.
-
-![Segmente göre medyan fiyat](figures/tr-02-segment-median.png)
-
-**Markadan hareket çıkmaz.** Seri+modelin üzerine markayı eklemek ortalama hatayı hiç oynatmıyor (MAPE farkı 0.00 puan) — marka zaten modelin içinde.
+**Markadan hareket çıkmaz.** Seri+modelin üzerine markayı eklemek ortalama hatayı hiç oynatmıyor — marka zaten modelin içinde.
 
 ![Medyan fiyat: BMW vs Audi](figures/tr-07-brand.png)
 
@@ -69,22 +55,23 @@ Model ucuz araçlarda zorlanıyor — hata fiyat çeyreğine göre belirgin değ
 
 Bu yüzden çıktı tek sayı değil, **%90 aralık**. Ama aralık ucuz araçlarda tutmuyor: en ucuz çeyrekte gerçek kapsama **%81.6**, hedefin altında.
 
-![Conformal kapsama % (hedef %90)](figures/tr-12-coverage.png)
+![%90 aralık kaç ilanda tuttu (hedef %90)](figures/tr-12-coverage.png)
 
 **Ne yapmalı**
 
 - Ucuz araçlarda aralığı genişlet — tek sayıya güvenme.
 - Nadir ve uç araçları elle fiyatla; model orada saçılıyor.
+- Metninde dönüşüm, motor değişimi ya da modifiye geçen ilanı otomatik fiyatlama, elle incele; bu bilgi formda yok ve en büyük hataların kaynağı.
 - Aylık yeniden eğit — piyasa seviyesi kaydı (+%5.3), model zamanı görmüyor.
 
 ![Daha çok veri, daha az hata — tek dönem vs biriken dönemler](figures/tr-15-backtest.png)
 
 ## Bu model neyi vermez
 
-- **Satış fiyatını.** İlan fiyatını tahmin eder; pazarlık payı hedefin içinde kalır.
+- **Satış fiyatını.** İlan fiyatını tahmin eder; satış fiyatı pazarlıkla bunun altına iner.
 - **Nedenselliği.** Bunlar kontrollü ilişkiler; "boya yaptır, fiyat düşer" demez.
 - **Belirli bir hasarlının değerini.** Model hasarı panel bazında görüyor (boyalı · değişen · ağır hasar kaydı) ama **şiddetini** görmüyor: çizik de pert de aynı bayrağa düşüyor.
 - **Donanım ve modifiyeyi.** Full donanımlı araç, modelin gözünde aynı aracın donanımsız hâliyle aynı.
 - **BMW ve Audi dışını.** Kapsam bu iki marka; premium-Alman segmentine genellenebilir, genel pazara değil.
 
-**Ölçek:** 29.988 ilan, 4 dönem (2026-01-18 – 2026-06-27). Medyan ilan fiyatı ₺1.54M.
+**Ölçek:** 29.988 ilan, 4 tarama dönemi. **Veri:** 2026-01-18 – 2026-06-27. Medyan ilan fiyatı ₺1.54M.

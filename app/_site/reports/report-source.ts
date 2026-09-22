@@ -28,10 +28,11 @@ export type Block =
 
 const DIR = path.join(process.cwd(), 'content', 'reports');
 /**
- * The provenance stamp the generator puts under a document's title: which JSON it read and
- * which script wrote it. That line is addressed to whoever opens the .md on disk — on the site
- * it names internal paths a reader has no use for, and the decision note is the only one of the
- * three documents carrying it.
+ * The provenance stamp the generator used to put under a document's title: which JSON it
+ * read and which script wrote it. That line is addressed to whoever opens the .md on disk;
+ * on the site it names internal paths a reader has no use for. The generator has since
+ * dropped it, so this is a guard rather than an active filter — one line, no way to match
+ * real report prose, and it keeps those paths off the page if a later run brings it back.
  *
  * Dropped here rather than in the generator, so the copy under content/ stays byte-identical to
  * the generator output and a re-sync stays a plain file copy.

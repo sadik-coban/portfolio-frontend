@@ -88,6 +88,9 @@ export function buildReportFigures(d: any, lang: Lang): Record<string, Fig> {
         [{ type: 'bar', orientation: 'h', y: body.map((r: any) => r[0]), x: body.map((r: any) => r[1]), marker: { color: green }, hovertemplate: '%{y}: %{customdata}<extra></extra>', customdata: body.map((r: any) => fmtM(r[1])) }],
         base({ margin: { t: 8, r: 16, b: 24, l: 8 } }), 300);
 
+    // No document asks for this slug right now: the generator dropped the cluster section
+    // from the decision note on 2026-09-22 and took the figure with it. Kept because a figure
+    // file returns with the next sync while a builder would have to be written again.
     const seg = [...(dom.segment_ladder || [])].sort((a: any, b: any) => a[1] - b[1]);
     put('02-segment-median',
         [{ type: 'bar', x: seg.map((r: any) => r[0]), y: seg.map((r: any) => r[1]), marker: { color: green }, text: seg.map((r: any) => fmtM(r[1])), textposition: 'outside', hovertemplate: '%{x}: %{text} · %{customdata} ' + L('ilan', 'listings') + '<extra></extra>', customdata: seg.map((r: any) => fmtN(r[2])) }],

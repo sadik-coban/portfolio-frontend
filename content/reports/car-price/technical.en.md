@@ -1,5 +1,7 @@
 # Used Car Market Analysis — Technical Report
 
+This report answers two questions: what sets a used-car price, and how accurately the model can predict it. The analysis runs over **29,988** Turkish-plated BMW/Audi listings — from cleaning and leakage checks through controlled price effects, market structure, model comparison and time tests. LightGBM is off by **6.5%** on average (MAE: **₺110K**, R²: **0.9744**), **42%** better than the median of the same model and year. Every metric here is computed **5-fold out-of-fold**, on data the model never saw in training.
+
 ## 1. Data cleaning and leakage detection
 
 **45,159 snapshots → 29,988 listings.** The 15,171 rows between are the same ad re-scraped: scrape residue, not data. Latest snapshot per `ad_id`.
@@ -350,7 +352,7 @@ Each point is a model; the y axis is the median error across that model's listin
 
 ![Median error by price quartile (%)](figures/en-10-quartile-error.png)
 
-![Conformal coverage % (target 90%)](figures/en-12-coverage.png)
+![How often the 90% range held (target 90%)](figures/en-12-coverage.png)
 
 | quartile | price range | coverage |
 |---|---|---:|

@@ -1,5 +1,7 @@
 # İkinci El Araç Piyasası Analizi — Teknik Rapor
 
+Bu rapor iki soruya yanıt arar: İkinci el araç fiyatını ne belirler ve model bunu ne kadar isabetle öngörebilir? Analiz; **29.988** TR plakalı BMW/Audi ilanında veri temizliği ve sızıntı kontrolünden geçerek kontrollü fiyat etkileri, piyasa yapısı, model karşılaştırması ve zamansal testleri ortaya koyar. LightGBM ortalama **%6.5** sapmayla (MAE: **₺110K**, R²: **0.9744**) çalışarak aynı model ve yılın medyanına göre **%42** daha iyi sonuç verir. Paylaşılan tüm metrikler, modelin daha önce görmediği veriler üzerinden **5-fold out-of-fold** kurgusuyla hesaplanmıştır.
+
 ## 1. Veri temizleme ve sızıntı tespiti
 
 **45.159 snapshot → 29.988 ilan.** Aradaki 15.171 satır aynı ilanın tekrar taranması — veri değil, tarama artığı. `ad_id` başına en son snapshot alındı.
@@ -350,7 +352,7 @@ Her nokta bir model; y ekseni o modelin ilanlarındaki medyan hata. Kova medyan�
 
 ![Fiyat çeyreğine göre medyan hata (%)](figures/tr-10-quartile-error.png)
 
-![Conformal kapsama % (hedef %90)](figures/tr-12-coverage.png)
+![%90 aralık kaç ilanda tuttu (hedef %90)](figures/tr-12-coverage.png)
 
 | çeyrek | fiyat aralığı | kapsama |
 |---|---|---:|
