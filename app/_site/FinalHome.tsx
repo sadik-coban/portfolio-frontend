@@ -22,11 +22,11 @@ export default function FinalHome({ recentPosts }: { recentPosts: any[] }) {
             {/* HERO — statement only, no figure */}
             <section className="pt-16 pb-10 md:pt-24 md:pb-12">
                 <p className="mb-7 font-mono text-[12px] font-medium uppercase tracking-[0.2em] text-[#047857]">{t('home.heroEyebrow')}</p>
-                {/* The setup is muted and the payoff carries full ink — the emphasis used to run the
-                    other way, which put the four words that make the argument at 2.2:1 contrast.
-                    #86857e clears the 3:1 large-text floor and is already the palette's meta grey. */}
+                {/* A personal site, so the name carries full ink and the work follows in the
+                    palette's meta grey — #86857e clears the 3:1 large-text contrast floor. The
+                    name comes from site-config, not the dictionaries: it reads the same in both. */}
                 <h1 className="m-0 mb-7 max-w-[960px] text-[44px] font-bold leading-[1.02] tracking-[-0.035em] text-[#1a1a1a] text-balance sm:text-[62px] lg:text-[80px] lg:leading-[0.98] lg:tracking-[-0.045em]">
-                    <span className="text-[#86857e]">{t('home.heroH1Lead')}</span> {t('home.heroH1Payoff')}
+                    {site.brand}. <span className="text-[#86857e]">{t('home.heroDoing')}</span>
                 </h1>
                 <div className="grid max-w-[1000px] grid-cols-1 items-end gap-7 md:grid-cols-[1fr_auto] md:gap-12">
                     <p className="m-0 max-w-[560px] text-[17px] leading-[1.6] text-[#5f5f5a] md:text-[20px]">{t('home.heroSub')}</p>
