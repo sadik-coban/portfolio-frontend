@@ -1,6 +1,7 @@
 import { MetadataRoute } from 'next';
 import { I18N_ENABLED } from '@/app/_site/i18n-config';
 import { site } from '@/app/_site/site-config';
+import { WRITING_ENABLED } from '@/app/_site/writing-config';
 
 // Static blog-post slugs (add new posts here, or wire to getBlogPosts()).
 const BLOG_POSTS = ['building-car-price-predictor'];
@@ -8,7 +9,10 @@ const BLOG_POSTS = ['building-car-price-predictor'];
 export default function sitemap(): MetadataRoute.Sitemap {
     const base = site.baseUrl;
     const lastModified = new Date();
-    const paths = [...Object.keys(site.pages), ...BLOG_POSTS.map((s) => `/blog/${s}`)];
+    // The closed pages keep their site.pages entries (that is the way back), so they are
+    // filtered here instead — a sitemap must not advertise a 404.
+    const paths = [...Object.keys(site.pages), ...(WRITING_ENABLED ? BLOG_POSTS.map((s) => `/blog/${s}`) : [])]
+        .filter((p) => WRITING_ENABLED || !(p === '/blog' || p.endsWith('/journal')));
 
     return paths.map((path) => {
         const url = path === '/' ? base : `${base}${path}`;

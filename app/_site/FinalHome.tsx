@@ -6,6 +6,7 @@ import PaperShell from './PaperShell';
 import { HOME_RIBBON, HOME_PROJECTS, HOME_ARSENAL } from './home/content';
 import ProjectLink, { ProjectText } from './home/ProjectLink';
 import { site } from './site-config';
+import { WRITING_ENABLED } from './writing-config';
 
 // Editorial homepage: a full-width statement instead of a hero chart, an identity ribbon
 // instead of scattered KPIs, and a numbered work index instead of chart-cover cards — each
@@ -138,7 +139,9 @@ export default function FinalHome({ recentPosts }: { recentPosts: any[] }) {
                 </div>
             </section>
 
-            {/* LATEST WRITING — compact rows */}
+            {/* LATEST WRITING — compact rows. Gated with the blog: every row here links to
+                /blog/[slug] and the header to /blog, all of which answer 404 while the flag is off. */}
+            {WRITING_ENABLED && (
             <section className="border-t border-[#e9e7e2] py-14">
                 <div className="mb-3.5 flex items-baseline justify-between">
                     <h2 className="m-0 font-mono text-[13px] font-medium uppercase tracking-[0.15em] text-[#5f5f5a]">{t('home.writingLabel')}</h2>
@@ -154,6 +157,7 @@ export default function FinalHome({ recentPosts }: { recentPosts: any[] }) {
                     </Link>
                 )) : <p className="border-t border-[#e9e7e2] py-6 text-[15px] text-[#86857e]">{t('blog.empty')}</p>}
             </section>
+            )}
         </PaperShell>
     );
 }

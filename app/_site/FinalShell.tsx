@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Rocket, LayoutDashboard, BrainCircuit, Activity, PieChart, BookOpen, Briefcase, FlaskConical, ArrowLeft, Menu, X, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { useLang, LangSwitch, localize } from './i18n';
+import { WRITING_ENABLED } from './writing-config';
 import { Monogram } from './Monogram';
 import { AppPageHeader } from './AppPageHeader';
 import { SIDEBAR_COLLAPSE_ENABLED } from './features';
@@ -52,7 +53,9 @@ export default function FinalShell({
         // more — app/_site/report-v1/ and app/_site/report/ keep the older pages' source only.
         { key: 'report', label: L('Karar notu', 'Decision note'), icon: Briefcase, href: '/projects/car-price/report' },
         { key: 'report-technical', label: L('Teknik rapor', 'Technical report'), icon: FlaskConical, href: '/projects/car-price/report/technical' },
-        { key: 'journal', label: t('sb.journal'), icon: BookOpen, href: '/projects/car-price/journal' },
+        // Journal rides on WRITING_ENABLED with the blog; the key stays in ActiveKey so the
+        // entry can come back untouched.
+        ...(WRITING_ENABLED ? [{ key: 'journal', label: t('sb.journal'), icon: BookOpen, href: '/projects/car-price/journal' }] : []),
     ];
 
     // Every row is [40px icon slot][label]. The icon slot is a fixed width, so the

@@ -6,12 +6,14 @@ import { Menu, X } from 'lucide-react';
 import { useLang, LangSwitch, localize } from './i18n';
 import { Monogram } from './Monogram';
 import { site } from './site-config';
+import { WRITING_ENABLED } from './writing-config';
 
+// `writing: true` marks an entry that only exists while WRITING_ENABLED is on.
 const NAV = [
     { key: 'nav.projects', href: '/projects' },
-    { key: 'nav.blog', href: '/blog' },
+    { key: 'nav.blog', href: '/blog', writing: true },
     { key: 'nav.about', href: '/about' },
-];
+].filter((n) => WRITING_ENABLED || !n.writing);
 
 /** Editorial paper chrome — nav (monogram + links + lang) and footer, light only. */
 export default function PaperShell({ children }: { children: React.ReactNode }) {
