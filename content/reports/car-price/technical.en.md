@@ -25,7 +25,7 @@ Median asking price ₺1.54M, ranging ₺0.84M–₺3.42M (P10–P90).
 
 1. **Structural** — age · km · engine power/size · body · fuel · transmission · drivetrain · segment.
 2. **Damage / inspection** — every body panel × {changed, painted, local paint} + tramer record + heavy damage.
-3. **Free text** — the seller's description; **not used** by the model. It was measured in a separate study: adding text features to the structured model produced no measurable gain in cross-validated accuracy, so it does not enter this report.
+3. **Free text** — the seller's description; **not used** by the model. It was measured and added nothing; the detail is in §10.
 
 ### Kept features (25)
 
@@ -452,4 +452,14 @@ Single = train on one snapshot, predict a later one. Cumulative = train on every
 ![Price distribution by snapshot](figures/en-13-drift-hist.png)
 
 ![Log-price density by snapshot](figures/en-14-drift-kde.png)
+
+## 10. Free text: measured, left out
+
+The seller's description does **not** enter the model. That is a measurement, not an oversight: under the same cross-validation protocol the structural model scores R² **0.9645** and adding text features gives **0.966** — ΔR² **0.0015**. On top of what the form already carries, text adds no accuracy.
+
+Pulling structured facts out of the text was tried separately: **LangExtract** with **gemini-3.1-flash-lite** extracted damage, maintenance and modification phrases from the ad text, each with a part and a state attribute.
+
+None of it entered the model or this report, because **its accuracy could not be measured**. Measuring it needs a balanced validation set of easy, medium and hard listings, labelled by hand; without that work there is no way to know when the extraction is wrong. We did not build decisions on a signal we could not measure.
+
+What it would take is clear: validate the extractions, then feed them to the model as a **clean signal** and test the gain under the same protocol. Two obstacles. First **sample size**: modified or heavily serviced cars are a small slice of the corpus, and with too few examples the model cannot learn the signal — it stays noise. The other route is to keep the signal out of the model and **drop those listings from the data**, then measure how far the error falls. Either way the result has to be tested on **live listings** before it is trusted.
 

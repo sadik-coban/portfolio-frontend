@@ -4,11 +4,11 @@
 
 ## What's it worth?
 
-A dealer's reflex — *same model, same year, look at the median* — misses by **₺191K** on average; the model by **₺110K** — **42% better**, **₺81K** per car. Across a 100-car stock that is about **₺8M** of pricing error.
+**The comparable median** — *the middle price of the same model and year* — misses by **₺191K** on average; the model by **₺110K** — **42% better**, **₺81K** per car. Across a 100-car stock that is about **₺8M** of pricing error.
 
 The gap it closes is everything beyond model and year: mileage, damage, engine.
 
-![Mean error: dealer reflex vs model](figures/en-00-base-vs-model.png)
+![Mean error: comparable median vs model](figures/en-00-base-vs-model.png)
 
 **Without a comparable the baseline collapses** — mean error at the bottom tier is **6.1×** the top. The model struggles without comparables too (below):
 

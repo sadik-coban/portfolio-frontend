@@ -1,10 +1,10 @@
 # İkinci El Araç Piyasası Analizi — Teknik Rapor
 
-Bu rapor iki soruya yanıt arar: İkinci el araç fiyatını ne belirler ve model bunu ne kadar isabetle öngörebilir? Analiz; **29.988** TR plakalı BMW/Audi ilanında veri temizliği ve sızıntı kontrolünden geçerek kontrollü fiyat etkileri, piyasa yapısı, model karşılaştırması ve zamansal testleri ortaya koyar. LightGBM ortalama **%6.5** sapmayla (MAE: **₺110K**, R²: **0.9744**) çalışarak aynı model ve yılın medyanına göre **%42** daha iyi sonuç verir. Paylaşılan tüm metrikler, modelin daha önce görmediği veriler üzerinden **5-fold out-of-fold** kurgusuyla hesaplanmıştır.
+Bu rapor iki soruya yanıt arar: İkinci el araç fiyatını ne belirler ve model bunu ne kadar isabetle öngörebilir? Analiz; **29.988** TR plakalı BMW/Audi ilanında veri temizliği ve sızıntı kontrolünden geçerek kontrollü fiyat etkileri, piyasa yapısı, model karşılaştırması ve zamansal testleri ortaya koyar. LightGBM ortalama **%6.5** yüzde hatayla (MAE: **₺110K**, R²: **0.9744**) çalışarak aynı model ve yılın medyanına göre **%42** daha iyi sonuç verir. Paylaşılan tüm metrikler, modelin daha önce görmediği veriler üzerinden **5-fold out-of-fold** kurgusuyla hesaplanmıştır.
 
 ## 1. Veri temizleme ve sızıntı tespiti
 
-**45.159 snapshot → 29.988 ilan.** Aradaki 15.171 satır aynı ilanın tekrar taranması — veri değil, tarama artığı. `ad_id` başına en son snapshot alındı.
+**Toplam 45.159 tarama kaydı → 29.988 ilan.** Aradaki 15.171 satır aynı ilanın tekrar taranması — veri değil, tarama artığı. `ad_id` başına en son kayıt alındı.
 
 Medyan ilan fiyatı ₺1.54M, ₺0.84M–₺3.42M arası (P10–P90).
 
@@ -14,9 +14,9 @@ Medyan ilan fiyatı ₺1.54M, ₺0.84M–₺3.42M arası (P10–P90).
 
 | kalem | değer |
 |---|---:|
-| ham satır (tüm snapshot'lar) | 45.159 |
+| ham satır (tüm taramalar) | 45.159 |
 | tekil ilan (`ad_id` dedup) | 29.988 |
-| dönem | 4 (2026-01-18 – 2026-06-27) |
+| tarama dönemi | 4 (2026-01-18 – 2026-06-27) |
 | modele giren öznitelik | 25 |
 | BMW / Audi | 17.896 / 12.092 |
 | hedef | `log1p(price)` |
@@ -25,7 +25,7 @@ Medyan ilan fiyatı ₺1.54M, ₺0.84M–₺3.42M arası (P10–P90).
 
 1. **Yapısal** — yaş · km · motor gücü/hacmi · kasa · yakıt · vites · çekiş · segment.
 2. **Hasar / ekspertiz** — her kaporta paneli × {değişen, boyalı, lokal boya} + tramer + ağır hasar.
-3. **Serbest metin** — satıcı açıklaması; modelde **kullanılmıyor**. Ayrı bir çalışmada ölçüldü: yapısal modele metin öznitelikleri eklendiğinde çapraz-doğrulamalı doğrulukta ölçülebilir bir katkı bulunamadı, o yüzden bu rapora girmiyor.
+3. **Serbest metin** — satıcı açıklaması; modelde **kullanılmıyor**. Ölçüldü, katkı çıkmadı; ayrıntısı §10'da.
 
 ### Tutulan öznitelikler (25)
 
@@ -414,7 +414,7 @@ Hedonik model dönem kuklalarıyla zamanı kontrol eder: aynı araç için fiyat
 | 01-27 → 06-27 | %7.31 | 10.313 | ≤01-27 → 06-27 | %7.35 | 10.257 |
 | 03-21 → 06-27 | %7.06 | 9.099 | ≤03-21 → 06-27 | %6.96 | 8.889 |
 
-Tek dönem = yalnız bir snapshot'ta eğit, sonrakini tahmin et. Kümülatif = t'ye kadarki tüm snapshot'larda eğit. Test kümesi yalnız eğitimde hiç görülmemiş `ad_id`'ler (sızıntısız); bu yüzden kümülatif n tek dönemden küçük ya da eşit. Aynı eğitim döneminden test ufku uzadıkça hata büyüyor.
+Tek dönem = yalnız bir taramada eğit, sonrakini tahmin et. Kümülatif = t'ye kadarki tüm taramalarda eğit. Test kümesi yalnız eğitimde hiç görülmemiş `ad_id`'ler (sızıntısız); bu yüzden kümülatif n tek dönemden küçük ya da eşit. Aynı eğitim döneminden test ufku uzadıkça hata büyüyor.
 
 ### Dönem başına OOF
 
@@ -452,4 +452,14 @@ Tek dönem = yalnız bir snapshot'ta eğit, sonrakini tahmin et. Kümülatif = t
 ![Fiyat dağılımı — dönemlere göre](figures/tr-13-drift-hist.png)
 
 ![Log-fiyat yoğunluğu — dönemlere göre](figures/tr-14-drift-kde.png)
+
+## 10. Serbest metin: ölçüldü, dahil edilmedi
+
+Satıcı açıklaması modele **girmiyor**. Bu bir ihmal değil, ölçüm sonucu: aynı çapraz-doğrulama protokolünde yapısal model R² **0.9645**, üstüne metin öznitelikleri eklenince **0.966** — ΔR² **0.0015**. Formda zaten olan bilginin üstüne metin doğruluk eklemiyor.
+
+Metinden yapılandırılmış bilgi çıkarmak ayrıca denendi: **LangExtract** kütüphanesi ve **gemini-3.1-flash-lite** ile ilan metinlerindeki hasar, bakım ve modifiye ifadeleri parça ve durum niteliğiyle çıkarıldı.
+
+Bu çıkarımlar ne modele ne rapora girdi, çünkü **doğrulukları ölçülemedi**. Ölçmek için zor/orta/kolay ilanlardan dengeli bir doğrulama kümesi kurup elle etiketlemek gerekiyor; o emek harcanmadan modelin ne zaman yanıldığı bilinmiyor. Ölçemediğimiz bir sinyalin üstüne karar kurulmadı.
+
+Yapılması gereken belli: çıkarımlar önce doğrulanmalı, sonra modele **temiz sinyal** olarak verilip katkısı aynı protokolle test edilmeli. İki engel var. Birincisi **örneklem**: modifiye ya da ağır bakım geçmiş ilan korpusun küçük bir bölümü; yeterli örnek yoksa model bu sinyali öğrenemez, gürültüye karışır. İkinci yol sinyali modele hiç vermeden bu ilanları **veriden çıkarmak** ve hata payının ne kadar düştüğünü ölçmek. Hangisi seçilirse seçilsin, sonuç **canlı ilanlarda** da sınanmadan kabul edilmemeli.
 

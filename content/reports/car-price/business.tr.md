@@ -4,11 +4,11 @@
 
 ## Ne kadar değerinde?
 
-Galerinin refleksi — *aynı model, aynı yıl, medyana bak* — ortalama **₺191K** yanılıyor; model **₺110K** — **%42 daha iyi**, araç başına **₺81K**. 100 araçlık bir stokta bu, yaklaşık **₺8M**'lik fiyatlama hatası farkı demek.
+**Emsal medyanı** — *aynı model, aynı yılın ortadaki fiyatı* — ortalama **₺191K** yanılıyor; model **₺110K** — **%42 daha iyi**, araç başına **₺81K**. 100 araçlık bir stokta bu, yaklaşık **₺8M**'lik fiyatlama hatası farkı demek.
 
 Farkı kapatan, model ve yılın ötesi: kilometre, hasar, motor.
 
-![Ortalama hata: galeri refleksi vs model](figures/tr-00-base-vs-model.png)
+![Ortalama hata: emsal medyanı vs model](figures/tr-00-base-vs-model.png)
 
 **Emsal yoksa taban çöküyor** — en alt basamakta ortalama hata, model+yıl basamağının **6.1 katı**. Model de emsalsiz araçta zorlanıyor (aşağıda):
 
