@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import NotebookShell, { type ReportKey } from './NotebookShell';
+import NotebookShell, { type ReportKey, type RailShape } from './NotebookShell';
 import type { Block, ReportLang } from './report-source';
 import { useReportFigures, ReportFigure } from './figures';
 import { useLang } from '../i18n';
@@ -26,7 +26,7 @@ export default function ReportView({ kind, active, kicker, title, doc, rail }: {
     kicker: string;
     title: string;
     doc: Doc;
-    rail?: 'full' | 'slim';
+    rail?: RailShape;
 }) {
     const lang = useLang().lang as ReportLang;
     const [data, setData] = useState<Record<string, unknown> | null>(null);

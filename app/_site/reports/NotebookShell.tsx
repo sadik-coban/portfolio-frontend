@@ -32,14 +32,20 @@ const REPORTS = [
 
 export type ReportKey = (typeof REPORTS)[number]['key'];
 
+/** Which shape the rail takes; see the `rail` prop below. */
+export type RailShape = 'full' | 'slim' | 'foot';
+
 export default function NotebookShell({
     active, lang, title, contentKey, children, rail = 'full',
 }: {
     active: ReportKey;
     /** 'full' = the labelled Reports block above the contents (what the three live pages use).
-     *  'slim' = the other two reports as one quiet line under the back link, contents straight
-     *  after. Being tried on report/preview before it touches anything published. */
-    rail?: 'full' | 'slim';
+     *  'slim' = the other two as one quiet line under the back link, contents straight after.
+     *  'foot' = the other two under a label at the foot of the rail. TocNav is flex-1 and scrolls
+     *  inside itself, so a block after it sits on the floor of the rail and stays there however
+     *  long the contents runs — the same place FinalShell parks its own secondary controls.
+     *  Being tried on report/preview before any of this touches a published page. */
+    rail?: RailShape;
     lang: Lang;
     title: string;
     /** Changes whenever the rendered document changes (language switch), so contents rebuild. */
@@ -209,10 +215,30 @@ export default function NotebookShell({
         </div>
     );
 
+    const reportsFoot = (
+        <div className="mt-auto shrink-0 border-t border-[#ece9e3] pt-4">
+            <div className="mb-1.5 font-mono text-[10px] uppercase leading-snug tracking-[0.12em] text-[#86857e]">{L('Diğer raporlar', 'Other reports')}</div>
+            <ul className="space-y-0.5 text-[13px]">
+                {siblings.map((r) => (
+                    <li key={r.key}>
+                        <Link
+                            href={localize(r.href, lang)}
+                            onClick={() => setDrawer(false)}
+                            className="block w-full rounded-[6px] px-2.5 py-1.5 text-left leading-snug text-[#5f5f5a] transition-colors hover:bg-[#f1efe9] hover:text-[#1a1a1a]"
+                        >
+                            {L(r.tr, r.en)}
+                        </Link>
+                    </li>
+                ))}
+            </ul>
+        </div>
+    );
+
     const nav = (
         <>
             {rail === 'full' && reportsFull}
             <TocNav toc={toc} activeId={activeId} onGo={goTo} label={L('İçindekiler', 'Contents')} />
+            {rail === 'foot' && reportsFoot}
         </>
     );
 

@@ -28,7 +28,7 @@ export default async function Page({ params }: LangParams) {
             kind="car-price"
             active="report-technical"
             rail="slim"
-            kicker={tr ? 'Deneme sayfası · sadeleştirilmiş raf' : 'Trial page · slim rail'}
+            kicker={tr ? 'Deneme · raf: sade' : 'Trial · rail: slim'}
             title={tr ? 'Teknik rapor' : 'Technical report'}
             doc={doc}
         />
