@@ -62,7 +62,8 @@ Bu yüzden çıktı tek sayı değil, **%90 aralık**. Ama aralık ucuz araçlar
 - Ucuz araçlarda aralığı genişlet — tek sayıya güvenme.
 - Nadir ve uç araçları elle fiyatla; model orada saçılıyor.
 - Metninde dönüşüm, motor değişimi ya da modifiye geçen ilanı otomatik fiyatlama, elle incele; bu bilgi formda yok ve en büyük hataların kaynağı.
-- Aylık yeniden eğit — piyasa seviyesi kaydı (+%5.3), model zamanı görmüyor.
+- Takvimle değil, **kaymayı izleyerek** yenile: canlıda fiyat dağılımını izleyen bir servis kur, eşik aşılınca yeniden eğit. Bugün kayma küçük; ama piyasa seviyesi 4 dönemde +%2.0 kaydı ve model zamanı görmüyor.
+- **Fiyat rejimini değiştiren gelişmeleri takip et** (vergi/ÖTV düzenlemesi, teşvik, ani piyasa hareketi gibi) — eğitim planı bunlara göre yapılmalı. Eski dönemleri atma: veri biriktikçe hata düşüyor.
 
 ![Daha çok veri, daha az hata — tek dönem vs biriken dönemler](figures/tr-15-backtest.png)
 

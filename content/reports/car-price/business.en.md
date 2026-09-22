@@ -62,7 +62,8 @@ That is why the output is a **90% range**, not one number. But the range does no
 - Widen the range on cheap cars — don't trust a point estimate.
 - Price rare and edge cars by hand; the model scatters there.
 - Never auto-price a listing whose text mentions a conversion, an engine swap or modifications — price it by hand; that information is not in the form and it is the biggest source of error.
-- Retrain monthly — the market level shifted (+5.3%) and the model is time-blind.
+- Renew by **watching drift**, not by the calendar: run a service that tracks the price distribution and retrain when it crosses the threshold. Drift is small today, but the market level moved +2.0% over four snapshots and the model is time-blind.
+- **Watch for events that reset the pricing regime** (a tax or excise change, an incentive, a sudden market move) — plan retraining around them. Do not discard old snapshots: more data means less error.
 
 ![More data, less error — single period vs pooled periods](figures/en-15-backtest.png)
 

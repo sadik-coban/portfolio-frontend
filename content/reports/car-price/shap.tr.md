@@ -12,7 +12,7 @@ Model fiyatı **neye bakarak** kuruyor? Burada açıklanan model LightGBM — te
 - **Model: OOF.** Her ilan, onu eğitimde hiç görmemiş fold modeliyle açıklanıyor (5-fold, üreticinin kurulumunun aynısı). Yeniden üretilen tahminler yayımlananlarla kuruşu kuruşuna aynı çıktı.
 - **Yöntem:** `shap.TreeExplainer` (exact). Toplamsallık hatası 6.6e-13, yani parçalar tahmini tam veriyor.
 - **Ölçek:** hedef `log1p(fiyat)`, yani katkılar log'da toplanıyor ve fiyatta **çarpan** oluyor (aşağıdaki tablo).
-- **Gruplama:** model/seri adının 170 SVD boyutu tek tek anlamsız, `MODEL_SERIES` altında toplandı. §3'teki tabloda `ENGINE` = hp + cc, `DAMAGE` = 13 panel + ağır hasar; beeswarm ve kohort grafiklerinde bunlar ayrı satır.
+- **Gruplama:** model/seri adının 170 SVD boyutu tek tek anlamsız, `MODEL_SERIES` altında toplandı. §3'teki tabloda `ENGINE` = hp + cc, `DAMAGE` = 13 panel + ağır hasar; beeswarm ve grup grafiklerinde bunlar ayrı satır.
 
 ### Hangi grafikte hangi ölçek
 
@@ -20,7 +20,7 @@ Her grafikte okura en anlamlı ölçek seçildi:
 
 | ölçek | nerede | neden |
 |---|---|---|
-| **log** | beeswarm, kohort, etkileşim | İlanlar arası karşılaştırılabilir **tek** ölçek: `+0.62` ucuz araçta da pahalı araçta da aynı anlama gelir. |
+| **log** | beeswarm, grup, etkileşim | İlanlar arası karşılaştırılabilir **tek** ölçek: `+0.62` ucuz araçta da pahalı araçta da aynı anlama gelir. |
 | **%** | bağımlılık eğrileri, tablodaki **fiyatta karşılığı** sütunu | Katkıyı çarpana çevirir: `e^s − 1`. +0.10 → ×1.105, yani %10.5 daha pahalı; −0.10 → ×0.905, %9.5 daha ucuz. |
 
 **Örnek hesap.** Yaş (yıl) kaleminin ortalama |SHAP|'i 0.2872 → `e^0.2872 = 1.333`, yani tipik bir ilanda fiyatı %33.3 oynatıyor. Aynı ilanda Motor (hp + cc) de 0.1360 eklemişse yüzdeler toplanmaz, çarpanlar çarpılır: `1.333 × 1.146 = 1.527` → %52.7, %33.3 + %14.6 = %47.8 değil.
@@ -63,7 +63,7 @@ Etki yönü korelasyonu (Spearman): yaş **-0.99**, kilometre **-0.96**, motor g
 
 ### Model her araçta aynı şeye bakmıyor
 
-![İki kohort](figures/tr-sh-04-cohorts.png)
+![İki grup](figures/tr-sh-04-cohorts.png)
 
 Bölmeyi biz vermedik: shap kendi karar ağacıyla veriyi **Yaş (yıl) = 9.5** eşiğinden ikiye ayırdı. *Yaş (yıl)* için ortalama |SHAP| iki grupta 0.40 ve 0.23, yani genç araçta yaklaşık 1.7 katı ağırlık. §3'teki sıralama bir **ortalama**: yeni araçta fiyatı yaş kurar, yaşlıda sıra diğerlerine geçer.
 

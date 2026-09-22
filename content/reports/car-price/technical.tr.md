@@ -386,22 +386,24 @@ Her nokta bir model; y ekseni o modelin ilanlarındaki medyan hata. Kova medyan�
 | 1.8 1.8 T | 20 | 96.000 | ₺950.000 | ₺1.816.088 | %91.2 |
 | 320i ED M Plus | 13 | 240.000 | ₺1.400.000 | ₺2.584.235 | %84.6 |
 
-En kötü 6 ilanın 6 tanesinde model gerçek fiyatın **üstünü** söylüyor; medyan yaş 20. Yapısal alanlarda görünmeyen bir durum (hasar geçmişi, proje araç, nadir varyant) olası açıklama — bu raporda ilan ilan doğrulanmadı. Tüm tahminler OOF; ilan kimliği (`ad_id`) bilerek yazılmadı.
+En kötü 6 ilanın 6 tanesinde model gerçek fiyatın **üstünü** söylüyor; medyan yaş 20. Altısı da tek tek incelendi. **İkisinde sebep veri:** motor gücü ya da hacmi kendi emsal grubunun medyanından 1.5 kattan fazla sapıyor — katalog eşleşmesi çökmüş, model olmayan bir motoru fiyatlıyor. Veride böyle 20 ilan var (%0.07) ve pahalıya mal oluyorlar: medyan hataları %18.6, geri kalanınki %4.7; büyük hata oranı %50.0 ile %3.9. **Dört ilanda sebep emsalsizlik:** aynı modelden veride 1–2 ilan var: birinde adın çok daha pahalı ikizi tahmini yukarı çekiyor, birinde de model adı çözümlenememiş ve o addan veride tek ilan var. Bozuk öznitelikli kayıtlar eğitim öncesi ayıklanmalı ya da motor alanları o ilanlarda eksik sayılmalı. Tüm tahminler OOF; ilan kimliği (`ad_id`) bilerek yazılmadı.
 
 ## 9. Zaman — dönem etkisi, dağılım kayması ve backtest
 
-İki kanıt aynı kararı veriyor. Dağılım kayması: dönemler arası eğriler neredeyse çakışık. Zamansal backtest: eski dönemde eğit, sonraki dönemin yalnızca YENİ ilanlarında test et (sızıntısız). Sonuç: piyasa SEVİYESİ +%5.3 kaydı ama ŞEKİL sabit → aylık yeniden eğitim yeter.
+İki kanıt aynı kararı veriyor. Dağılım kayması: dönemler arası eğriler neredeyse çakışık. Zamansal backtest: eski dönemde eğit, sonraki dönemin yalnızca YENİ ilanlarında test et (sızıntısız). Sonuç: aynı model ve yılın ilanlarında piyasa seviyesi +%2.0 kaydı (hedonik ölçüm daha yüksek, farkı aşağıda) ama ŞEKİL sabit → yeniden eğitim takvime değil **ölçülen kaymaya** bağlanmalı (bölümün sonu).
 
 ### Dönem etkisi
 
-| dönem | fiyat seviyesi (taban 01-18) |
-|---|---:|
-| 01-18 (taban) | %0.00 |
-| 01-27 | +%1.54 |
-| 03-21 | +%3.17 |
-| 06-27 | +%5.30 |
+| dönem | canlı piyasa (aynı model+yıl) | dağılım mesafesi (EMD) | hedonik (kontrollü) |
+|---|---:|---:|---:|
+| 01-18 (taban) | %0.00 | — | %0.00 |
+| 01-27 | %0.00 (776) | ₺10.109 | +%1.54 |
+| 03-21 | +%0.85 (728) | ₺20.560 | +%3.17 |
+| 06-27 | +%1.98 (701) | ₺48.059 | +%5.30 |
 
-Hedonik model dönem kuklalarıyla zamanı kontrol eder: aynı araç için fiyat seviyesi 4 dönemde **+%5.3** kaydı. Rapordaki model (LightGBM) zamansızdır — dönem özniteliği almaz.
+Üç sütun üç ayrı soruya cevap veriyor. **Canlı piyasa**: aynı model ve yılın ilanlarında medyan fiyat ne kadar değişti (parantez içinde karşılaştırılan hücre sayısı) — ilan bileşiminden arınmış, model varsayımı yok. **EMD**: iki dönemin fiyat dağılımını üst üste getirmek için gereken ortalama kaydırma; bileşim dahil. **Hedonik**: her dönem için ayrı bir gösterge değişkeniyle, yalnız regresyondaki öznitelikler sabit tutularak ölçülen seviye.
+
+Hedonik sayı ötekilerden yüksek ve sebebi ölçüldü: hedonik regresyon **dedup edilmiş** veride koşuyor, orada bir ilanın dönemi onun **son görüldüğü** taramadır. Aynı hücre karşılaştırması o veride +%4.30, canlı taramalarda +%1.98 veriyor — farkın bir kısmı zaman değil, ilanın piyasada kalma süresi. Rapordaki model (LightGBM) zamansızdır: dönem özniteliği almaz.
 
 ### Zamansal backtest
 
@@ -452,6 +454,12 @@ Tek dönem = yalnız bir taramada eğit, sonrakini tahmin et. Kümülatif = t'ye
 ![Fiyat dağılımı — dönemlere göre](figures/tr-13-drift-hist.png)
 
 ![Log-fiyat yoğunluğu — dönemlere göre](figures/tr-14-drift-kde.png)
+
+### Yeniden eğitim ne zaman
+
+- **Takvim değil, eşik.** Canlıda bir **kayma servisi** PSI · KS · EMD'yi izlesin; PSI 0.10 eşiğini aşınca yeniden eğitim tetiklensin. Bugünkü en yüksek PSI 0.0049 — eşiğin çok altında, yani takvime bağlı düzenli eğitim bugün gereksiz.
+- **Fiyat rejimini değiştiren gelişmeler.** Vergi/ÖTV düzenlemesi, teşvik, ithalat kuralı, kur hareketi ya da ani piyasa anomalisi gibi dışsal olaylar kaymayı bir ölçüm penceresi dolmadan yaratabilir; bunlar eşikten bağımsız **tetikleyici** sayılmalı ve eğitim planı bunlara göre yapılmalı.
+- **Veri biriktikçe kazanç.** Dönem başına bağımsız OOF %7.00–%7.23 bandında sabit kalırken kümülatif %7.05 → %6.52 (n 10.901 → 29.988). Yeniden eğitim eski dönemleri atarak değil, **üstüne ekleyerek** yapılmalı.
 
 ## 10. Serbest metin: ölçüldü, dahil edilmedi
 

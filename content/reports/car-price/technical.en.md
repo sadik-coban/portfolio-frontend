@@ -386,22 +386,24 @@ Across 29,988 listings a few predictions landing within a few lira of the truth 
 | 1.8 1.8 T | 20 | 96,000 | ₺950,000 | ₺1,816,088 | 91.2% |
 | 320i ED M Plus | 13 | 240,000 | ₺1,400,000 | ₺2,584,235 | 84.6% |
 
-In 6 of the worst 6 the model says **more** than the actual price; median age 20. Something invisible in the structured fields (damage history, project car, rare variant) is a plausible explanation — not verified listing by listing here. All predictions are OOF; the listing id (`ad_id`) is deliberately not published.
+In 6 of the worst 6 the model says **more** than the actual price; median age 20. All six were examined one by one. **In two the cause is the data:** engine power or displacement deviates more than 1.5× from the median of its comparable group — the catalogue match collapsed and the model is pricing an engine the car does not have. There are 20 such listings (0.07%) and they are expensive: their median error is 18.6% against 4.7% for the rest, and their big-miss rate 50.0% against 3.9%. **In 4 the cause is having no comparables:** 1–2 listings of that model exist; on one a far more expensive twin of the same name pulls the prediction up, and on another the model name could not be resolved — a single listing carries it. Records with broken specs should be filtered before training, or their engine fields treated as missing. All predictions are OOF; the listing id (`ad_id`) is deliberately not published.
 
 ## 9. Time — period effect, distribution drift and backtest
 
-Two lines of evidence give the same call. Distribution drift: the period curves nearly overlap. Temporal backtest: train on an earlier period and test only on the next period's NEW listings (leak-free). Verdict: the market LEVEL shifted +5.3% but the SHAPE held → monthly retraining suffices.
+Two lines of evidence give the same call. Distribution drift: the period curves nearly overlap. Temporal backtest: train on an earlier period and test only on the next period's NEW listings (leak-free). Verdict: within the same model and year the market level moved +2.0% (the hedonic figure is higher; the gap is explained below) but the SHAPE held → retraining should follow **measured drift**, not the calendar (end of this section).
 
 ### Period effect
 
-| snapshot | price level vs 01-18 |
-|---|---:|
-| 01-18 (base) | 0.00% |
-| 01-27 | +1.54% |
-| 03-21 | +3.17% |
-| 06-27 | +5.30% |
+| snapshot | live market (same model+year) | distribution distance (EMD) | hedonic (controlled) |
+|---|---:|---:|---:|
+| 01-18 (base) | 0.00% | — | 0.00% |
+| 01-27 | 0.00% (776) | ₺10,109 | +1.54% |
+| 03-21 | +0.85% (728) | ₺20,560 | +3.17% |
+| 06-27 | +1.98% (701) | ₺48,059 | +5.30% |
 
-The hedonic model controls for time with period dummies: for the same car the price level moved **+5.3%** across 4 snapshots. The report's model (LightGBM) is time-blind — it takes no period feature.
+The three columns answer three different questions. **Live market**: how the median price moved within the same model and year (cell count in brackets) — free of listing mix, no model assumption. **EMD**: the average shift needed to line up two periods' price distributions, mix included. **Hedonic**: the level measured with a separate indicator per period, holding the regression's features fixed.
+
+The hedonic figure is the highest and we measured why: it is fitted on the **deduplicated** data, where a listing's period is the snapshot it was **last seen** in. The same cell comparison gives +4.30% there and +1.98% on the live snapshots — part of the gap is not time but how long a listing stayed up. The report's model (LightGBM) is time-blind: it takes no period feature.
 
 ### Temporal backtest
 
@@ -452,6 +454,12 @@ Single = train on one snapshot, predict a later one. Cumulative = train on every
 ![Price distribution by snapshot](figures/en-13-drift-hist.png)
 
 ![Log-price density by snapshot](figures/en-14-drift-kde.png)
+
+### When to retrain
+
+- **A threshold, not a calendar.** Run a **drift service** in production that watches PSI · KS · EMD and triggers retraining when PSI crosses 0.10. Today's highest PSI is 0.0049 — far below it, so scheduled retraining buys nothing right now.
+- **Events that reset the pricing regime.** A tax or excise change, an incentive, an import rule, a currency move or a sudden market anomaly can shift the distribution before a monitoring window closes; treat those as **triggers** regardless of the threshold and plan retraining around them.
+- **Accumulated data pays.** Per-snapshot OOF stays flat at 7.00%–7.23% while the cumulative figure falls 7.05% → 6.52% (n 10,901 → 29,988). Retrain by **adding** snapshots, not by discarding the old ones.
 
 ## 10. Free text: measured, left out
 
