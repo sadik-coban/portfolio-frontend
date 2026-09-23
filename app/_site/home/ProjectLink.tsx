@@ -38,13 +38,18 @@ const LINK = /\[([^\]]+)\]\(([^)]+)\)/g;
  * themselves with the title link's ::after overlay so the whole row is one target, and an
  * inline anchor would otherwise sit underneath it.
  */
-export function ProjectText({ value, lang }: { value: string; lang: Lang }) {
+export function ProjectText({ value, lang, linkClassName = 'text-[#047857] hover:text-[#1a1a1a]' }: {
+    value: string;
+    lang: Lang;
+    /** Colour classes for the inline links; the default is the paper palette /projects uses. */
+    linkClassName?: string;
+}) {
     const parts: React.ReactNode[] = [];
     let at = 0;
     for (const m of value.matchAll(LINK)) {
         if (m.index > at) parts.push(value.slice(at, m.index));
         parts.push(
-            <ProjectLink key={m.index} href={m[2]} lang={lang} className="relative z-10 font-medium text-[#047857] transition-colors hover:text-[#1a1a1a] hover:underline">
+            <ProjectLink key={m.index} href={m[2]} lang={lang} className={`relative z-10 font-medium transition-colors hover:underline ${linkClassName}`}>
                 {m[1]}
             </ProjectLink>,
         );
