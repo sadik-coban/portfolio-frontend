@@ -84,3 +84,8 @@ report-*.md
 /playwright-report/
 /blob-report/
 /playwright/.cache/
+
+# Python — the site itself is Node; this is a local interpreter for the odd script run
+# from this repo (python/python3 on this machine are Microsoft Store stubs, not Python).
+/.venv/
+__pycache__/
