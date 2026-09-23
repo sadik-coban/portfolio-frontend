@@ -28,7 +28,7 @@ const EXTERNAL = [
 ];
 
 /**
- * Site frame — nav (wordmark + links + lang) and footer, Swiss-minimal, light only.
+ * Site frame — nav (wordmark + links + lang) and footer, each a bento tile, light only.
  * Palette and type come from the --site-* tokens and design/fonts.ts
  * (design-system/sadik-coban/MASTER.md). Only the chrome takes the new type: the pages
  * inside keep inheriting their own, so /about and /projects change frame, not content.
@@ -45,11 +45,11 @@ export default function PaperShell({ children }: { children: React.ReactNode }) 
 
     return (
         <div className={`site-frame ${siteFontVars} min-h-screen bg-site-bg text-site-ink`}>
-            <div className="mx-auto max-w-[1192px] px-6">
-                <nav className="flex h-16 items-center justify-between border-b border-site-line font-text">
+            <div className="mx-auto max-w-[1192px] px-4 sm:px-6">
+                <nav className="mt-4 flex h-14 items-center justify-between rounded-2xl border border-site-line bg-site-card px-5 font-text md:mt-6 md:px-6">
                     <Monogram tone="site" />
-                    <div className="flex items-center gap-5 text-[14px] font-medium md:gap-8">
-                        <div className="hidden items-center gap-8 md:flex">
+                    <div className="flex items-center gap-4 text-[14px] font-medium md:gap-5">
+                        <div className="hidden items-center gap-1 md:flex">
                             {NAV.map((n) => {
                                 const active = isActive(n.href);
                                 return (
@@ -57,7 +57,7 @@ export default function PaperShell({ children }: { children: React.ReactNode }) 
                                         key={n.key}
                                         href={localize(n.href, lang)}
                                         aria-current={active ? 'page' : undefined}
-                                        className={`transition-colors duration-200 ${active ? 'text-site-ink underline decoration-site-accent decoration-2 underline-offset-[6px]' : 'text-site-muted hover:text-site-ink'}`}
+                                        className={`rounded-full px-3 py-1.5 transition-colors duration-200 ${active ? 'bg-site-bg text-site-ink' : 'text-site-muted hover:bg-site-bg hover:text-site-ink'}`}
                                     >
                                         {t(n.key)}
                                     </Link>
@@ -79,7 +79,7 @@ export default function PaperShell({ children }: { children: React.ReactNode }) 
                 </nav>
 
                 {open && (
-                    <div className="flex flex-col border-b border-site-line py-2 font-text md:hidden">
+                    <div className="mt-2 flex flex-col rounded-2xl border border-site-line bg-site-card px-5 py-2 font-text md:hidden">
                         {NAV.map((n) => (
                             <Link
                                 key={n.key}
@@ -96,9 +96,7 @@ export default function PaperShell({ children }: { children: React.ReactNode }) 
 
                 {children}
 
-                {/* The footer opens on an ink rule, not a hairline — the one heavy line on the page
-                    marks where the content ends and the colophon begins. */}
-                <footer className="border-t border-site-ink pt-12 pb-8 font-text">
+                <footer className="mb-6 rounded-2xl border border-site-line bg-site-card p-7 font-text md:p-10">
                     <div className="mb-12 grid grid-cols-2 gap-8 md:grid-cols-12 md:gap-6">
                         <div className="col-span-2 md:col-span-6">
                             <Monogram tone="site" />

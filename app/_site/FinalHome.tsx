@@ -1,168 +1,142 @@
 "use client";
 
 import Link from 'next/link';
-import { ArrowUpRight } from 'lucide-react';
+import { ArrowRight, ArrowUpRight } from 'lucide-react';
 import { useLang, localize } from './i18n';
 import PaperShell from './PaperShell';
 import { HOME_RIBBON, HOME_PROJECTS, HOME_ARSENAL } from './home/content';
-import ProjectLink, { ProjectText } from './home/ProjectLink';
+import ProjectTile from './home/ProjectTile';
 import { site } from './site-config';
 import { WRITING_ENABLED } from './writing-config';
 
-// Swiss-minimal homepage (design-system/sadik-coban/MASTER.md): a full-width statement, an
-// identity ribbon, a numbered work index on a 12-column grid, and the arsenal. Monochrome,
-// one blue accent that only ever marks a link. Nav and footer come from PaperShell.
+// Bento homepage (design-system/sadik-coban/MASTER.md): modular tiles on a 12-column grid.
+// Intro tiles instead of a full-width statement, five project tiles each carrying a figure
+// drawn from the project's own numbers, and the toolset as chips. Nav and footer: PaperShell.
+
+// Where each project sits, in HOME_PROJECTS order. Top row: the live system wide, the LLM
+// study narrow; bottom row: three even tiles. At md (two columns) the feature spans both.
+const SPANS = ['md:col-span-2 lg:col-span-7', 'lg:col-span-5', 'lg:col-span-4', 'lg:col-span-4', 'lg:col-span-4'];
+
+const TILE = 'rounded-2xl border border-site-line bg-site-card';
+
 export default function FinalHome({ recentPosts }: { recentPosts: any[] }) {
     const { t, lang } = useLang();
+    const status = HOME_RIBBON.find((r) => r.live);
+    const facts = HOME_RIBBON.filter((r) => !r.live);
+    const external = [
+        { label: 'GitHub', href: site.social.github },
+        { label: 'LinkedIn', href: site.social.linkedin },
+        { label: 'Email', href: `mailto:${site.social.email}` },
+    ];
 
-    // The ribbon used to carry a computed "Work · N projects" cell, and the section header
-    // printed the same count again below it. With a focused body of work those counters only
-    // ever advertised how few entries there are, so the page states what the work IS instead.
     return (
         <PaperShell>
             <div className="font-text">
-                {/* HERO — statement only, no figure */}
-                <section className="pt-16 pb-12 md:pt-28 md:pb-16">
-                    <p className="mb-8 flex items-center gap-3 text-[12px] font-medium uppercase tracking-[0.14em] text-site-muted">
-                        <span className="h-px w-8 bg-site-ink" aria-hidden="true" />
-                        {t('home.heroEyebrow')}
-                    </p>
-                    {/* The setup is muted and the payoff carries full ink, so the four words that make
-                        the argument are the darkest on the page. --site-muted is 7:1 on the ground. */}
-                    <h1 className="m-0 mb-12 max-w-[1040px] font-display text-[44px] font-bold leading-[1.02] tracking-[-0.035em] text-site-ink text-balance sm:text-[64px] lg:text-[88px] lg:leading-[0.96] lg:tracking-[-0.045em]">
-                        <span className="text-site-muted">{t('home.heroH1Lead')}</span> {t('home.heroH1Payoff')}
-                    </h1>
-                    <div className="grid grid-cols-1 gap-8 border-t border-site-line pt-8 md:grid-cols-12 md:gap-6">
-                        <p className="m-0 max-w-[560px] text-[17px] leading-[1.6] text-site-ink-2 md:col-span-7 md:text-[19px]">{t('home.heroSub')}</p>
-                        {/* Three nowrap items don't fit one 327px line, so the row wraps below sm. */}
-                        <div className="flex flex-wrap items-center gap-x-6 gap-y-3 whitespace-nowrap md:col-span-5 md:justify-end md:self-end">
-                            <Link href="#work" className="inline-flex h-11 items-center rounded-[8px] bg-site-primary px-6 text-[14px] font-semibold text-white transition-opacity duration-200 hover:opacity-90">{t('home.viewWork')}</Link>
+                {/* INTRO — one identity tile, and a column of two small ones beside it */}
+                <section className="grid grid-cols-1 gap-4 pt-6 md:pt-8 lg:grid-cols-12">
+                    <div className={`${TILE} flex flex-col p-7 md:p-10 lg:col-span-8`}>
+                        <p className="m-0 mb-5 text-[12px] font-medium uppercase tracking-[0.1em] text-site-muted">{t('home.heroEyebrow')}</p>
+                        {/* The setup is muted and the payoff carries full ink, so the words that make the
+                            argument are the darkest on the tile. --site-muted is 7:1 on the card. */}
+                        <h1 className="m-0 mb-5 max-w-[720px] font-display text-[36px] font-semibold leading-[1.05] tracking-[-0.03em] text-site-ink text-balance sm:text-[44px] lg:text-[52px]">
+                            <span className="text-site-muted">{t('home.heroH1Lead')}</span> {t('home.heroH1Payoff')}
+                        </h1>
+                        <p className="m-0 max-w-[560px] text-[16px] leading-[1.6] text-site-ink-2 md:text-[17px]">{t('home.heroSub')}</p>
+                        <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-3 whitespace-nowrap md:mt-auto md:pt-8">
+                            <Link href="#work" className="inline-flex h-11 items-center gap-2 rounded-xl bg-site-primary px-5 text-[14px] font-semibold text-white transition-opacity duration-200 hover:opacity-90">
+                                {t('home.viewWork')}
+                            </Link>
                             <Link href={localize('/about', lang)} className="text-[14px] font-medium text-site-ink transition-colors duration-200 hover:text-site-accent">{t('home.getInTouch')}</Link>
-                            <a href={site.social.github} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-[14px] font-medium text-site-muted transition-colors duration-200 hover:text-site-accent">
-                                GitHub <ArrowUpRight size={14} aria-hidden="true" />
-                            </a>
                         </div>
                     </div>
-                </section>
 
-                {/* IDENTITY RIBBON — one cohesive line, even weight.
-                    The separators are the container's own background showing through a 1px grid gap,
-                    not per-cell borders: a border-l picked by array index paints a stray vertical bar
-                    on the left edge of every wrapped row, which is exactly what mobile used to show. */}
-                <div className="grid grid-cols-1 gap-px border-y border-site-line bg-site-line sm:grid-cols-3">
-                    {HOME_RIBBON.map((r) => (
-                        <div key={r.label.en} className="flex items-center gap-3 bg-site-bg px-4 py-4 md:px-6 md:py-5">
-                            {'live' in r && r.live && (
-                                <span className="relative h-2 w-2 shrink-0" aria-hidden="true">
-                                    <span className="absolute inset-0 rounded-full bg-site-live motion-safe:animate-[pulseDot_2.4s_ease-in-out_infinite]" />
-                                    <span className="absolute inset-0 rounded-full bg-site-live" />
-                                </span>
-                            )}
-                            <div>
-                                <div className="mb-1 text-[11px] font-medium uppercase tracking-[0.1em] text-site-muted">{r.label[lang]}</div>
-                                <div className={`text-[15px] font-medium ${'accent' in r && r.accent ? 'text-site-ink' : 'text-site-ink-2'}`}>{r.value[lang]}</div>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-
-                {/* SELECTED WORK — the anchor lives here, not on the ribbon above: "View work" should
-                    land on the work, not on a strip of metadata. */}
-                <section id="work" className="scroll-mt-8 pt-16 md:pt-20">
-                    <h2 className="m-0 mb-8 font-display text-[28px] font-bold tracking-[-0.03em] text-site-ink sm:text-[36px]">{t('home.workLabel')}</h2>
-
-                    {HOME_PROJECTS.map((p, i) => {
-                        const live = p.kind === 'live';
-                        return (
-                            // Below md: index + badge on the left of one header line, the metric on its
-                            // right, the body underneath. From md: a 12-column row — rail 2, body 7, metric 3.
-                            <div
-                                key={p.title}
-                                className="group relative grid grid-cols-[1fr_auto] gap-x-4 gap-y-5 border-t border-site-line px-2 py-8 transition-colors duration-200 hover:bg-site-card md:grid-cols-12 md:gap-x-6 md:px-4 md:py-10"
-                            >
-                                <div className="col-start-1 row-start-1 flex items-center gap-3 md:col-span-2 md:flex-col md:items-start md:gap-4">
-                                    <div className="font-display text-[15px] font-bold tabular-nums text-site-ink md:text-[18px]">
-                                        {String(i + 1).padStart(2, '0')}
-                                    </div>
-                                    <span className={`inline-flex w-max items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.06em] ${live ? 'border-site-live/40 text-site-ink' : 'border-site-line text-site-muted'}`}>
-                                        <span className="relative h-1.5 w-1.5 shrink-0" aria-hidden="true">
-                                            <span className={`absolute inset-0 ${live ? 'rounded-full bg-site-live motion-safe:animate-[pulseDot_2.4s_ease-in-out_infinite]' : 'rounded-[1px] bg-site-muted'}`} />
-                                            <span className={`absolute inset-0 ${live ? 'rounded-full bg-site-live' : 'rounded-[1px] bg-site-muted'}`} />
-                                        </span>
-                                        {t(live ? 'home.live' : p.kind === 'package' ? 'home.package' : 'home.case')}
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:col-span-4 lg:grid-cols-1">
+                        {status && (
+                            <div className={`${TILE} flex flex-col justify-between gap-6 p-6`}>
+                                <div className="text-[12px] font-medium uppercase tracking-[0.1em] text-site-muted">{status.label[lang]}</div>
+                                <div className="flex items-center gap-3">
+                                    <span className="relative h-2.5 w-2.5 shrink-0" aria-hidden="true">
+                                        <span className="absolute inset-0 rounded-full bg-site-live motion-safe:animate-[pulseDot_2.4s_ease-in-out_infinite]" />
+                                        <span className="absolute inset-0 rounded-full bg-site-live" />
                                     </span>
-                                </div>
-
-                                <div className="col-start-2 row-start-1 text-right md:col-span-3 md:col-start-10">
-                                    <div className="font-mono text-[20px] font-medium tabular-nums tracking-[-0.03em] text-site-ink md:text-[34px]">{p.metric}</div>
-                                    <div className="mt-1 text-[11px] font-medium uppercase tracking-[0.08em] text-site-muted">{p.metricLabel[lang]}</div>
-                                </div>
-
-                                {/* Body. The title is the row's real link and its ::after overlay makes the
-                                    whole row clickable — the row can't be one big <a> any more, because the
-                                    per-surface links below would then be anchors nested inside an anchor. */}
-                                <div className="col-span-2 row-start-2 md:col-span-7 md:col-start-3 md:row-start-1">
-                                    <div className="mb-3 text-[12px] font-medium uppercase tracking-[0.12em] text-site-muted">{p.domain}</div>
-                                    <h3 className="m-0 mb-3 font-display text-[26px] font-bold leading-[1.1] tracking-[-0.03em] text-site-ink transition-colors duration-200 group-hover:text-site-accent sm:text-[34px]">
-                                        <ProjectLink href={p.href} lang={lang} className="after:absolute after:inset-0 after:content-['']">{p.title}</ProjectLink>
-                                    </h3>
-                                    <p className="m-0 mb-6 max-w-[600px] text-[16px] leading-[1.6] text-site-ink-2 sm:text-[17px]">
-                                        <ProjectText value={p.description[lang]} lang={lang} linkClassName="text-site-accent hover:text-site-ink" />
-                                    </p>
-                                    {/* The surfaces this one system actually ships — the row used to spend this
-                                        line on the stack string, which the arsenal grid repeats below. */}
-                                    <div className="relative z-10 flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-site-line pt-4">
-                                        {p.surfaces.map((s) => (
-                                            <ProjectLink key={s.href} href={s.href} lang={lang} className="inline-flex items-center gap-1 text-[14px] font-medium text-site-accent transition-colors duration-200 hover:text-site-ink">
-                                                {s.label[lang]} <ArrowUpRight size={14} aria-hidden="true" />
-                                            </ProjectLink>
-                                        ))}
-                                    </div>
+                                    <span className="font-display text-[24px] font-semibold tracking-[-0.02em] text-site-ink">{status.value[lang]}</span>
                                 </div>
                             </div>
-                        );
-                    })}
-                    <div className="border-t border-site-line" />
-                </section>
-
-                {/* TECHNICAL ARSENAL — grouped, three columns, each group under a 2px ink rule. No top
-                    border: the work index already closes on its own rule right above. */}
-                <section className="py-16 md:py-20">
-                    <div className="mb-10 grid grid-cols-1 gap-3 md:grid-cols-12 md:gap-6">
-                        <h2 className="m-0 font-display text-[28px] font-bold tracking-[-0.03em] text-site-ink sm:text-[36px] md:col-span-5">{t('home.arsenalLabel')}</h2>
-                        <p className="m-0 max-w-[520px] text-[16px] leading-[1.6] text-site-muted md:col-span-7 md:self-end">{t('home.arsenalSub')}</p>
-                    </div>
-                    <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6">
-                        {HOME_ARSENAL.map((grp) => (
-                            <div key={grp.group.en}>
-                                <div className="border-t-2 border-site-ink pt-3 pb-1 text-[12px] font-semibold uppercase tracking-[0.08em] text-site-ink">{grp.group[lang]}</div>
-                                {grp.items.map((it) => (
-                                    <div key={it.tool} className="border-b border-site-line py-3">
-                                        <div className="text-[15px] font-medium text-site-ink">{it.tool}</div>
-                                        <div className="mt-1 text-[14px] leading-[1.5] text-site-muted">{it.did[lang]}</div>
+                        )}
+                        <div className={`${TILE} flex flex-col gap-5 p-6`}>
+                            <dl className="m-0 grid grid-cols-2 gap-4">
+                                {facts.map((r) => (
+                                    <div key={r.label.en}>
+                                        <dt className="text-[12px] font-medium uppercase tracking-[0.1em] text-site-muted">{r.label[lang]}</dt>
+                                        <dd className="m-0 mt-1 text-[15px] font-medium text-site-ink">{r.value[lang]}</dd>
                                     </div>
                                 ))}
+                            </dl>
+                            <div className="mt-auto flex flex-wrap gap-2">
+                                {external.map((e) => (
+                                    <a
+                                        key={e.label}
+                                        href={e.href}
+                                        {...(e.href.startsWith('mailto:') ? {} : { target: '_blank', rel: 'noopener noreferrer' })}
+                                        className="inline-flex h-9 items-center gap-1 rounded-full border border-site-line px-3.5 text-[13px] font-medium text-site-ink-2 transition-colors duration-200 hover:border-site-ink/30 hover:text-site-ink"
+                                    >
+                                        {e.label} <ArrowUpRight size={13} aria-hidden="true" />
+                                    </a>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                {/* WORK — five tiles; the anchor lands here, not on the intro */}
+                <section id="work" className="scroll-mt-6 pt-14">
+                    <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
+                        <h2 className="m-0 font-display text-[28px] font-semibold tracking-[-0.025em] text-site-ink sm:text-[32px]">{t('home.workLabel')}</h2>
+                        <Link href={localize('/projects', lang)} className="inline-flex items-center gap-1 text-[14px] font-medium text-site-accent transition-colors duration-200 hover:text-site-ink">
+                            {t('home.work.viewAll')} <ArrowRight size={14} aria-hidden="true" />
+                        </Link>
+                    </div>
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-12">
+                        {HOME_PROJECTS.map((p, i) => (
+                            <ProjectTile key={p.title} p={p} variant={i === 0 ? 'feature' : 'standard'} className={SPANS[i] ?? 'lg:col-span-4'} />
+                        ))}
+                    </div>
+                </section>
+
+                {/* TOOLSET — three compact tiles of chips */}
+                <section className="pt-14 pb-16">
+                    <h2 className="m-0 mb-5 font-display text-[28px] font-semibold tracking-[-0.025em] text-site-ink sm:text-[32px]">{t('home.arsenalLabel')}</h2>
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                        {HOME_ARSENAL.map((grp) => (
+                            <div key={grp.group.en} className={`${TILE} p-6`}>
+                                <div className="mb-4 text-[12px] font-medium uppercase tracking-[0.1em] text-site-muted">{grp.group[lang]}</div>
+                                <ul className="m-0 flex list-none flex-wrap gap-2 p-0">
+                                    {grp.tools.map((tool) => (
+                                        <li key={tool} className="rounded-full bg-site-bg px-3 py-1.5 text-[13px] font-medium text-site-ink">{tool}</li>
+                                    ))}
+                                </ul>
                             </div>
                         ))}
                     </div>
                 </section>
 
-                {/* LATEST WRITING — compact rows. Gated with the blog: every row here links to
-                    /blog/[slug] and the header to /blog, all of which answer 404 while the flag is off. */}
+                {/* LATEST WRITING — gated with the blog: every row links to /blog/[slug] and the
+                    header to /blog, all of which answer 404 while the flag is off. */}
                 {WRITING_ENABLED && (
-                <section className="border-t border-site-line py-16 md:py-20">
-                    <div className="mb-6 flex items-baseline justify-between gap-6">
-                        <h2 className="m-0 font-display text-[28px] font-bold tracking-[-0.03em] text-site-ink sm:text-[36px]">{t('home.writingLabel')}</h2>
+                <section className="pb-16">
+                    <div className="mb-5 flex items-end justify-between gap-6">
+                        <h2 className="m-0 font-display text-[28px] font-semibold tracking-[-0.025em] text-site-ink sm:text-[32px]">{t('home.writingLabel')}</h2>
                         <Link href={localize('/blog', lang)} className="text-[14px] font-medium text-site-accent transition-colors duration-200 hover:text-site-ink">{t('home.allPosts')}</Link>
                     </div>
-                    {recentPosts.length > 0 ? recentPosts.map((post) => (
-                        <Link key={post.slug} href={localize(`/blog/${post.slug}`, lang)} className="group flex items-center gap-4 border-t border-site-line px-2 py-5 transition-colors duration-200 hover:bg-site-card sm:gap-6">
-                            {/* No fixed width: mono + tabular-nums keeps the date column aligned across posts. */}
-                            <span className="shrink-0 font-mono text-[12px] font-medium tabular-nums text-site-muted">{post.meta.date}</span>
-                            <span className="flex-1 text-[15px] font-medium text-site-ink transition-colors duration-200 group-hover:text-site-accent sm:text-[17px]">{post.meta.title}</span>
-                            {post.meta.readTime && <span className="shrink-0 text-[13px] text-site-muted">{post.meta.readTime} {t('blog.min')}</span>}
-                        </Link>
-                    )) : <p className="border-t border-site-line py-6 text-[15px] text-site-muted">{t('blog.empty')}</p>}
+                    <div className={`${TILE} divide-y divide-site-line overflow-hidden`}>
+                        {recentPosts.length > 0 ? recentPosts.map((post) => (
+                            <Link key={post.slug} href={localize(`/blog/${post.slug}`, lang)} className="group flex items-center gap-4 px-6 py-5 transition-colors duration-200 hover:bg-site-bg sm:gap-6">
+                                <span className="shrink-0 font-mono text-[12px] font-medium tabular-nums text-site-muted">{post.meta.date}</span>
+                                <span className="flex-1 text-[15px] font-medium text-site-ink transition-colors duration-200 group-hover:text-site-accent sm:text-[17px]">{post.meta.title}</span>
+                                {post.meta.readTime && <span className="shrink-0 text-[13px] text-site-muted">{post.meta.readTime} {t('blog.min')}</span>}
+                            </Link>
+                        )) : <p className="m-0 px-6 py-6 text-[15px] text-site-muted">{t('blog.empty')}</p>}
+                    </div>
                 </section>
                 )}
             </div>

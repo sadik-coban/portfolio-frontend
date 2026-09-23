@@ -61,8 +61,8 @@ const en: Dict = {
     'projects.subtitle': 'End-to-end systems where I explore AI, data science, and software engineering — from predictive models to production dashboards.',
     // Set in full ink: the two-tone split belongs to the homepage H1 alone, where the tonal
     // shift marks the turn in the sentence. Repeated here it read as a component slot.
-    'projects.h1': 'One system, taken end to end: rigor that ships.',
-    'projects.lede': 'A deployed ML system — scraping and deduplication, a leak-free evaluation, drift monitoring, and a serving API. The same discipline throughout: work out what the problem actually needs, then build only that.',
+    'projects.h1': 'From a live system to open studies.',
+    'projects.lede': 'A deployed price model, an R package on CRAN, and studies of air-quality data, food access and LLM classification. The finished ones say how they were evaluated and where they stop.',
     'projects.more': 'More end-to-end projects are in progress — the code lives on GitHub in the meantime.',
     'journal.more': 'More engineering notes are on the way.',
     'projects.explore': 'Explore project',
@@ -118,6 +118,10 @@ const en: Dict = {
     'home.live': 'LIVE DEMO',
     'home.case': 'CASE STUDY',
     'home.package': 'CRAN PACKAGE',
+    'home.study': 'STUDY',
+    'home.soon': 'COMING SOON',
+    'home.resultsSoon': 'Results coming soon — no numbers until they are final.',
+    'home.schematic': 'Schematic of the method — an illustration, not data.',
     'home.viewProject': 'View project',
     'home.viewPackage': 'View on CRAN',
 
@@ -343,8 +347,8 @@ const tr: Dict = {
 
     'projects.title': 'Projeler',
     'projects.subtitle': 'Yapay zekâ, veri bilimi ve yazılım mühendisliğini bir araya getirdiğim uçtan uca sistemler; tahmin modellerinden üretim panolarına kadar uzanıyor.',
-    'projects.h1': 'Uçtan uca kurulmuş tek bir sistem: sahaya çıkan titizlik.',
-    'projects.lede': 'Üretime çıkmış bir ML sistemi — veri toplama ve tekilleştirme, sızıntısız değerlendirme, drift izleme ve servis API’si. Baştan sona aynı disiplin: problemin gerçekten neye ihtiyacı olduğunu belirle, sadece onu kur.',
+    'projects.h1': 'Canlı bir sistemden açık çalışmalara.',
+    'projects.lede': 'Canlıda çalışan bir fiyat modeli, CRAN’de bir R paketi ve hava kalitesi verisi, gıdaya erişim ve LLM sınıflandırma üzerine çalışmalar. Bitenler nasıl değerlendirildiklerini ve nerede durduklarını söylüyor.',
     'projects.more': 'Daha fazla uçtan uca proje yolda — bu sırada kodun tamamı GitHub’da.',
     'journal.more': 'Daha fazla mühendislik notu yolda.',
     'projects.explore': 'Projeyi incele',
@@ -398,6 +402,10 @@ const tr: Dict = {
     'home.live': 'CANLI DEMO',
     'home.case': 'VAKA ÇALIŞMASI',
     'home.package': 'CRAN PAKETİ',
+    'home.study': 'ÇALIŞMA',
+    'home.soon': 'YAKINDA',
+    'home.resultsSoon': 'Sonuçlar yakında — kesinleşene kadar sayı yok.',
+    'home.schematic': 'Yöntemin şeması — bir çizim, veri değil.',
     'home.viewProject': 'Projeyi gör',
     'home.viewPackage': 'CRAN’de gör',
 

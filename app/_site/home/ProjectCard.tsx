@@ -12,7 +12,7 @@ export function ProjectCard({ project, priceByYear }: { project: HomeProject; pr
     // The whole card is one link (matches the blog/journal cards); ↗ is just a hint.
     return (
         <Link
-            href={localize(project.href, lang)}
+            href={localize(project.href ?? '/projects', lang)}
             aria-label={project.title}
             className="group grid grid-cols-1 sm:grid-cols-[248px_1fr] items-center gap-6 sm:gap-8 border-t border-[#e9e7e2] py-7"
         >

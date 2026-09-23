@@ -1,15 +1,20 @@
-// Homepage content ported from the "Data Scientist Portfolio" reference design,
-// translated to TR/EN. Language-neutral fields (values, tools, stack) stay as-is.
+// Homepage and /projects content, TR/EN. Language-neutral fields (titles, tools, stack) stay
+// as-is. Every figure here is quoted from the project's own report — the source is named in a
+// comment beside it, so a number can be checked against where it came from.
 import type { Lang } from '../i18n';
 
 type Bi = Record<Lang, string>;
 
-/** One line of a project's metric stack on /projects. `stat` names a key in the live stats
- *  map the server derives from public/site_data.json — always prefer it. `value` is the
- *  literal escape hatch for figures that aren't in that file (a study with no model, say). */
+/** A value that reads the same in both languages ('6.50%') or needs its own digit grouping
+ *  per locale ({ en: '29,988', tr: '29.988' }). */
+export type Localized = string | Bi;
+export const localized = (v: Localized, lang: Lang) => (typeof v === 'string' ? v : v[lang]);
+
+/** One line of a project's metric stack on /projects. Literal values, quoted from the
+ *  project's report — the metrics used to be read from public/site_data.json, which stopped
+ *  being regenerated in July and went on quoting a MAPE the current report no longer gives. */
 export interface ProjectMetric {
-    stat?: string;
-    value?: string;
+    value: Localized;
     label: Bi;
     accent?: boolean;
 }
@@ -19,49 +24,56 @@ export interface ProjectMetric {
  *  plain anchor with target/rel rather than a next/link route. */
 export const isExternalHref = (href: string) => /^https?:\/\//.test(href);
 
+/** Which mini figure a tile draws — the data behind each lives in ./figures.ts. */
+export type ProjectFigure = 'carPrice' | 'openaq' | 'mrfei' | 'mff';
+
 export interface HomeProject {
     domain: string;
-    kind: 'live' | 'case' | 'package';
+    kind: 'live' | 'package' | 'study';
     title: string;
-    /** Rendered by ProjectText: plain copy, except `[label](href)` becomes a link. */
+    /** One or two sentences for the homepage tile. Same `[label](href)` syntax as description. */
+    summary: Bi;
+    /** Rendered by ProjectText: plain copy, except `[label](href)` becomes a link. /projects only. */
     description: Bi;
     stack: string;
-    cover: 'chart' | 'choropleth';
-    href: string;
-    /** The one number the editorial work index carries on the right of each row. */
-    metric: string;
-    metricLabel: Bi;
+    /** Legacy — read only by the unused home/ProjectCard.tsx. */
+    cover?: 'chart' | 'choropleth';
+    /** Where the tile leads. Absent = nothing is published yet: the tile renders unlinked and
+     *  carries a "coming soon" badge instead of pointing at a page that doesn't exist. */
+    href?: string;
+    /** The one number a homepage tile carries. Absent = the study has no final result yet. */
+    metric?: Localized;
+    metricLabel?: Bi;
+    figure?: ProjectFigure;
     /** /projects only — the year the work shipped, the topic chips, and the metric stack. */
     year: string;
     tags: string[];
     metrics: ProjectMetric[];
-    /** The pages this project actually ships, linked straight from the homepage row. */
+    /** The pages this project actually ships, linked straight from its tile. */
     surfaces: { label: Bi; href: string }[];
 }
 
-/** Identity ribbon under the hero — who/where/what, not project KPIs (each project row
- *  carries its own metric). The "Work" cell is computed from HOME_PROJECTS. */
+/** Who/where/what for the intro tiles — not project KPIs (each project tile carries its own). */
 export const HOME_RIBBON: { label: Bi; value: Bi; live?: boolean; accent?: boolean }[] = [
     { label: { en: 'Status', tr: 'Durum' }, value: { en: 'Open to roles', tr: 'Yeni rollere açık' }, live: true, accent: true },
     { label: { en: 'Role', tr: 'Rol' }, value: { en: 'Data Scientist · MLOps', tr: 'Veri Bilimci · MLOps' } },
     { label: { en: 'Based', tr: 'Konum' }, value: { en: 'Istanbul', tr: 'İstanbul' } },
 ];
 
-// Kept in sync with public/site_data.json (domain.final_results.model_karsilastirma
-// .lightgbm_tfidf_svd + meta.n_dedup). These are 5-fold out-of-fold figures, not a
-// single holdout — the label says so, because the distinction is the point.
-export const HOME_METRICS: { value: string; label: Bi; accent?: boolean }[] = [
-    { value: '29,988', label: { en: 'Listings modelled', tr: 'Modellenen ilan' } },
-    { value: '0.975', label: { en: 'Cross-validated R²', tr: 'Çapraz-doğrulanmış R²' }, accent: true },
-    { value: '6.49%', label: { en: 'Out-of-fold MAPE', tr: 'Out-of-fold MAPE' } },
-    { value: '₺110K', label: { en: 'Out-of-fold MAE', tr: 'Out-of-fold MAE' } },
-];
-
+// Order is layout: the homepage bento puts the first two on the top row (car price wide, the
+// LLM study narrow) and the last three on an even row beneath.
 export const HOME_PROJECTS: HomeProject[] = [
+    // Figures: content/reports/car-price/technical.en.md — the opening summary (29,988 listings)
+    // and §Model variants. "The model" of the report is LightGBM at 6.50%; CatBoost wins the
+    // producer's MAPE-only rule at 6.45%, which the report itself calls a practical tie.
     {
         domain: 'Deployment · MLOps',
         kind: 'live',
         title: 'Car Price Prediction & MLOps',
+        summary: {
+            en: 'A live price model for used BMW and Audi listings — scraping, leak-free evaluation, drift monitoring and a serving API.',
+            tr: 'İkinci el BMW ve Audi ilanları için canlı bir fiyat modeli — veri toplama, sızıntısız değerlendirme, drift izleme ve servis API’si.',
+        },
         description: {
             en: 'End-to-end ML system on LightGBM with TF-IDF+SVD text features — scraping, dedup, leak-free 5-fold evaluation, drift monitoring, SHAP explainability, and a FastAPI serving layer. The complete production cycle, not just a notebook.',
             tr: 'LightGBM ve TF-IDF+SVD metin öznitelikleriyle kurulmuş, uçtan uca bir ML sistemi: veri toplama, tekilleştirme, sızıntısız 5-fold değerlendirme, drift izleme, SHAP açıklanabilirliği ve FastAPI servis katmanı. Bu sadece bir defter değil, eksiksiz bir üretim döngüsü.',
@@ -69,14 +81,15 @@ export const HOME_PROJECTS: HomeProject[] = [
         stack: 'LightGBM · FastAPI · DuckDB · Railway',
         cover: 'chart',
         href: '/projects/car-price',
-        metric: '6.49%',
+        metric: '6.50%',
         metricLabel: { en: 'out-of-fold MAPE', tr: 'out-of-fold MAPE' },
+        figure: 'carPrice',
         year: '2026',
-        tags: ['LightGBM', 'TF-IDF+SVD', 'FastAPI', 'DuckDB', 'Railway', 'Next.js'],
+        tags: ['LightGBM', 'CatBoost', 'TF-IDF+SVD', 'FastAPI', 'DuckDB', 'Railway', 'Next.js'],
         metrics: [
-            { stat: 'mape', label: { en: 'out-of-fold MAPE', tr: 'out-of-fold MAPE' }, accent: true },
-            { stat: 'r2', label: { en: 'cross-validated R²', tr: 'çapraz-doğrulanmış R²' } },
-            { stat: 'listings', label: { en: 'listings modelled', tr: 'modellenen ilan' } },
+            { value: '6.50%', label: { en: 'out-of-fold MAPE', tr: 'out-of-fold MAPE' }, accent: true },
+            { value: '0.9744', label: { en: 'cross-validated R²', tr: 'çapraz-doğrulanmış R²' } },
+            { value: { en: '29,988', tr: '29.988' }, label: { en: 'listings modelled', tr: 'modellenen ilan' } },
         ],
         surfaces: [
             { label: { en: 'Overview', tr: 'Genel bakış' }, href: '/projects/car-price' },
@@ -85,14 +98,95 @@ export const HOME_PROJECTS: HomeProject[] = [
             { label: { en: 'Dashboard', tr: 'Pano' }, href: '/projects/car-price/dashboard' },
         ],
     },
+    // In progress, and nothing of it is on this machine yet: no metric, no figure, no link.
+    // The tile says what the study is and that results are coming — it does not guess them.
+    {
+        domain: 'NLP · LLMs',
+        kind: 'study',
+        title: 'LLMs vs Classical Text Classifiers',
+        summary: {
+            en: 'Open-weight LLMs served with vLLM, set against classical classifiers on the same labelled task.',
+            tr: 'vLLM ile servis edilen açık ağırlıklı LLM’ler, aynı etiketli görevde klasik sınıflandırıcılara karşı.',
+        },
+        description: {
+            en: 'Open-weight LLMs served with vLLM, set against classical classifiers on the same labelled task. Results will be published here once they are final.',
+            tr: 'vLLM ile servis edilen açık ağırlıklı LLM’ler, aynı etiketli görevde klasik sınıflandırıcılara karşı. Sonuçlar kesinleştiğinde burada yayımlanacak.',
+        },
+        stack: 'vLLM',
+        year: '2026',
+        tags: ['vLLM', 'LLM', 'Text classification'],
+        metrics: [],
+        surfaces: [],
+    },
+    // Figures: openaqseriesanalytics/clean/FINDINGS.en.md — header line (1,853 series, 518,689
+    // daily records) and the review-signal row (342). The author's own warning applies: 342 is
+    // how many series raised a review signal, never "342 pathological series". Not published yet.
+    {
+        domain: 'Data quality · Open data',
+        kind: 'study',
+        title: 'OpenAQ Series Quality Audit',
+        summary: {
+            en: 'A unit-aware audit of OpenAQ air-quality series. A rule that fires is a review signal, not proof of a defect.',
+            tr: 'OpenAQ hava kalitesi serilerinin birim-duyarlı taraması. Tetiklenen bir kural kusur kanıtı değil, inceleme sinyalidir.',
+        },
+        description: {
+            en: 'A unit-aware audit of OpenAQ v3 air-quality series: 1,853 sensor–parameter–years through eight pathology rules and six separate quality axes. A rule that fires is a review signal, not proof of a defect — each flag is checked against neighbouring stations, multi-day episodes and the provider’s own flags.',
+            tr: 'OpenAQ v3 hava kalitesi serilerinin birim-duyarlı taraması: 1.853 sensör–parametre–yıl, sekiz patoloji kuralından ve altı ayrı kalite ekseninden geçiyor. Tetiklenen bir kural kusur kanıtı değil, inceleme sinyalidir — her işaret komşu istasyonlara, çok günlü epizotlara ve sağlayıcının kendi bayraklarına karşı sınanıyor.',
+        },
+        stack: 'Python · pandas · NumPy · requests',
+        metric: { en: '1,853', tr: '1.853' },
+        metricLabel: { en: 'sensor–parameter–years', tr: 'sensör–parametre–yıl' },
+        figure: 'openaq',
+        year: '2026',
+        tags: ['OpenAQ v3', 'pandas', 'Data quality', 'Rule-based audit'],
+        metrics: [
+            { value: { en: '1,853', tr: '1.853' }, label: { en: 'series audited', tr: 'taranan seri' }, accent: true },
+            { value: { en: '518,689', tr: '518.689' }, label: { en: 'daily records', tr: 'günlük kayıt' } },
+            { value: '342', label: { en: 'series with a review signal', tr: 'inceleme sinyali veren seri' } },
+        ],
+        surfaces: [],
+    },
+    // Figures: mRFEI Analysis/reports/mRFEI-2017-brief.md — Summary and §1 (8,057 tracts +
+    // 1,523 places + 58 counties + 14 regions + the state = 9,653 units; 297 stable low-score
+    // tracts; 17.89% statewide). This replaces an earlier entry quoting "3,143 US counties",
+    // which no analysis supports, and the /mrfei page stays closed: its figures are illustrative.
+    {
+        domain: 'Public health · Spatial statistics',
+        kind: 'study',
+        title: 'California Food Environment (mRFEI 2017)',
+        summary: {
+            en: 'Where California’s food deserts are, and how sure we can be — CDPH’s retail food-environment index, 2017.',
+            tr: 'Kaliforniya’nın gıda çölleri nerede ve bundan ne kadar emin olabiliriz — CDPH perakende gıda ortamı endeksi, 2017.',
+        },
+        description: {
+            en: 'Where California’s food deserts are, and how sure we can be: CDPH’s modified Retail Food Environment Index across 9,653 tracts, places, counties and regions. Zero-score units are kept rather than dropped, and 297 tracts form low-score clusters that hold under every neighbour definition tested.',
+            tr: 'Kaliforniya’nın gıda çölleri nerede ve bundan ne kadar emin olabiliriz: CDPH’nin değiştirilmiş Perakende Gıda Ortamı Endeksi, 9.653 tract, yerleşim, ilçe ve bölge üzerinde. Sıfır puanlı birimler atılmak yerine korunuyor; 297 tract, denenen her komşuluk tanımında ayakta kalan düşük puanlı kümeler oluşturuyor.',
+        },
+        stack: 'pandas · GeoPandas · PySAL · SciPy · FastAPI',
+        metric: '297',
+        metricLabel: { en: 'tracts in stable low-score clusters', tr: 'kararlı düşük puanlı kümedeki tract' },
+        figure: 'mrfei',
+        year: '2026',
+        tags: ['GeoPandas', 'PySAL', 'Moran’s I', 'SciPy', 'FastAPI'],
+        metrics: [
+            { value: { en: '9,653', tr: '9.653' }, label: { en: 'units analysed', tr: 'incelenen birim' } },
+            { value: '297', label: { en: 'stable low-score tracts', tr: 'kararlı düşük puanlı tract' }, accent: true },
+            { value: '17.89%', label: { en: 'statewide healthy share', tr: 'eyalet sağlıklı payı' } },
+        ],
+        surfaces: [],
+    },
     // MFF — the one entry that lives off-site: the work is the CRAN release, so every link
-    // (row, surfaces) points at cran.r-project.org and there is no local project page.
+    // (tile, surfaces) points at cran.r-project.org and there is no local project page.
     // Authorship is stated plainly: DESCRIPTION lists Nihat Tak as author/maintainer and
-    // Sadık Çoban as contributor (ctb), so the card says contributor, not author.
+    // Sadık Çoban as contributor (ctb), so the tile says contributor, not author.
     {
         domain: 'Open source · R',
         kind: 'package',
         title: 'MFF — Meta Fuzzy Functions',
+        summary: {
+            en: 'An R package on CRAN for fuzzy meta-ensembles. [Nihat Tak](https://www.nihattak.com) is the author; I am a contributor.',
+            tr: 'Bulanık meta-topluluklar için CRAN’de bir R paketi. Paketin yazarı [Nihat Tak](https://www.nihattak.com); ben katkıda bulunanım.',
+        },
         description: {
             en: 'An R package on CRAN for fuzzy meta-ensembles. It takes the validation predictions of several base learners — penalised regression, random forest, XGBoost, LightGBM — learns membership weights over that prediction space with Fuzzy C-Means, possibilistic FCM, Gustafson–Kessel or k-means, and fits one regression per cluster, tuned by grid search on validation loss. [Nihat Tak](https://www.nihattak.com) is the author; I am a contributor (ctb).',
             tr: 'CRAN’de yayımlanan, bulanık meta-topluluklar için bir R paketi. Birden çok temel öğrenicinin — cezalı regresyon, rastgele orman, XGBoost, LightGBM — doğrulama tahminlerini alıyor, bu uzayda Fuzzy C-Means, olabilirlikçi FCM, Gustafson–Kessel ya da k-ortalamalar ile üyelik ağırlıkları öğreniyor ve her küme için doğrulama kaybına göre ayarlanmış ayrı bir regresyon kuruyor. Paketin yazarı [Nihat Tak](https://www.nihattak.com); ben katkıda bulunan (ctb) olarak yer alıyorum.',
@@ -102,9 +196,10 @@ export const HOME_PROJECTS: HomeProject[] = [
         href: 'https://cran.r-project.org/package=MFF',
         metric: 'v0.2.4',
         metricLabel: { en: 'on CRAN · MIT', tr: 'CRAN’de · MIT' },
+        figure: 'mff',
         year: '2026',
         tags: ['R', 'Fuzzy C-Means', 'PFCM', 'Gustafson–Kessel', 'glmnet', 'xgboost', 'lightgbm'],
-        // Literal values: a package release has no site_data.json metrics.
+        // Literal values: a package release has no evaluation metrics.
         metrics: [
             { value: '0.2.4', label: { en: 'CRAN version', tr: 'CRAN sürümü' }, accent: true },
             { value: '4', label: { en: 'clustering engines', tr: 'kümeleme motoru' } },
@@ -115,62 +210,22 @@ export const HOME_PROJECTS: HomeProject[] = [
             { label: { en: 'Reference manual', tr: 'Referans kılavuzu' }, href: 'https://cran.r-project.org/web/packages/MFF/MFF.pdf' },
         ],
     },
-    // mRFEI case study — deactivated (hidden from listings; route 404s). Source kept
-    // in app/mrfei/. To restore: uncomment this entry + remove the
-    // notFound() in app/[lang]/mrfei/page.tsx.
-    // {
-    //     domain: 'Statistical · Geospatial',
-    //     kind: 'case',
-    //     title: 'Retail Food Environment Index',
-    //     description: {
-    //         en: 'A statistical and geospatial study of food-access inequality. The defining decision was methodological restraint — rigorous 95% confidence intervals, and a deliberate choice not to force an ML model where it wasn’t warranted.',
-    //         tr: 'Gıdaya erişim eşitsizliğinin istatistiksel ve mekânsal incelemesi. Belirleyici karar metodolojik özdenetimdi — titiz %95 güven aralıkları ve gereksiz yere ML modeli zorlamama tercihi.',
-    //     },
-    //     stack: 'pandas · scipy · GeoPandas · scikit-learn',
-    //     cover: 'choropleth',
-    //     href: '/mrfei',
-    //     metric: '3,143',
-    //     metricLabel: { en: 'US counties', tr: 'ABD ilçesi' },
-    //     year: '2025',
-    //     tags: ['pandas', 'scipy', 'GeoPandas', 'scikit-learn'],
-    //     // Literal values: this study predates site_data.json and has no model metrics.
-    //     metrics: [
-    //         { value: '3,143', label: { en: 'US counties', tr: 'ABD ilçesi' } },
-    //         { value: '95% CI', label: { en: 'methodology', tr: 'metodoloji' }, accent: true },
-    //         { value: 'no ML', label: { en: 'by design', tr: 'bilinçli tercih' } },
-    //     ],
-    //     surfaces: [{ label: { en: 'Case study', tr: 'Vaka çalışması' }, href: '/mrfei' }],
-    // },
 ];
 
-// What each tool actually did on the car-price system — kept honest against the code:
-// LightGBM won on a shared leak-free split, the model ships as one S3 pickle on Railway,
-// and the raw rows stay in DuckDB behind the API. No registry, no MultiQuantile.
-// Grouped by where each tool earns its place — the editorial homepage renders these as
-// three columns, so the copy per item stays short (one line of what it actually did).
-export const HOME_ARSENAL: { group: Bi; items: { tool: string; did: Bi }[] }[] = [
+// The tools the work above actually used, as chips. The per-tool "what it did" lines are gone:
+// they were written for the car-price system alone and had started to say things the current
+// report contradicts (LightGBM "won at 6.49%" — the report now has a practical tie at ~6.5%).
+export const HOME_ARSENAL: { group: Bi; tools: string[] }[] = [
     {
         group: { en: 'Modelling & Stats', tr: 'Modelleme & İstatistik' },
-        items: [
-            { tool: 'LightGBM · CatBoost', did: { en: 'One leak-free 5-fold split — LightGBM won at 6.49% MAPE.', tr: 'Tek sızıntısız 5-fold bölünme — LightGBM %6.49 MAPE ile kazandı.' } },
-            { tool: 'scikit-learn · TF-IDF+SVD', did: { en: 'Listing titles into 170 dense dimensions, bundled with the model.', tr: 'İlan başlıkları 170 yoğun boyuta; modelle aynı pakette.' } },
-            { tool: 'SciPy · statsmodels', did: { en: 'Hedonic regression with bootstrap CIs; KS + Wasserstein for drift.', tr: 'Bootstrap GA’lı hedonik regresyon; drift için KS + Wasserstein.' } },
-        ],
+        tools: ['LightGBM', 'CatBoost', 'scikit-learn', 'SciPy', 'statsmodels', 'PySAL', 'R'],
     },
     {
         group: { en: 'Serving & Data', tr: 'Servis & Veri' },
-        items: [
-            { tool: 'FastAPI · DuckDB', did: { en: 'Prediction, drift and BI endpoints aggregating 30K rows server-side.', tr: '30 bin satırı sunucuda toplayan tahmin, drift ve BI uç noktaları.' } },
-            { tool: 'Railway · S3', did: { en: 'Model bundle and listing database load from object storage at boot.', tr: 'Model paketi ve ilan veritabanı açılışta nesne depolamadan yükleniyor.' } },
-            { tool: 'pandas · NumPy', did: { en: 'Scraping, dedup and the columnar aggregation behind the dashboard.', tr: 'Kazıma, tekilleştirme ve panonun arkasındaki kolonlu toplama.' } },
-        ],
+        tools: ['FastAPI', 'DuckDB', 'pandas', 'NumPy', 'GeoPandas', 'Railway', 'S3'],
     },
     {
         group: { en: 'Frontend & Viz', tr: 'Arayüz & Görselleştirme' },
-        items: [
-            { tool: 'Next.js', did: { en: 'Static analysis report and the app pages rendering this work.', tr: 'Statik analiz raporu ve bu çalışmayı gösteren uygulama sayfaları.' } },
-            { tool: 'Plotly · ECharts', did: { en: 'Notebook-grade figures and the live market dashboard.', tr: 'Defter kalitesinde grafikler ve canlı pazar panosu.' } },
-            { tool: 'Tailwind', did: { en: 'The editorial and app layers of this design system.', tr: 'Bu tasarım sisteminin editorial ve uygulama katmanları.' } },
-        ],
+        tools: ['Next.js', 'Tailwind', 'Plotly', 'ECharts'],
     },
 ];

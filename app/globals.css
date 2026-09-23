@@ -57,8 +57,8 @@
   --color-site-accent: var(--site-accent);
   --color-site-primary: var(--site-primary);
   --color-site-live: var(--site-live);
-  --font-display: var(--font-archivo);
-  --font-text: var(--font-space-grotesk);
+  --font-display: var(--font-space-grotesk);
+  --font-text: var(--font-dm-sans);
 }
 
 :root {
@@ -96,19 +96,19 @@
   --sidebar-ring: oklch(0.708 0 0);
 }
 
-/* Swiss-minimal palette for the site frame (PaperShell) and the homepage. Named apart
+/* Bento palette for the site frame (PaperShell), the homepage and /projects. Named apart
    from the shadcn tokens above on purpose: the project pages' components read those,
-   and this palette must not reach them. Monochrome with one accent; --site-live is a
+   and this palette must not reach them. Neutral tiles with one accent; --site-live is a
    status colour for the "open to roles" dot only and always sits beside its label. */
 :root {
-  --site-bg: #fafafa;
+  --site-bg: #f5f5f5;
   --site-card: #ffffff;
-  --site-ink: #09090b;
-  --site-ink-2: #3f3f46;
-  --site-muted: #475569;
-  --site-line: #e4e4e7;
+  --site-ink: #0a0a0a;
+  --site-ink-2: #404040;
+  --site-muted: #525252;
+  --site-line: #e5e5e5;
   --site-accent: #2563eb;
-  --site-primary: #18181b;
+  --site-primary: #171717;
   --site-live: #16a34a;
 }
 

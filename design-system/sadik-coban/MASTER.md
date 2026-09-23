@@ -1,14 +1,27 @@
 # Design System Master File
 
-> **LOGIC:** When building a specific page, first check `design-system/pages/[page-name].md`.
+> **LOGIC:** When building a specific page, first check `design-system/sadik-coban/pages/[page-name].md`.
 > If that file exists, its rules **override** this Master file.
 > If not, strictly follow the rules below.
 
 ---
 
 **Project:** Sadik Coban
-**Generated:** 2026-09-23 04:01:28
-**Category:** General
+**Direction:** Bento grid, light (2nd iteration; replaces the Swiss-minimal first pass)
+**Scope:** the site frame (PaperShell: nav + footer), the homepage and /projects.
+The project, report and dashboard pages keep their own paper palette.
+
+### How this was assembled
+
+`search.py --design-system` did not return a bento system for this product. For
+"portfolio bento grid" it offered an off-topic "Vibrant & Block-based" style with Russo One. So
+the system is composed from verified domain searches instead:
+
+| Part | Query | Result used |
+|------|-------|-------------|
+| Style | `"bento grid cards modern" --domain style` | **Bento Box Grid** — modular cards, asymmetric grid, varied spans, `rounded-xl`+, subtle shadows |
+| Type | `"tech product developer modern sans" --domain typography` | **Tech Startup** — Space Grotesk / DM Sans |
+| Palette | Bento Box Grid row: "Neutral base + brand accent" | neutral greys + one blue, below |
 
 ---
 
@@ -16,197 +29,100 @@
 
 ### Color Palette
 
-| Role | Hex | CSS Variable |
-|------|-----|--------------|
-| Primary | `#18181B` | `--color-primary` |
-| On Primary | `#FFFFFF` | `--color-on-primary` |
-| Secondary | `#3F3F46` | `--color-secondary` |
-| On Secondary | `#FFFFFF` | `--color-on-secondary` |
-| Accent/CTA | `#2563EB` | `--color-accent` |
-| On Accent/CTA | `#FFFFFF` | `--color-on-accent` |
-| Background | `#FAFAFA` | `--color-background` |
-| Foreground | `#09090B` | `--color-foreground` |
-| Card | `#FFFFFF` | `--color-card` |
-| Card Foreground | `#09090B` | `--color-card-foreground` |
-| Muted | `#E8ECF0` | `--color-muted` |
-| Muted Foreground | `#475569` | `--color-muted-foreground` |
-| Border | `#E4E4E7` | `--color-border` |
-| Destructive | `#DC2626` | `--color-destructive` |
-| On Destructive | `#FFFFFF` | `--color-on-destructive` |
-| Ring | `#18181B` | `--color-ring` |
+Tokens live in `app/globals.css` as `--site-*` and are exposed to Tailwind as `bg-site-bg`,
+`text-site-ink`, `border-site-line` and so on. Components never use raw hex.
 
-**Color Notes:** Monochrome + blue accent
+| Role | Token | Hex |
+|------|-------|-----|
+| Page background | `--site-bg` | `#F5F5F5` |
+| Tile / card | `--site-card` | `#FFFFFF` |
+| Ink (headings, values) | `--site-ink` | `#0A0A0A` |
+| Ink 2 (body) | `--site-ink-2` | `#404040` |
+| Muted (labels, captions) | `--site-muted` | `#525252` |
+| Line (tile borders, rules) | `--site-line` | `#E5E5E5` |
+| Accent (links, the highlighted data series, focus ring) | `--site-accent` | `#2563EB` |
+| Primary (CTA fill) | `--site-primary` | `#171717` |
+| Live (status dot only, always beside its label) | `--site-live` | `#16A34A` |
+
+These token names are kept separate from the shadcn tokens (`--background`, `--accent`…)
+because the project pages' components read those.
+
+Measured contrast: ink/card 19.8 · ink-2/card 10.4 · muted/card 7.8 · muted/bg 7.2 ·
+accent/card 5.2 · accent/bg 4.7 · white/primary 17.9 · live dot/card 3.3 (non-text).
 
 ### Typography
 
-- **Heading Font:** Archivo
-- **Body Font:** Space Grotesk
-- **Mood:** minimal, portfolio, designer, creative, clean, artistic
-- **Google Fonts:** [Archivo + Space Grotesk](https://fonts.googleapis.com/css2?family=Archivo:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap)
+- **Display:** Space Grotesk (`font-display`): headings, tile titles, status value
+- **Text:** DM Sans (`font-text`): body, labels, chips
+- **Numbers:** Geist Mono (`font-mono`, `tabular-nums`): metrics and figure values only
+- Loaded with `next/font/google` in `app/_site/design/fonts.ts`, subsets `latin` + `latin-ext`
+  (Turkish ğ ş ı İ), and imported only by PaperShell, so project pages never fetch them.
 
-**CSS Import:**
-```css
-@import url('https://fonts.googleapis.com/css2?family=Archivo:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
-```
+### Shape and spacing
 
-### Spacing Variables
-
-| Token | Value | Usage |
-|-------|-------|-------|
-| `--space-xs` | `4px` / `0.25rem` | Tight gaps |
-| `--space-sm` | `8px` / `0.5rem` | Icon gaps, inline spacing |
-| `--space-md` | `16px` / `1rem` | Standard padding |
-| `--space-lg` | `24px` / `1.5rem` | Section padding |
-| `--space-xl` | `32px` / `2rem` | Large gaps |
-| `--space-2xl` | `48px` / `3rem` | Section margins |
-| `--space-3xl` | `64px` / `4rem` | Hero padding |
-
-### Shadow Depths
-
-| Level | Value | Usage |
-|-------|-------|-------|
-| `--shadow-sm` | `0 1px 2px rgba(0,0,0,0.05)` | Subtle lift |
-| `--shadow-md` | `0 4px 6px rgba(0,0,0,0.1)` | Cards, buttons |
-| `--shadow-lg` | `0 10px 15px rgba(0,0,0,0.1)` | Modals, dropdowns |
-| `--shadow-xl` | `0 20px 25px rgba(0,0,0,0.15)` | Hero images, featured cards |
+- Tiles: `rounded-2xl`, `border border-site-line`, `bg-site-card`, padding 24–40px
+- Grid: 12 columns from `lg`, 2 from `md`, 1 below; 16px gap (`gap-4`)
+- Chips: `rounded-full bg-site-bg`, 13px
 
 ---
 
-## Component Specs
+## Component Rules
 
-### Buttons
+### Project tile (`app/_site/home/ProjectTile.tsx`)
 
-```css
-/* Primary Button */
-.btn-primary {
-  background: #2563EB;
-  color: white;
-  padding: 12px 24px;
-  border-radius: 8px;
-  font-weight: 600;
-  transition: all 200ms ease;
-  cursor: pointer;
-}
+Contents, top to bottom:
 
-.btn-primary:hover {
-  opacity: 0.9;
-  transform: translateY(-1px);
-}
+1. badge row (kind, plus "coming soon" when unlinked)
+2. domain label
+3. title
+4. summary (homepage) or full description (/projects)
+5. mini figure
+6. metric (homepage) or the three-metric stack (/projects)
+7. surface links
 
-/* Secondary Button */
-.btn-secondary {
-  background: transparent;
-  color: #18181B;
-  border: 2px solid #18181B;
-  padding: 12px 24px;
-  border-radius: 8px;
-  font-weight: 600;
-  transition: all 200ms ease;
-  cursor: pointer;
-}
-```
+- **Linked tile:** the title link's `::after` covers the tile. Surface links and inline links
+  sit above it on `z-10`. Keyboard focus rings the whole tile via
+  `has-[.tile-link:focus-visible]`.
+- **Unlinked tile:** no overlay, no hover lift, a dashed "coming soon" badge. Never link to a
+  page that isn't published.
+- **Study with no final numbers:** a dashed "results coming soon" panel. **No placeholder
+  chart**, because it would read as a result.
 
-### Cards
+### Mini figures (`app/_site/home/MiniFigure.tsx`, data in `figures.ts`)
 
-```css
-.card {
-  background: #FAFAFA;
-  border-radius: 12px;
-  padding: 24px;
-  box-shadow: var(--shadow-md);
-  transition: all 200ms ease;
-  cursor: pointer;
-}
+- Every number is copied from the project's own report, with the file and section named in a
+  comment. Nothing is illustrative unless the tile says so (the MFF schematic does).
+- HTML/CSS bars and strips, not SVG text, so labels stay at a fixed legible size.
+- One `role="img"` per figure with a complete `aria-label`. The drawn parts are
+  `aria-hidden`.
+- Accent marks the one series the text is about. Comparison series are neutral.
 
-.card:hover {
-  box-shadow: var(--shadow-lg);
-  transform: translateY(-2px);
-}
-```
+### Hover and motion
 
-### Inputs
-
-```css
-.input {
-  padding: 12px 16px;
-  border: 1px solid #E2E8F0;
-  border-radius: 8px;
-  font-size: 16px;
-  transition: border-color 200ms ease;
-}
-
-.input:focus {
-  border-color: #18181B;
-  outline: none;
-  box-shadow: 0 0 0 3px #18181B20;
-}
-```
-
-### Modals
-
-```css
-.modal-overlay {
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(4px);
-}
-
-.modal {
-  background: white;
-  border-radius: 16px;
-  padding: 32px;
-  box-shadow: var(--shadow-xl);
-  max-width: 500px;
-  width: 90%;
-}
-```
-
----
-
-## Style Guidelines
-
-**Style:** Minimalism & Swiss Style
-
-**Keywords:** Clean, simple, spacious, functional, white space, high contrast, geometric, sans-serif, grid-based, essential
-
-**Best For:** Enterprise apps, dashboards, documentation sites, SaaS platforms, professional tools
-
-**Key Effects:** Subtle hover (200-250ms), smooth transitions, sharp shadows if any, clear type hierarchy, fast loading
-
-### Page Pattern
-
-**Pattern Name:** Hero + Features + CTA
-
-- **Conversion Strategy:** Deep CTA placement. For CTA label text, verify at least 4.5:1 against the button fill; use 7:1 only when the product explicitly targets AAA normal-text contrast. Keep focus and component boundaries independently visible. Disable hero parallax under reduced motion and render its static final state.
-- **CTA Placement:** Hero (sticky) + Bottom
-- **Section Order:** Hero with headline/image > Value prop > Key features (3-5) > CTA section > Footer
+- Linked tiles: border darkens and a soft shadow appears (200ms). **No scale transforms.**
+- Colour transitions 150–250ms; `prefers-reduced-motion` collapses them (global rule).
+- The only looping animation is the live status dot (`pulseDot`), under `motion-safe`.
 
 ---
 
 ## Anti-Patterns (Do NOT Use)
 
-
-### Additional Forbidden Patterns
-
-- ❌ **Emojis as icons** — Use SVG icons (Heroicons, Lucide, Simple Icons)
-- ❌ **Missing cursor:pointer** — All clickable elements must have cursor:pointer
-- ❌ **Layout-shifting hovers** — Avoid scale transforms that shift layout
-- ❌ **Low contrast text** — Maintain 4.5:1 minimum contrast ratio
-- ❌ **Instant state changes** — Always use transitions (150-300ms)
-- ❌ **Invisible focus states** — Focus states must be visible for a11y
+- ❌ Raw hex in components: use `site-*` tokens
+- ❌ Placeholder or invented chart data; a figure must trace to a report
+- ❌ Scale-on-hover or other layout-shifting hovers
+- ❌ Emojis as icons: use Lucide
+- ❌ Low-contrast text (< 4.5:1)
+- ❌ Invisible focus states
+- ❌ A full-width manifesto headline: the intro is a tile, not a cover
 
 ---
 
 ## Pre-Delivery Checklist
 
-Before delivering any UI code, verify:
-
-- [ ] No emojis used as icons (use SVG instead)
-- [ ] All icons from consistent icon set (Heroicons/Lucide)
-- [ ] `cursor-pointer` on all clickable elements
-- [ ] Hover states with smooth transitions (150-300ms)
-- [ ] Light mode: text contrast 4.5:1 minimum
-- [ ] Focus states visible for keyboard navigation
+- [ ] No raw hex in frame/home/projects components
+- [ ] Every figure value matches its source report
+- [ ] Unlinked tiles contain no `<a>` except inline credits, and show "coming soon"
+- [ ] Focus visible on every link, and the tile ring for tile links
 - [ ] `prefers-reduced-motion` respected
-- [ ] Responsive: 375px, 768px, 1024px, 1440px
-- [ ] No content hidden behind fixed navbars
-- [ ] No horizontal scroll on mobile
+- [ ] 375 / 768 / 1440: no horizontal scroll
+- [ ] `/tr`: Turkish letters render in Space Grotesk / DM Sans; uppercase labels show "İ"
