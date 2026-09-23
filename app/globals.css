@@ -98,18 +98,20 @@
 
 /* Bento palette for the site frame (PaperShell), the homepage and /projects. Named apart
    from the shadcn tokens above on purpose: the project pages' components read those,
-   and this palette must not reach them. Neutral tiles with one accent; --site-live is a
-   status colour for the "live demo" badge dot only and always sits beside its label. */
+   and this palette must not reach them. The values are the project pages' own warm paper
+   and green, so moving from a tile into its project doesn't change the site's colours;
+   the old meta grey (#86857e) is left out, at 3.6:1 it is too faint for small text.
+   --site-live is the "live demo" badge dot only and always sits beside its label. */
 :root {
-  --site-bg: #f5f5f5;
-  --site-card: #ffffff;
-  --site-ink: #0a0a0a;
-  --site-ink-2: #404040;
-  --site-muted: #525252;
-  --site-line: #e5e5e5;
-  --site-accent: #2563eb;
-  --site-primary: #171717;
-  --site-live: #16a34a;
+  --site-bg: #f7f6f3;
+  --site-card: #fdfcf9;
+  --site-ink: #1a1a1a;
+  --site-ink-2: #45443f;
+  --site-muted: #5f5f5a;
+  --site-line: #e9e7e2;
+  --site-accent: #047857;
+  --site-primary: #1a1a1a;
+  --site-live: #059669;
 }
 
 /* The "live demo" badge dot on a project tile breathes so the system reads as live without

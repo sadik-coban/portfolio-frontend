@@ -115,7 +115,7 @@ function Mrfei({ lang }: { lang: Lang }) {
                     <span>{hi.region} {num(hi.median, lang, 1)}</span>
                 </div>
             </div>
-            <Caption>{lang === 'tr' ? 'Bölgelerin medyan tract puanı · mavi = eyalet payının altında' : 'Median tract score by region · blue = below the state share'}</Caption>
+            <Caption>{lang === 'tr' ? 'Bölgelerin medyan tract puanı · yeşil = eyalet payının altında' : 'Median tract score by region · green = below the state share'}</Caption>
         </>
     );
 }

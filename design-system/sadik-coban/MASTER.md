@@ -9,7 +9,8 @@
 **Project:** Sadik Coban
 **Direction:** Bento grid, light (2nd iteration; replaces the Swiss-minimal first pass)
 **Scope:** the site frame (PaperShell: nav + footer), the homepage and /projects.
-The project, report and dashboard pages keep their own paper palette.
+Its palette is the project, report and dashboard pages' own warm paper and green, so the whole
+site speaks one colour language.
 
 ### How this was assembled
 
@@ -21,7 +22,7 @@ the system is composed from verified domain searches instead:
 |------|-------|-------------|
 | Style | `"bento grid cards modern" --domain style` | **Bento Box Grid** — modular cards, asymmetric grid, varied spans, `rounded-xl`+, subtle shadows |
 | Type | `"tech product developer modern sans" --domain typography` | **Tech Startup** — Space Grotesk / DM Sans |
-| Palette | Bento Box Grid row: "Neutral base + brand accent" | neutral greys + one blue, below |
+| Palette | Bento Box Grid row: "Neutral base + brand accent" | the site's existing warm paper + one green, below |
 
 ---
 
@@ -34,21 +35,26 @@ Tokens live in `app/globals.css` as `--site-*` and are exposed to Tailwind as `b
 
 | Role | Token | Hex |
 |------|-------|-----|
-| Page background | `--site-bg` | `#F5F5F5` |
-| Tile / card | `--site-card` | `#FFFFFF` |
-| Ink (headings, values) | `--site-ink` | `#0A0A0A` |
-| Ink 2 (body) | `--site-ink-2` | `#404040` |
-| Muted (labels, captions) | `--site-muted` | `#525252` |
-| Line (tile borders, rules) | `--site-line` | `#E5E5E5` |
-| Accent (links, the highlighted data series, focus ring) | `--site-accent` | `#2563EB` |
-| Primary (CTA fill) | `--site-primary` | `#171717` |
-| Live (the "live demo" badge dot only, always beside its label) | `--site-live` | `#16A34A` |
+| Page background | `--site-bg` | `#F7F6F3` |
+| Tile / card | `--site-card` | `#FDFCF9` |
+| Ink (headings, values) | `--site-ink` | `#1A1A1A` |
+| Ink 2 (body) | `--site-ink-2` | `#45443F` |
+| Muted (labels, captions) | `--site-muted` | `#5F5F5A` |
+| Line (tile borders, rules) | `--site-line` | `#E9E7E2` |
+| Accent (links, the highlighted data series, focus ring) | `--site-accent` | `#047857` |
+| Primary (CTA fill) | `--site-primary` | `#1A1A1A` |
+| Live (the "live demo" badge dot only, always beside its label) | `--site-live` | `#059669` |
 
 These token names are kept separate from the shadcn tokens (`--background`, `--accent`…)
 because the project pages' components read those.
 
-Measured contrast: ink/card 19.8 · ink-2/card 10.4 · muted/card 7.8 · muted/bg 7.2 ·
-accent/card 5.2 · accent/bg 4.7 · white/primary 17.9 · live dot/card 3.3 (non-text).
+Measured contrast: ink/card 17.0 · ink-2/card 9.5 · muted/card 6.3 · muted/bg 5.9 ·
+accent/card 5.35 · accent/bg 5.07 · white/primary 17.4 · live dot/card 3.67 (non-text).
+
+Why green, not the first pass's blue (#2563EB): every page a tile leads to (overview, reports,
+dashboard, drift, SHAP) is drawn in this paper + green, so a blue frame read as a second brand
+the moment you clicked through. And #2563EB is the most generic default there is. The old meta
+grey #86857e is deliberately not a token: at 3.6:1 it fails small text.
 
 ### Typography
 
