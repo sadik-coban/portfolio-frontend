@@ -99,7 +99,7 @@
 /* Bento palette for the site frame (PaperShell), the homepage and /projects. Named apart
    from the shadcn tokens above on purpose: the project pages' components read those,
    and this palette must not reach them. Neutral tiles with one accent; --site-live is a
-   status colour for the "open to roles" dot only and always sits beside its label. */
+   status colour for the "live demo" badge dot only and always sits beside its label. */
 :root {
   --site-bg: #f5f5f5;
   --site-card: #ffffff;
@@ -112,8 +112,8 @@
   --site-live: #16a34a;
 }
 
-/* Homepage identity ribbon — the "open to roles" dot breathes so the status reads as
-   live without any copy saying so. Halo pulses; the solid core underneath stays put. */
+/* The "live demo" badge dot on a project tile breathes so the system reads as live without
+   any copy saying so. Halo pulses; the solid core underneath stays put. */
 @keyframes pulseDot {
   0%, 100% { transform: scale(1); opacity: 1; }
   50% { transform: scale(1.9); opacity: 0.35; }

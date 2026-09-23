@@ -42,7 +42,7 @@ Tokens live in `app/globals.css` as `--site-*` and are exposed to Tailwind as `b
 | Line (tile borders, rules) | `--site-line` | `#E5E5E5` |
 | Accent (links, the highlighted data series, focus ring) | `--site-accent` | `#2563EB` |
 | Primary (CTA fill) | `--site-primary` | `#171717` |
-| Live (status dot only, always beside its label) | `--site-live` | `#16A34A` |
+| Live (the "live demo" badge dot only, always beside its label) | `--site-live` | `#16A34A` |
 
 These token names are kept separate from the shadcn tokens (`--background`, `--accent`…)
 because the project pages' components read those.
@@ -101,7 +101,13 @@ Contents, top to bottom:
 
 - Linked tiles: border darkens and a soft shadow appears (200ms). **No scale transforms.**
 - Colour transitions 150–250ms; `prefers-reduced-motion` collapses them (global rule).
-- The only looping animation is the live status dot (`pulseDot`), under `motion-safe`.
+- The only looping animation is the "live demo" badge dot (`pulseDot`), under `motion-safe`.
+
+### Intro
+
+- One full-width identity tile: eyebrow, headline, sub, CTA and GitHub/LinkedIn text links.
+  No status/role/location side tiles. They were removed as visual noise, and the footer
+  carries every contact link.
 
 ---
 

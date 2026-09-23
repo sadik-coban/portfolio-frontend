@@ -4,13 +4,13 @@ import Link from 'next/link';
 import { ArrowRight, ArrowUpRight } from 'lucide-react';
 import { useLang, localize } from './i18n';
 import PaperShell from './PaperShell';
-import { HOME_RIBBON, HOME_PROJECTS, HOME_ARSENAL } from './home/content';
+import { HOME_PROJECTS, HOME_ARSENAL } from './home/content';
 import ProjectTile from './home/ProjectTile';
 import { site } from './site-config';
 import { WRITING_ENABLED } from './writing-config';
 
 // Bento homepage (design-system/sadik-coban/MASTER.md): modular tiles on a 12-column grid.
-// Intro tiles instead of a full-width statement, five project tiles each carrying a figure
+// One intro tile instead of a full-width statement, five project tiles each carrying a figure
 // drawn from the project's own numbers, and the toolset as chips. Nav and footer: PaperShell.
 
 // Where each project sits, in HOME_PROJECTS order. Top row: the live system wide, the LLM
@@ -21,20 +21,17 @@ const TILE = 'rounded-2xl border border-site-line bg-site-card';
 
 export default function FinalHome({ recentPosts }: { recentPosts: any[] }) {
     const { t, lang } = useLang();
-    const status = HOME_RIBBON.find((r) => r.live);
-    const facts = HOME_RIBBON.filter((r) => !r.live);
     const external = [
         { label: 'GitHub', href: site.social.github },
         { label: 'LinkedIn', href: site.social.linkedin },
-        { label: 'Email', href: `mailto:${site.social.email}` },
     ];
 
     return (
         <PaperShell>
             <div className="font-text">
-                {/* INTRO — one identity tile, and a column of two small ones beside it */}
-                <section className="grid grid-cols-1 gap-4 pt-6 md:pt-8 lg:grid-cols-12">
-                    <div className={`${TILE} flex flex-col p-7 md:p-10 lg:col-span-8`}>
+                {/* INTRO — one identity tile, full width */}
+                <section className="pt-6 md:pt-8">
+                    <div className={`${TILE} p-7 md:p-10`}>
                         <p className="m-0 mb-5 text-[12px] font-medium uppercase tracking-[0.1em] text-site-muted">{t('home.heroEyebrow')}</p>
                         {/* The setup is muted and the payoff carries full ink, so the words that make the
                             argument are the darkest on the tile. --site-muted is 7:1 on the card. */}
@@ -42,48 +39,17 @@ export default function FinalHome({ recentPosts }: { recentPosts: any[] }) {
                             <span className="text-site-muted">{t('home.heroH1Lead')}</span> {t('home.heroH1Payoff')}
                         </h1>
                         <p className="m-0 max-w-[560px] text-[16px] leading-[1.6] text-site-ink-2 md:text-[17px]">{t('home.heroSub')}</p>
-                        <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-3 whitespace-nowrap md:mt-auto md:pt-8">
+                        {/* The button and three nowrap links don't fit one 327px line, so the row wraps. */}
+                        <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-3 whitespace-nowrap">
                             <Link href="#work" className="inline-flex h-11 items-center gap-2 rounded-xl bg-site-primary px-5 text-[14px] font-semibold text-white transition-opacity duration-200 hover:opacity-90">
                                 {t('home.viewWork')}
                             </Link>
                             <Link href={localize('/about', lang)} className="text-[14px] font-medium text-site-ink transition-colors duration-200 hover:text-site-accent">{t('home.getInTouch')}</Link>
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:col-span-4 lg:grid-cols-1">
-                        {status && (
-                            <div className={`${TILE} flex flex-col justify-between gap-6 p-6`}>
-                                <div className="text-[12px] font-medium uppercase tracking-[0.1em] text-site-muted">{status.label[lang]}</div>
-                                <div className="flex items-center gap-3">
-                                    <span className="relative h-2.5 w-2.5 shrink-0" aria-hidden="true">
-                                        <span className="absolute inset-0 rounded-full bg-site-live motion-safe:animate-[pulseDot_2.4s_ease-in-out_infinite]" />
-                                        <span className="absolute inset-0 rounded-full bg-site-live" />
-                                    </span>
-                                    <span className="font-display text-[24px] font-semibold tracking-[-0.02em] text-site-ink">{status.value[lang]}</span>
-                                </div>
-                            </div>
-                        )}
-                        <div className={`${TILE} flex flex-col gap-5 p-6`}>
-                            <dl className="m-0 grid grid-cols-2 gap-4">
-                                {facts.map((r) => (
-                                    <div key={r.label.en}>
-                                        <dt className="text-[12px] font-medium uppercase tracking-[0.1em] text-site-muted">{r.label[lang]}</dt>
-                                        <dd className="m-0 mt-1 text-[15px] font-medium text-site-ink">{r.value[lang]}</dd>
-                                    </div>
-                                ))}
-                            </dl>
-                            <div className="mt-auto flex flex-wrap gap-2">
-                                {external.map((e) => (
-                                    <a
-                                        key={e.label}
-                                        href={e.href}
-                                        {...(e.href.startsWith('mailto:') ? {} : { target: '_blank', rel: 'noopener noreferrer' })}
-                                        className="inline-flex h-9 items-center gap-1 rounded-full border border-site-line px-3.5 text-[13px] font-medium text-site-ink-2 transition-colors duration-200 hover:border-site-ink/30 hover:text-site-ink"
-                                    >
-                                        {e.label} <ArrowUpRight size={13} aria-hidden="true" />
-                                    </a>
-                                ))}
-                            </div>
+                            {external.map((e) => (
+                                <a key={e.label} href={e.href} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-[14px] font-medium text-site-muted transition-colors duration-200 hover:text-site-accent">
+                                    {e.label} <ArrowUpRight size={14} aria-hidden="true" />
+                                </a>
+                            ))}
                         </div>
                     </div>
                 </section>

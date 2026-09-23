@@ -53,13 +53,6 @@ export interface HomeProject {
     surfaces: { label: Bi; href: string }[];
 }
 
-/** Who/where/what for the intro tiles — not project KPIs (each project tile carries its own). */
-export const HOME_RIBBON: { label: Bi; value: Bi; live?: boolean; accent?: boolean }[] = [
-    { label: { en: 'Status', tr: 'Durum' }, value: { en: 'Open to roles', tr: 'Yeni rollere açık' }, live: true, accent: true },
-    { label: { en: 'Role', tr: 'Rol' }, value: { en: 'Data Scientist · MLOps', tr: 'Veri Bilimci · MLOps' } },
-    { label: { en: 'Based', tr: 'Konum' }, value: { en: 'Istanbul', tr: 'İstanbul' } },
-];
-
 // Order is layout: the homepage bento puts the first two on the top row (car price wide, the
 // LLM study narrow) and the last three on an even row beneath.
 export const HOME_PROJECTS: HomeProject[] = [
