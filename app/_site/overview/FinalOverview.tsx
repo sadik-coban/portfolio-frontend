@@ -5,24 +5,27 @@ import { ArrowRight } from 'lucide-react';
 import { GithubIcon } from '@/components/ui/social-icons';
 import FinalShell from '../FinalShell';
 import { useLang, localize } from '../i18n';
-import * as LBL from '@/lib/labels';
 
 // The overview is data-driven: every metric below is read from the same
-// public/report-data.json (+ text_data.json) the report's charts render from, so the landing
-// page can't drift from the analysis behind it. Keys are the generator's English ones
+// public/report-data.json the report's charts render from, so the landing page can't drift
+// from the analysis behind it. Keys are the generator's English ones
 // (cardatasys/docs/site-data-renames.json). `initialData` is passed by the server page.
-type Props = { initialData?: any; initialNlp?: any };
+//
+// The prose follows the same rule: a finding appears here only if the current reports make it
+// (content/reports/car-price). The free-text card is gone — its numbers came from the old text
+// analysis, and the current report's §10 says the text was measured and left out instead.
+type Props = { initialData?: any };
 
 const fmtN = (n: number, loc: string) => Math.round(n).toLocaleString(loc);
 const fmtK = (n: number, loc: string) => '₺' + Math.round(n / 1000).toLocaleString(loc) + 'K';
 const fmtM = (n: number) => '₺' + (n / 1e6).toFixed(2) + 'M';
 
-export default function FinalOverview({ initialData, initialNlp }: Props) {
+export default function FinalOverview({ initialData }: Props) {
     const { t, lang } = useLang();
     const L = (tr: string, en: string) => (lang === 'tr' ? tr : en);
     const loc = lang === 'tr' ? 'tr-TR' : 'en-US';
 
-    const d = initialData, nd = initialNlp;
+    const d = initialData;
     const meta = d?.meta, dom = d?.domain;
     const fr = dom?.final_results?.model_comparison;
     // `win` is "the model" of the report and of the service: LightGBM. The ★ is something else —
@@ -37,6 +40,9 @@ export default function FinalOverview({ initialData, initialNlp }: Props) {
     const tiers: any[] = mym?.metric_breakdown ?? [];
     const abl = dom?.brand_ablation;
     const hed = dom?.hedonic;
+    // The hedonic age and km rows are marginal effects at the median car (report §6), not slopes
+    // that hold everywhere — the centre is part of the claim.
+    const hedCenter = dom?.hedonic_reliability?.center;
     // The largest co-missing block: catalogue specs that go blank together on the same listings.
     const coMiss = d?.methodology?.systematic_missing?.systematic_groups?.[0];
     const pd = dom?.price_dist;
@@ -46,14 +52,6 @@ export default function FinalOverview({ initialData, initialNlp }: Props) {
     const lift = base && win ? Math.round((base.MAE - win.MAE) / base.MAE * 100) : 0;
     const residue = meta ? meta.n_raw - meta.n_dedup : 0;
     const keptCols = meta?.n_features ?? 25;
-
-    // nlp evidence — what the structured columns never recorded
-    const gapN = nd?.crosssource_damage?.gap_n;
-    const convN = nd?.anomalies?.signal_counts?.conversion_text;
-    const clashN = nd?.crosssource_fields?.counts
-        ? Object.values(nd.crosssource_fields.counts as Record<string, number>).reduce((a, b) => a + b, 0)
-        : undefined;
-    const topExtra = nd?.extras?.equipment_coverage?.[0];
 
     const S = {
         card: 'rounded-[14px] border border-[#e4e2dd] bg-[#fdfcf9]',
@@ -121,7 +119,7 @@ export default function FinalOverview({ initialData, initialNlp }: Props) {
             {/* ── lift vs the dealer's reflex ── */}
             {base && win && (
                 <div className={`${S.card} mt-5 p-4`}>
-                    <div className={`${S.cap} mb-3`}>{L('galerinin refleksine karşı tipik hata — MAE (₺)', "typical error vs. the dealer's reflex — MAE (₺)")}</div>
+                    <div className={`${S.cap} mb-3`}>{L('emsal medyanına karşı tipik hata — MAE (₺)', 'typical error vs. the comparable median — MAE (₺)')}</div>
                     {[
                         { l: L('Emsal medyanı', 'Comparable median'), sub: L(' · taban', ' · baseline'), w: 100, c: '#c9c6bf', v: fmtK(base.MAE, loc), b: false },
                         { l: 'LightGBM · TF-IDF+SVD', sub: L(' · model', ' · the model'), w: (win.MAE / base.MAE) * 100, c: '#047857', v: fmtK(win.MAE, loc), b: true },
@@ -138,8 +136,10 @@ export default function FinalOverview({ initialData, initialNlp }: Props) {
                         </div>
                     ))}
                     <p className="mt-3 max-w-[620px] text-[12.5px] leading-[1.55] text-[#5f5f5a]">
-                        {L(`Model, galerinin "aynı model, aynı yıl, medyana bak" refleksini %${lift} kısaltıyor. Kapattığı şey model+yılın ötesi: km, hasar, motor.`,
-                            `The model cuts a dealer's "same model, same year" reflex by ${lift}%. What it closes is everything beyond model and year: km, damage, engine.`)}
+                        {/* The decision note's own account: beyond model and year the gap is closed mostly
+                            by mileage and damage — engine information is largely in the model name. */}
+                        {L(`Modelin ortalama hatası, aynı model ve yılın medyan fiyatından %${lift} düşük. Model ve yılın ötesindeki farkı çoğunlukla km ve hasar kapatıyor.`,
+                            `The model's mean error is ${lift}% lower than the median price of the same model and year. Beyond model and year, the gap is closed mostly by mileage and damage.`)}
                     </p>
                 </div>
             )}
@@ -262,7 +262,7 @@ export default function FinalOverview({ initialData, initialNlp }: Props) {
                 <p className={`${S.lede} mb-5`}>
                     {L('Fiyatı nasıl okuyacağını değiştiren bulgular — modeli süsleyenler değil.', "Findings that change how you'd read a price, not just decorate the model.")}
                 </p>
-                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="grid gap-3 sm:grid-cols-2">
                     {[
                         abl && {
                             n: '01', t: L('Marka önemli değil', "Brand doesn't matter"),
@@ -278,9 +278,12 @@ export default function FinalOverview({ initialData, initialNlp }: Props) {
                         // The hedonic regression's controlled effects — read, not typed: these were
                         // hardcoded from the July run (−7.1 / −14.6) and outlived it.
                         hed && {
-                            n: '02', t: L('km ve yaş taşıyor — ve ayrışıyor', 'km & age drive it — and diverge'),
-                            d: L(`Yaş ${sPct(hed.age_pct)}/yıl, km ${sPct(hed.km100k_pct)}/100k km (korelasyonlu eksenler). Düşük-km yaşlı araç yaş cezasını yemiş ama km cezasını yememiş → sistematik ucuz.`,
-                                `Age ${sPct(hed.age_pct)}/yr, km ${sPct(hed.km100k_pct)}/100k km (correlated axes). A low-km old car paid the age penalty but not the km one → systematically underpriced.`),
+                            n: '02', t: L('km ve yaş, kontrol edilmiş etki', 'km & age, all else equal'),
+                            d: hedCenter
+                                ? L(`Hedonik regresyonda, medyan araçta (${hedCenter.age} yıl, ${fmtN(hedCenter.km, loc)} km): bir yıl daha ${sPct(hed.age_pct)}, 100 bin km daha ${sPct(hed.km100k_pct)}.`,
+                                    `In the hedonic regression, at the median car (${hedCenter.age} years, ${fmtN(hedCenter.km, loc)} km): one more year ${sPct(hed.age_pct)}, 100,000 more km ${sPct(hed.km100k_pct)}.`)
+                                : L(`Hedonik regresyonda: bir yıl daha ${sPct(hed.age_pct)}, 100 bin km daha ${sPct(hed.km100k_pct)}.`,
+                                    `In the hedonic regression: one more year ${sPct(hed.age_pct)}, 100,000 more km ${sPct(hed.km100k_pct)}.`),
                             rows: [
                                 { l: L('km · 100k başına', 'km · per 100k'), w: 100, c: '#e08a1e', v: sPct(hed.km100k_pct) },
                                 { l: L('yaş · yıl başına', 'age · per year'), w: (Math.abs(hed.age_pct) / Math.abs(hed.km100k_pct)) * 100, c: '#e08a1e', v: sPct(hed.age_pct) },
@@ -289,15 +292,15 @@ export default function FinalOverview({ initialData, initialNlp }: Props) {
                         },
                         tiers.length >= 3 && {
                             n: '03', t: L('Taban nadir araçlarda çöküyor', 'The baseline collapses on rare cars'),
-                            d: L(`Emsal medyanı araçların %${tiers[0][2]}’ini fiyatlıyor — ama emsalsiz araç modele, sonra globale iner ve patlar. Model her yerde düz kalıyor.`,
-                                `The comparable median prices ${tiers[0][2]}% of cars — but a car with no comp falls back to model, then global, and blows up. The model stays flat everywhere.`),
+                            d: L(`Emsal medyanı araçların %${tiers[0][2]}’ini aynı model ve yıldan fiyatlıyor. Emsali olmayan araç modelin tüm yılların medyanına, o da yoksa genel medyana iner; her basamakta hata sertçe büyür.`,
+                                `The comparable median prices ${tiers[0][2]}% of cars from the same model and year. A car with no comparable steps down to the model's all-year median, then the global one, and the error grows sharply at each step.`),
                             rows: tiers.slice(0, 3).map((r: any, i: number) => ({
                                 l: [L('model+yıl', 'model+year'), L('model fb', 'model fb'), L('global fb', 'global fb')][i],
                                 w: (r[4] / tiers[2][4]) * 100,
                                 c: ['#047857', '#e08a1e', '#ef4444'][i],
                                 v: fmtK(r[4], loc),
                             })),
-                            s: L(`%${tiers[0][2]} emsalli · %${(tiers[1][2] + tiers[2][2]).toFixed(2)} düşüp patlıyor`, `${tiers[0][2]}% comped · ${(tiers[1][2] + tiers[2][2]).toFixed(2)}% fall back and blow up`),
+                            s: L(`%${tiers[0][2]} emsalli · %${(tiers[1][2] + tiers[2][2]).toFixed(2)} emsalsiz, basamak iniyor`, `${tiers[0][2]}% with a comparable · ${(tiers[1][2] + tiers[2][2]).toFixed(2)}% without, stepping down`),
                         },
                         {
                             n: '04', t: L('Kirli veri, fiyatlamadan önce çözüldü', 'Dirty data, handled before pricing'),
@@ -308,18 +311,6 @@ export default function FinalOverview({ initialData, initialNlp }: Props) {
                                 { l: L('tutulan', 'kept'), w: (keptCols / 117) * 100, c: '#047857', v: String(keptCols) },
                             ],
                             s: coMiss ? L(`${coMiss.n_columns} spec kolonu birlikte eksik · %${coMiss.co_missing_pct} birlikte`, `${coMiss.n_columns} spec columns miss together · ${coMiss.co_missing_pct}% co-missing`) : '',
-                        },
-                        (gapN || convN || clashN) && {
-                            n: '05', wide: true, t: L('İlan metni, kolonların hiç kaydetmediğini taşıyor', 'The listing text holds what the columns never recorded'),
-                            d: L('Serbest metin, satıcının forma hiç yazmadığı hasarı, motor dönüşümlerini, formla uyuşmayan alanları ve hiç kolonu olmayan donanımı anlatıyor. Fiyatın tek başına taşıyamadığı detay burada — metin bu yüzden kendi başına analiz ediliyor.',
-                                'Free text describes damage the seller never entered on the form, engine swaps and conversions, fields that don’t line up with the form, and equipment that has no column at all. That’s the detail a price alone can’t carry — and why the text is analysed on its own terms.'),
-                            rows: [
-                                gapN && { l: L('yalnız metinde açıklanmış', 'disclosed in text only'), w: 100, c: '#e08a1e', v: fmtN(gapN, loc) },
-                                clashN && { l: L('alan çelişkisi', 'field clashes'), w: (clashN / gapN) * 100, c: '#e08a1e', v: `~${fmtN(Math.round(clashN / 100) * 100, loc)}` },
-                                convN && { l: L('dönüşüm', 'conversions'), w: (convN / gapN) * 100, c: '#7c5cff', v: fmtN(convN, loc) },
-                            ].filter(Boolean),
-                            s: topExtra ? L(`ilanların %${topExtra.mention_pct}’inde ${LBL.label(LBL.equipment, topExtra.feature, 'tr').toLowerCase()} geçiyor — hiçbir kolonda yok`,
-                                `${LBL.label(LBL.equipment, topExtra.feature, 'en').toLowerCase()} appears in ${topExtra.mention_pct}% of ads — and in zero columns`) : '',
                         },
                     ].filter(Boolean).map((f: any) => (
                         <div key={f.n} className={`${S.card} flex flex-col p-4 ${f.wide ? 'sm:col-span-2 lg:col-span-2' : ''}`}>
@@ -339,8 +330,8 @@ export default function FinalOverview({ initialData, initialNlp }: Props) {
                     <span className={S.n}>[04]</span><h2 className={S.h2}>{L('Veri ve yöntem', 'Data & method')}</h2>
                 </div>
                 <p className={`${S.lede} mb-5`}>
-                    {L('Gerçek TR plakalı 2.el ilan detay sayfaları, dört aylık dönem, ilan başına tek kayıt. Tarayıcının getirdiğinin üçte biri aynı ilanın tekrarı.',
-                        'Real TR-registered used-car detail pages, four monthly snapshots, one listing per ad. A third of what the scraper returns is the same ad seen again.')}
+                    {L('Gerçek TR plakalı 2.el ilan detay sayfaları, dört dönem, ilan başına tek kayıt. Tarayıcının getirdiğinin üçte biri aynı ilanın tekrarı.',
+                        'Real TR-registered used-car detail pages, four snapshots, one listing per ad. A third of what the scraper returns is the same ad seen again.')}
                 </p>
 
                 <div className={`${S.card} mb-4 p-4`}>
@@ -357,8 +348,8 @@ export default function FinalOverview({ initialData, initialNlp }: Props) {
                         <span className="shrink-0 font-mono text-[11.5px] text-[#5f5f5a]">{L('ad_id başına en son', 'latest per ad_id')}</span>
                     </div>
                     <p className="mt-3 text-[12.5px] leading-[1.55] text-[#5f5f5a]">
-                        {L(`Aradaki ${fmtN(residue, loc)} satır aynı ilanın dört dönemde yeniden taranmış hâli — veri değil, tarama artığı. Dedup, ad_id üzerinden ve CV bölünmesinden ÖNCE çalışır; böylece bir tekrar fold'lara yayılıp skoru şişiremez.`,
-                            `The ${fmtN(residue, loc)} rows between are the same ad re-scraped across four snapshots — scrape residue, not data. Dedup runs on ad_id before the CV split, so a repeat can't straddle folds and inflate the score.`)}
+                        {L(`Aradaki ${fmtN(residue, loc)} satır aynı ilanın dört dönemde yeniden taranmış hâli — veri değil, tarama artığı. Dedup, ad_id üzerinden ve CV bölünmesinden ÖNCE çalışır; böylece aynı ilan (ad_id) fold'lara yayılıp skoru şişiremez.`,
+                            `The ${fmtN(residue, loc)} rows between are the same ad re-scraped across four snapshots — scrape residue, not data. Dedup runs on ad_id before the CV split, so the same ad (ad_id) can't straddle folds and inflate the score.`)}
                     </p>
                 </div>
 
