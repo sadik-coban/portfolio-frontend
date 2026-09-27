@@ -57,7 +57,7 @@ export default function Footer() {
                                 <GithubIcon size={20} />
                             </a>
                             <a
-                                href="https://www.linkedin.com/in/sad%C4%B1k-%C3%A7oban-5239aa253"
+                                href="https://www.linkedin.com/in/sadikcoban"
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="h-10 w-10 flex items-center justify-center rounded-full bg-slate-100 dark:bg-slate-900 text-slate-500 hover:bg-blue-50 hover:text-blue-600 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-blue-400 transition-all"
