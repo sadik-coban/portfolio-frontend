@@ -13,12 +13,14 @@ export function proxy(req: NextRequest) {
     headers.set('x-pathname', pathname);
 
     // Turkish: while enabled, matches the [lang]='tr' route as-is. While DEACTIVATED,
-    // redirect any /tr URL to its unprefixed English equivalent.
+    // redirect any /tr URL to its unprefixed English equivalent — with a 307, not a 308:
+    // the switch-off is temporary, and a permanent redirect is cached by browsers and search
+    // engines, so /tr would keep bouncing to English after Turkish came back.
     if (pathname === '/tr' || pathname.startsWith('/tr/')) {
         if (!I18N_ENABLED) {
             const url = req.nextUrl.clone();
             url.pathname = pathname.slice(3) || '/';
-            return NextResponse.redirect(url, 308);
+            return NextResponse.redirect(url, 307);
         }
         return NextResponse.next({ request: { headers } });
     }
