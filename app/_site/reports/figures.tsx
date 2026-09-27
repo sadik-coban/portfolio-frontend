@@ -186,11 +186,12 @@ export function buildReportFigures(d: any, lang: Lang): Record<string, Fig> {
     // ads and is mostly noise; the few models above the 40% cap sit as triangles on the edge rather
     // than stretching the axis; the red line is the median of those per-model medians per bucket.
     //
-    // per_model_error carries all 745 models — site_data's residual_vs_n keeps only the 5+ ones, so
-    // the hollow points exist only in the generator's metrics file (merged by shrink-site-data).
+    // per_model_error carries all 745 models — domain.residual_vs_n keeps only the 5+ ones, so the
+    // hollow points come from the export's own error_drivers block (the same one figures 27–30 read).
+    const ed = d.error_drivers ?? {};
     const CAP = 40;
-    const pme: number[][] = dom.per_model_error?.length ? dom.per_model_error : (dom.residual_vs_n || []).map((r: any) => [r[0], r[1]]);
-    const buckets = dom.per_model_buckets || [];
+    const pme: number[][] = ed.per_model_error?.length ? ed.per_model_error : (dom.residual_vs_n || []).map((r: any) => [r[0], r[1]]);
+    const buckets = ed.per_model_buckets || [];
     const nTick = (v: number) => v.toLocaleString(loc);
     const pick = (f: (n: number, m: number) => boolean) => pme.filter(([n, m]) => f(n, m));
     const many = pick((n, m) => n >= 5 && m <= CAP), few = pick((n, m) => n < 5 && m <= CAP), over = pick((_n, m) => m > CAP);
@@ -214,6 +215,142 @@ export function buildReportFigures(d: any, lang: Lang): Record<string, Fig> {
             xaxis: { type: 'log', tickmode: 'array', tickvals: [1, 2, 5, 10, 20, 50, 100, 200, 500, 1000], ticktext: [1, 2, 5, 10, 20, 50, 100, 200, 500, 1000].map(nTick), title: { text: L('modeldeki ilan sayısı (log)', 'listings per model (log)'), font: { size: 10 } } },
             yaxis: { range: [0, CAP + 4], ticksuffix: '%', title: { text: L('model başına medyan hata', 'median error per model'), font: { size: 10 } } },
         }), 320);
+
+    // ---------- error in lira and the engine rule (figures 27–30, from error_drivers) ----------
+    // The generator draws 27, 29 and 30 as two panels side by side (report_common.py :739, :785,
+    // :826). Here the two panels stack: side by side, a phone gets ~150px per panel. Each panel
+    // owns an explicit domain, and its title is an annotation pinned to the top of that domain.
+    const TOP: [number, number] = [0.6, 1], BOTTOM: [number, number] = [0, 0.4];
+    const ax = (o: any = {}) => ({ fixedrange: true, automargin: true, gridcolor: theme.grid, zeroline: false, linecolor: theme.grid, tickfont: { size: 10, color: theme.muted }, ...o });
+    const axTitle = (text: string) => ({ text, font: { size: 10 } });
+    const panelTitle = (text: string, top: number) => ({ text, xref: 'paper', yref: 'paper', x: 0.5, y: top, xanchor: 'center', yanchor: 'bottom', showarrow: false, font: { size: 11, color: theme.text } });
+    // Below the bottom panel's tick labels (and its axis title, when it has one — pass a larger drop).
+    const footnote = (text: string, drop = 44) => ({ text, xref: 'paper', yref: 'paper', x: 0.5, y: 0, xanchor: 'center', yanchor: 'top', yshift: -drop, showarrow: false, font: { size: 9, color: theme.muted } });
+    const pctTxt = (v: number) => (lang === 'tr' ? `%${v.toFixed(1)}` : `${v.toFixed(1)}%`);
+    const grey = '#86857e', red = '#b91c1c';
+
+    // 27 · where the lira error adds up (by actual price), and the bias once listings are grouped by
+    // what the model predicted. The bias axis is fixed at ±MAE/2, as the generator draws it, so a
+    // small bar reads as small instead of filling the panel.
+    const lq: any[] = ed.lira_quartile || [], pq: any[] = ed.pred_quartile || [];
+    const halfMae = (dom.model_compare?.lightgbm?.MAE ?? 0) / 2 / 1e3;
+    put('27-quartile-lira', (lq.length && pq.length && halfMae) ? [
+        { type: 'bar', xaxis: 'x', yaxis: 'y', x: lq.map((r) => r[0]), y: lq.map((r) => r[2]), marker: { color: green }, text: lq.map((r) => pctTxt(r[2])), textposition: 'outside', cliponaxis: false, customdata: lq.map((r) => fmtK(r[3])), hovertemplate: '%{x}: %{text} · ' + L('ort. |hata|', 'mean |error|') + ' %{customdata}<extra></extra>', showlegend: false },
+        { type: 'bar', xaxis: 'x2', yaxis: 'y2', name: L('ortalama', 'mean'), x: pq.map((r) => r[0]), y: pq.map((r) => r[2] / 1e3), marker: { color: green }, hovertemplate: '%{x} · ' + L('ortalama', 'mean') + ' %{y:+.1f} ' + L('₺bin', '₺k') + '<extra></extra>' },
+        { type: 'bar', xaxis: 'x2', yaxis: 'y2', name: L('medyan', 'median'), x: pq.map((r) => r[0]), y: pq.map((r) => r[3] / 1e3), marker: { color: grey }, hovertemplate: '%{x} · ' + L('medyan', 'median') + ' %{y:+.1f} ' + L('₺bin', '₺k') + '<extra></extra>' },
+    ] : null, base({
+        barmode: 'group', showlegend: true, margin: { t: 24, r: 16, b: 34, l: 8 },
+        // Inside the bias panel's top-right: the axis runs to ±MAE/2 and the bars stay near zero, so
+        // that corner is empty — above the panel it collided with the panel title on a phone.
+        legend: { font: { size: 9 }, orientation: 'h', x: 1, xanchor: 'right', y: BOTTOM[1], yanchor: 'top', bgcolor: 'rgba(0,0,0,0)' },
+        xaxis: { anchor: 'y', title: axTitle(L('gerçek fiyat çeyreği', 'actual-price quartile')) },
+        yaxis: { domain: TOP, range: [0, Math.max(...lq.map((r) => r[2]), 0) * 1.18], title: axTitle(L('toplam lira hatasındaki pay %', 'share of total lira error %')) },
+        xaxis2: ax({ anchor: 'y2', title: axTitle(L('tahmin edilen fiyat çeyreği', 'predicted-price quartile')) }),
+        yaxis2: ax({ domain: BOTTOM, range: [-halfMae, halfMae], zeroline: true, zerolinecolor: grey, title: axTitle(L('sapma: tahmin − gerçek (₺bin; eksen ±MAE/2)', 'bias: predicted − actual (₺k; axis ±MAE/2)')) }),
+        annotations: [panelTitle(L('hata nerede birikiyor', 'where the error adds up'), TOP[1]), panelTitle(L('tahmine göre gruplanınca sapma', 'bias when grouped by prediction'), BOTTOM[1])],
+    }), 560);
+
+    // 28 · error in lira against the prediction. The generator scatters all 29,988 [actual, pred]
+    // pairs; here the same pairs (the outlier-preserving sample) take the density + red-ring
+    // language of figures 08 and 09, so the extremes survive the binning.
+    const liraPts: number[][] = pvtObj?.points ? pvtObj.points.map((p: number[]) => [p[1] / 1e6, (p[1] - p[0]) / 1e6]) : [];
+    const diagLira = liraPts.length ? sampleRepresentative(liraPts, (p: number[]) => Math.abs(p[1])) : null;
+    put('28-residual-lira', diagLira ? [hb2d(liraPts), scOut(diagLira.outliers)] : null,
+        base({
+            margin: { t: 8, r: 12, b: 34, l: 46 },
+            xaxis: { title: axTitle(L('tahmin edilen fiyat (₺M)', 'predicted price (₺M)')) },
+            yaxis: { title: axTitle(L('tahmin − gerçek (₺M; eksi = düşük tahmin)', 'predicted − actual (₺M; negative = under)')) },
+            shapes: [{ type: 'line', xref: 'paper', x0: 0, x1: 1, yref: 'y', y0: 0, y1: 0, line: { color: red, width: 1.2 } }],
+        }), 320);
+
+    // 29 · from a range to one number: each candidate's distance from the same model's exact value.
+    // Boxes from the export's percentiles ([p5, p25, p50, p75, p95]) — whiskers are p5–p95, no
+    // fliers — with the chosen candidate filled and its median printed in bold, as the generator does.
+    const er = ed.engine_rule;
+    const ENG: [string, string][] = [['engine_cc', L('motor hacmi', 'engine size')], ['power_hp', L('motor gücü', 'engine power')]];
+    const CAND: [string, string][] = [['lower', L('alt sınır', 'lower bound')], ['mid', L('orta nokta', 'midpoint')], ['upper', L('üst sınır', 'upper bound')]];
+    const num = (v: number) => (Number.isInteger(v) ? fmtN(v) : v.toLocaleString(loc, { maximumFractionDigits: 1 }));
+    if (er?.engine_cc && er?.power_hp) {
+        const traces: any[] = [], notes: any[] = [];
+        ENG.forEach(([k], i) => {
+            const h = er[k], xs = i ? 'x2' : 'x', ys = i ? 'y2' : 'y';
+            CAND.forEach(([c, label], j) => {
+                const p = h.candidates?.[c]?.percentiles;
+                if (!p) return;
+                const chosen = c === h.chosen;
+                const name = chosen ? `${label}<br>(${L('seçilen', 'chosen')})` : label;
+                traces.push({ type: 'box', xaxis: xs, yaxis: ys, x: [name], width: 0.5, lowerfence: [p[0]], q1: [p[1]], median: [p[2]], q3: [p[3]], upperfence: [p[4]], boxpoints: false, fillcolor: chosen ? green : '#e4e2dd', line: { color: '#33332f', width: 1.2 }, whiskerwidth: 0.4, showlegend: false, hoverinfo: 'y' });
+                // x by category index, not name: j + 0.28 sits just past the box's right edge (width
+                // 0.5) at every chart width, where a pixel shift would land on the box on a wide one.
+                notes.push({ xref: xs, yref: ys, x: j + 0.28, y: p[2], text: chosen ? `<b>${num(p[2])}</b>` : num(p[2]), xanchor: 'left', showarrow: false, font: { size: 10, color: theme.text } });
+            });
+        });
+        const title = (k: string, heading: string) => `${heading} · ` + L(`referanslı ${fmtN(er[k].with_reference)} aralıklı ilan`, `${fmtN(er[k].with_reference)} range listings with a reference`);
+        const yTitle = (k: string) => axTitle(L(`|aday − kesin değer| (${er[k].unit})`, `|candidate − exact value| (${er[k].unit})`));
+        put('29-hp-cc-rule', traces, base({
+            margin: { t: 24, r: 16, b: 80, l: 8 },
+            xaxis: { anchor: 'y' },
+            yaxis: { domain: TOP, rangemode: 'tozero', title: yTitle('engine_cc') },
+            xaxis2: ax({ anchor: 'y2' }),
+            yaxis2: ax({ domain: BOTTOM, rangemode: 'tozero', title: yTitle('power_hp') }),
+            annotations: [
+                ...notes,
+                panelTitle(title('engine_cc', ENG[0][1]), TOP[1]), panelTitle(title('power_hp', ENG[1][1]), BOTTOM[1]),
+                footnote(L('kutu = çeyrekler · çizgi ve sayı = medyan · bıyık = %5–%95<br>kesin değer = aynı modelin kesin değerli ilanlarının medyanı',
+                    'box = quartiles · line and number = median · whiskers = 5th–95th percentile<br>exact value = median of the same model’s exact-value listings')),
+            ],
+        }), 600);
+
+        // 30 · what the site gives: lower × upper bound. Each (lower, upper) pair is one bubble, its area
+        // proportional to the listings behind it; exact values sit on the diagonal, ranges above it.
+        const t30: any[] = [];
+        const lims: [number, number][] = [];
+        ENG.forEach(([k], i) => {
+            const pairs: any[] = er[k].pairs || [];
+            if (!pairs.length) { lims.push([0, 1]); return; }
+            const xs = i ? 'x2' : 'x', ys = i ? 'y2' : 'y', leg = i ? 'legend2' : 'legend';
+            const all = pairs.flatMap((r) => [r[0], r[1]]);
+            const lim: [number, number] = [Math.min(...all) * 0.95, Math.max(...all) * 1.02];
+            lims.push(lim);
+            const nMax = Math.max(...pairs.map((r) => r[3]));
+            const sizeref = (2 * nMax) / 34 ** 2; // largest bubble ≈ 34px across
+            ([[false, green, L('kesin değer', 'exact value')], [true, red, L('aralık', 'range')]] as [boolean, string, string][]).forEach(([isRange, colour, label]) => {
+                const rows = pairs.filter((r) => Boolean(r[2]) === isRange);
+                if (!rows.length) return;
+                const total = rows.reduce((s, r) => s + r[3], 0);
+                t30.push({
+                    type: 'scatter', mode: 'markers', xaxis: xs, yaxis: ys, legend: leg,
+                    // Two lines, so both entries fit one row on a phone (the count on its own line).
+                    name: `${label}<br>${fmtN(total)} ${L('ilan', 'listings')}`,
+                    x: rows.map((r) => r[0]), y: rows.map((r) => r[1]), customdata: rows.map((r) => fmtN(r[3])),
+                    marker: { size: rows.map((r) => r[3]), sizemode: 'area', sizeref, sizemin: 3, color: colour, opacity: 0.55, line: { width: 0 } },
+                    hovertemplate: `${L('alt', 'lower')} %{x:,} · ${L('üst', 'upper')} %{y:,} ${er[k].unit} · %{customdata} ${L('ilan', 'listings')}<extra></extra>`,
+                });
+            });
+            t30.push({ type: 'scatter', mode: 'lines', xaxis: xs, yaxis: ys, legend: leg, name: 'y = x', showlegend: false, x: lim, y: lim, line: { dash: 'dash' as const, color: grey, width: 1 }, hoverinfo: 'skip' });
+        });
+        // The equal scale shrinks each panel to a centred square, so a legend pinned to the paper's
+        // left edge floated away from it on a wide screen. A centred row above the square stays with
+        // it at every width; the panel title moves up to make room. The y = x line stays out of the
+        // legend — the footnote already says exact values sit on the diagonal — so the row fits a phone.
+        const legAt = (top: number) => ({ font: { size: 9 }, orientation: 'h', x: 0.5, xanchor: 'center', y: top, yanchor: 'bottom', itemsizing: 'constant', bgcolor: 'rgba(0,0,0,0)' });
+        const titleAbove = (text: string, top: number) => ({ ...panelTitle(text, top), yshift: 36 });
+        const eqAxes = (i: number, lim: [number, number], unit: string) => ({
+            [i ? 'xaxis2' : 'xaxis']: ax({ anchor: i ? 'y2' : 'y', range: lim, constrain: 'domain', title: axTitle(L(`alt sınır (${unit})`, `lower bound (${unit})`)) }),
+            [i ? 'yaxis2' : 'yaxis']: ax({ domain: i ? BOTTOM : TOP, anchor: i ? 'x2' : 'x', range: lim, scaleanchor: i ? 'x2' : 'x', scaleratio: 1, title: axTitle(L(`üst sınır (${unit})`, `upper bound (${unit})`)) }),
+        });
+        const c = er.engine_cc, h = er.power_hp;
+        put('30-engine-bounds', t30, {
+            ...base({ margin: { t: 66, r: 16, b: 92, l: 8 }, showlegend: true }),
+            ...eqAxes(0, lims[0], c.unit), ...eqAxes(1, lims[1], h.unit),
+            legend: legAt(TOP[1]), legend2: legAt(BOTTOM[1]),
+            annotations: [
+                titleAbove(ENG[0][1], TOP[1]), titleAbove(ENG[1][1], BOTTOM[1]),
+                footnote(L(`nokta büyüklüğü = ilan sayısı · kesin değer köşegende (alt = üst)<br>çizilemeyen: açık uçlu aralık ${fmtN(c.open_ended)}/${fmtN(h.open_ended)}, değersiz ${fmtN(c.no_value)}/${fmtN(h.no_value)} ilan (hacim/güç)`,
+                    `point size = listings · exact values on the diagonal (lower = upper)<br>not drawn: open-ended range ${fmtN(c.open_ended)}/${fmtN(h.open_ended)}, no value ${fmtN(c.no_value)}/${fmtN(h.no_value)} listings (size/power)`), 50),
+            ],
+        }, 720);
+    }
 
     const cf = dom.conformal;
     const cfHedef = cf?.coverage_target ?? 90;
