@@ -8,9 +8,9 @@ import { useLang, localize } from '../i18n';
 import * as LBL from '@/lib/labels';
 
 // The overview is data-driven: every metric below is read from the same
-// public/site_data.json (+ text_data.json) the report renders from, so the landing
-// page can't drift from the analysis behind it. `initialData` is passed by the
-// server page; the client fetch is a fallback for the non-SSR path.
+// public/report-data.json (+ text_data.json) the report's charts render from, so the landing
+// page can't drift from the analysis behind it. Keys are the generator's English ones
+// (cardatasys/docs/site-data-renames.json). `initialData` is passed by the server page.
 type Props = { initialData?: any; initialNlp?: any };
 
 const fmtN = (n: number, loc: string) => Math.round(n).toLocaleString(loc);
@@ -24,13 +24,24 @@ export default function FinalOverview({ initialData, initialNlp }: Props) {
 
     const d = initialData, nd = initialNlp;
     const meta = d?.meta, dom = d?.domain;
-    const fr = dom?.final_results?.model_karsilastirma;
+    const fr = dom?.final_results?.model_comparison;
+    // `win` is "the model" of the report and of the service: LightGBM. The ★ is something else —
+    // the variant that wins the producer's MAPE-only rule, named in the export's `winner`. In the
+    // current run that is CatBoost TF-IDF+SVD by 0.05 points, a tie in practice, so the star is
+    // read from the data instead of being pinned to a row.
     const win = fr?.lightgbm_tfidf_svd;
-    const mym = dom?.model_yil_medyani;
-    const base = mym?.taban;
-    const tiers: any[] = mym?.metrik_kirilim ?? [];
+    const starKey = fr?.winner === 'catboost' ? 'catboost_tfidf_svd' : fr?.winner === 'lightgbm' ? 'lightgbm_tfidf_svd' : null;
+    const star = (key: string) => (key === starKey ? ' ★' : '');
+    const mym = dom?.model_year_median;
+    const base = mym?.baseline;
+    const tiers: any[] = mym?.metric_breakdown ?? [];
     const abl = dom?.brand_ablation;
+    const hed = dom?.hedonic;
+    // The largest co-missing block: catalogue specs that go blank together on the same listings.
+    const coMiss = d?.methodology?.systematic_missing?.systematic_groups?.[0];
     const pd = dom?.price_dist;
+    // Signed percent in the page's style: "−6.64%" / "−%6.64".
+    const sPct = (v: number) => `${v < 0 ? '−' : '+'}${lang === 'tr' ? `%${Math.abs(v).toFixed(2)}` : `${Math.abs(v).toFixed(2)}%`}`;
 
     const lift = base && win ? Math.round((base.MAE - win.MAE) / base.MAE * 100) : 0;
     const residue = meta ? meta.n_raw - meta.n_dedup : 0;
@@ -112,8 +123,8 @@ export default function FinalOverview({ initialData, initialNlp }: Props) {
                 <div className={`${S.card} mt-5 p-4`}>
                     <div className={`${S.cap} mb-3`}>{L('galerinin refleksine karşı tipik hata — MAE (₺)', "typical error vs. the dealer's reflex — MAE (₺)")}</div>
                     {[
-                        { l: L('Model+yıl medyanı', 'Model+year median'), sub: L('· taban', '· baseline'), w: 100, c: '#c9c6bf', v: fmtK(base.MAE, loc), b: false },
-                        { l: 'LightGBM · TF-IDF+SVD', sub: ' ★', w: (win.MAE / base.MAE) * 100, c: '#047857', v: fmtK(win.MAE, loc), b: true },
+                        { l: L('Emsal medyanı', 'Comparable median'), sub: L(' · taban', ' · baseline'), w: 100, c: '#c9c6bf', v: fmtK(base.MAE, loc), b: false },
+                        { l: 'LightGBM · TF-IDF+SVD', sub: L(' · model', ' · the model'), w: (win.MAE / base.MAE) * 100, c: '#047857', v: fmtK(win.MAE, loc), b: true },
                     ].map((r) => (
                         <div key={r.l} className="mb-[9px] flex items-center gap-3 last:mb-0">
                             <div className="w-[150px] shrink-0 font-mono text-[12px] sm:w-[190px]">
@@ -218,10 +229,10 @@ export default function FinalOverview({ initialData, initialNlp }: Props) {
                                 </thead>
                                 <tbody>
                                     {[
-                                        { k: 'LightGBM · TF-IDF+SVD ★', m: fr.lightgbm_tfidf_svd, win: true },
-                                        { k: 'CatBoost · TF-IDF+SVD', m: fr.catboost_tfidf_svd },
+                                        { k: `LightGBM · TF-IDF+SVD${star('lightgbm_tfidf_svd')} · ${L('model', 'the model')}`, m: fr.lightgbm_tfidf_svd, win: true },
+                                        { k: `CatBoost · TF-IDF+SVD${star('catboost_tfidf_svd')}`, m: fr.catboost_tfidf_svd },
                                         { k: 'CatBoost · native', m: fr.catboost_native },
-                                        { k: L('Model+yıl medyanı · fallback’li', 'Model+year median · fallback'), m: base, base: true },
+                                        { k: L('Emsal medyanı · merdivenli', 'Comparable median · laddered'), m: base, base: true },
                                     ].filter((r) => r.m).map((r) => (
                                         <tr key={r.k} className={r.win ? 'bg-[#eef6f1]' : ''}>
                                             <td className={`border-t border-[#ece9e3] px-3 py-2 text-left ${r.win ? 'font-semibold text-[#065f46]' : r.base ? 'text-[#5f5f5a]' : 'text-[#33332f]'}`}>{r.k}</td>
@@ -234,6 +245,8 @@ export default function FinalOverview({ initialData, initialNlp }: Props) {
                             </table>
                         </div>
                         <p className="m-0 px-4 pb-4 pt-3 text-[12.5px] text-[#5f5f5a]">
+                            {starKey && L('★ yalnız MAPE’ye bakan kuralın kazananı; iki TF-IDF+SVD varyantı pratikte berabere, sitenin ve servisin modeli LightGBM. ',
+                                '★ wins the MAPE-only rule; the two TF-IDF+SVD variants are practically tied, and the site and the service use LightGBM. ')}
                             {L('Metrikler out-of-fold (sızıntısız); final modeller tüm veriyle eğitildi. Servis, nokta fiyatın yanında sabit ', 'Metrics are out-of-fold (leak-free); final models train on all data. Serving returns a point price plus a fixed ')}
                             <b className="font-mono text-[#065f46]">±6.6%</b>{L(' bant döndürür.', ' band.')}
                         </p>
@@ -253,29 +266,31 @@ export default function FinalOverview({ initialData, initialNlp }: Props) {
                     {[
                         abl && {
                             n: '01', t: L('Marka önemli değil', "Brand doesn't matter"),
-                            d: L('Marka, model+seri’nin üstüne eklendiğinde hatayı 1₺ oynatıyor. Marka zaten model’in içinde — rozet, sinyal değil.',
-                                'Adding brand on top of series+model moves the error by ₺1. Brand is already inside model — a badge, not a price signal.'),
+                            d: L(`Marka, model+seri’nin üstüne eklendiğinde hatayı ${fmtN(Math.abs(abl.brand_series_model.MAE - abl.series_model.MAE), loc)}₺ oynatıyor. Marka zaten model’in içinde — rozet, sinyal değil.`,
+                                `Adding brand on top of series+model moves the error by ₺${fmtN(Math.abs(abl.brand_series_model.MAE - abl.series_model.MAE), loc)}. Brand is already inside model — a badge, not a price signal.`),
                             rows: [
-                                { l: L('yalnız brand', 'brand only'), w: 100, c: '#c9c6bf', v: abl.sadece_brand.MAPE.toFixed(2) },
-                                { l: L('seri+model', 'series+model'), w: (abl.seri_model.MAPE / abl.sadece_brand.MAPE) * 100, c: '#047857', v: abl.seri_model.MAPE.toFixed(2) },
-                                { l: L('+ brand', '+ brand'), w: (abl.brand_seri_model.MAPE / abl.sadece_brand.MAPE) * 100, c: '#047857', v: abl.brand_seri_model.MAPE.toFixed(2) },
+                                { l: L('yalnız brand', 'brand only'), w: 100, c: '#c9c6bf', v: abl.brand_only.MAPE.toFixed(2) },
+                                { l: L('seri+model', 'series+model'), w: (abl.series_model.MAPE / abl.brand_only.MAPE) * 100, c: '#047857', v: abl.series_model.MAPE.toFixed(2) },
+                                { l: L('+ brand', '+ brand'), w: (abl.brand_series_model.MAPE / abl.brand_only.MAPE) * 100, c: '#047857', v: abl.brand_series_model.MAPE.toFixed(2) },
                             ],
                             s: L("Theil's U = 1.00 · model markayı zaten belirliyor", "Theil's U = 1.00 · model already determines brand"),
                         },
-                        {
+                        // The hedonic regression's controlled effects — read, not typed: these were
+                        // hardcoded from the July run (−7.1 / −14.6) and outlived it.
+                        hed && {
                             n: '02', t: L('km ve yaş taşıyor — ve ayrışıyor', 'km & age drive it — and diverge'),
-                            d: L('Yaş −%7.1/yıl, km −%14.6/100k km (korelasyonlu eksenler). Düşük-km yaşlı araç yaş cezasını yemiş ama km cezasını yememiş → sistematik ucuz.',
-                                'Age −7.1%/yr, km −14.6%/100k km (correlated axes). A low-km old car paid the age penalty but not the km one → systematically underpriced.'),
+                            d: L(`Yaş ${sPct(hed.age_pct)}/yıl, km ${sPct(hed.km100k_pct)}/100k km (korelasyonlu eksenler). Düşük-km yaşlı araç yaş cezasını yemiş ama km cezasını yememiş → sistematik ucuz.`,
+                                `Age ${sPct(hed.age_pct)}/yr, km ${sPct(hed.km100k_pct)}/100k km (correlated axes). A low-km old car paid the age penalty but not the km one → systematically underpriced.`),
                             rows: [
-                                { l: L('km · 100k başına', 'km · per 100k'), w: 100, c: '#e08a1e', v: '−14.6%' },
-                                { l: L('yaş · yıl başına', 'age · per year'), w: 48.6, c: '#e08a1e', v: '−7.1%' },
+                                { l: L('km · 100k başına', 'km · per 100k'), w: 100, c: '#e08a1e', v: sPct(hed.km100k_pct) },
+                                { l: L('yaş · yıl başına', 'age · per year'), w: (Math.abs(hed.age_pct) / Math.abs(hed.km100k_pct)) * 100, c: '#e08a1e', v: sPct(hed.age_pct) },
                             ],
-                            s: L('hedonik R² 0.931 · her %95 GA sıfırı dışlıyor', 'hedonic R² 0.931 · every 95% CI excludes zero'),
+                            s: L(`hedonik R² ${hed.r2.toFixed(3)} · her %95 GA sıfırı dışlıyor`, `hedonic R² ${hed.r2.toFixed(3)} · every 95% CI excludes zero`),
                         },
                         tiers.length >= 3 && {
                             n: '03', t: L('Taban nadir araçlarda çöküyor', 'The baseline collapses on rare cars'),
-                            d: L('Model+yıl medyanı araçların %97.5’ini fiyatlıyor — ama emsalsiz araç modele, sonra globale iner ve patlar. Model her yerde düz kalıyor.',
-                                'The model+year median prices 97.5% of cars — but a car with no comp falls back to model, then global, and blows up. The model stays flat everywhere.'),
+                            d: L(`Emsal medyanı araçların %${tiers[0][2]}’ini fiyatlıyor — ama emsalsiz araç modele, sonra globale iner ve patlar. Model her yerde düz kalıyor.`,
+                                `The comparable median prices ${tiers[0][2]}% of cars — but a car with no comp falls back to model, then global, and blows up. The model stays flat everywhere.`),
                             rows: tiers.slice(0, 3).map((r: any, i: number) => ({
                                 l: [L('model+yıl', 'model+year'), L('model fb', 'model fb'), L('global fb', 'global fb')][i],
                                 w: (r[4] / tiers[2][4]) * 100,
@@ -286,13 +301,13 @@ export default function FinalOverview({ initialData, initialNlp }: Props) {
                         },
                         {
                             n: '04', t: L('Kirli veri, fiyatlamadan önce çözüldü', 'Dirty data, handled before pricing'),
-                            d: L(`${fmtN(meta.n_raw, loc)} snapshot → ${fmtN(meta.n_dedup, loc)} ilan; 15 spec kolonu birlikte boşalıyor (katalog çöküşü); ham "G" segmenti bozuk bir MPV etiketiydi, seriden yeniden türetildi.`,
-                                `${fmtN(meta.n_raw, loc)} snapshots → ${fmtN(meta.n_dedup, loc)} listings; 15 spec columns go missing together (catalog collapse); the raw "G" segment was a corrupt MPV mislabel, re-derived from series.`),
+                            d: L(`${fmtN(meta.n_raw, loc)} snapshot → ${fmtN(meta.n_dedup, loc)} ilan; ${coMiss ? `${coMiss.n_columns} spec kolonu` : 'spec kolonları'} birlikte boşalıyor (katalog çöküşü); ham "G" segmenti bozuk bir MPV etiketiydi, seriden yeniden türetildi.`,
+                                `${fmtN(meta.n_raw, loc)} snapshots → ${fmtN(meta.n_dedup, loc)} listings; ${coMiss ? `${coMiss.n_columns} spec columns` : 'spec columns'} go missing together (catalog collapse); the raw "G" segment was a corrupt MPV mislabel, re-derived from series.`),
                             rows: [
                                 { l: L('ham kolon', 'raw columns'), w: 100, c: '#c9c6bf', v: '117' },
                                 { l: L('tutulan', 'kept'), w: (keptCols / 117) * 100, c: '#047857', v: String(keptCols) },
                             ],
-                            s: L('15 spec kolonu birlikte eksik · birlikte-eksiklik 1.00', '15 spec columns miss together · co-miss 1.00'),
+                            s: coMiss ? L(`${coMiss.n_columns} spec kolonu birlikte eksik · %${coMiss.co_missing_pct} birlikte`, `${coMiss.n_columns} spec columns miss together · ${coMiss.co_missing_pct}% co-missing`) : '',
                         },
                         (gapN || convN || clashN) && {
                             n: '05', wide: true, t: L('İlan metni, kolonların hiç kaydetmediğini taşıyor', 'The listing text holds what the columns never recorded'),

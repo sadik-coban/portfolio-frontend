@@ -9,7 +9,7 @@ import { site } from './site-config';
 type Bi = { en: string; tr: string };
 
 /** Work index. Each row states its own case: what the project is, what it was built with,
- *  and the three numbers it stands on — read from public/site_data.json server-side, so
+ *  and the three numbers it stands on — read from public/report-data.json server-side, so
  *  the index can't quote figures the analysis behind it no longer reports. */
 export default function FinalProjects({ stats }: { stats: Record<string, Bi> }) {
     const { t, lang } = useLang();

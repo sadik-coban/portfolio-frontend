@@ -47,16 +47,6 @@ export const HOME_RIBBON: { label: Bi; value: Bi; live?: boolean; accent?: boole
     { label: { en: 'Based', tr: 'Konum' }, value: { en: 'Istanbul', tr: 'İstanbul' } },
 ];
 
-// Kept in sync with public/site_data.json (domain.final_results.model_karsilastirma
-// .lightgbm_tfidf_svd + meta.n_dedup). These are 5-fold out-of-fold figures, not a
-// single holdout — the label says so, because the distinction is the point.
-export const HOME_METRICS: { value: string; label: Bi; accent?: boolean }[] = [
-    { value: '29,988', label: { en: 'Listings modelled', tr: 'Modellenen ilan' } },
-    { value: '0.975', label: { en: 'Cross-validated R²', tr: 'Çapraz-doğrulanmış R²' }, accent: true },
-    { value: '6.49%', label: { en: 'Out-of-fold MAPE', tr: 'Out-of-fold MAPE' } },
-    { value: '₺110K', label: { en: 'Out-of-fold MAE', tr: 'Out-of-fold MAE' } },
-];
-
 export const HOME_PROJECTS: HomeProject[] = [
     {
         domain: 'Deployment · MLOps',
@@ -144,7 +134,8 @@ export const HOME_PROJECTS: HomeProject[] = [
 ];
 
 // What each tool actually did on the car-price system — kept honest against the code:
-// LightGBM won on a shared leak-free split, the model ships as one S3 pickle on Railway,
+// LightGBM and CatBoost tie on a shared leak-free split (CatBoost takes the MAPE-only rule by
+// 0.05 points; LightGBM is the model that ships), the model ships as one S3 pickle on Railway,
 // and the raw rows stay in DuckDB behind the API. No registry, no MultiQuantile.
 // Grouped by where each tool earns its place — the editorial homepage renders these as
 // three columns, so the copy per item stays short (one line of what it actually did).
@@ -152,7 +143,7 @@ export const HOME_ARSENAL: { group: Bi; items: { tool: string; did: Bi }[] }[] =
     {
         group: { en: 'Modelling & Stats', tr: 'Modelleme & İstatistik' },
         items: [
-            { tool: 'LightGBM · CatBoost', did: { en: 'One leak-free 5-fold split — LightGBM won at 6.49% MAPE.', tr: 'Tek sızıntısız 5-fold bölünme — LightGBM %6.49 MAPE ile kazandı.' } },
+            { tool: 'LightGBM · CatBoost', did: { en: 'One leak-free 5-fold split — LightGBM and CatBoost tie at ~6.5% MAPE.', tr: 'Tek sızıntısız 5-fold bölünme — LightGBM ve CatBoost ~%6.5 MAPE’de berabere.' } },
             { tool: 'scikit-learn · TF-IDF+SVD', did: { en: 'Listing titles into 170 dense dimensions, bundled with the model.', tr: 'İlan başlıkları 170 yoğun boyuta; modelle aynı pakette.' } },
             { tool: 'SciPy · statsmodels', did: { en: 'Hedonic regression with bootstrap CIs; KS + Wasserstein for drift.', tr: 'Bootstrap GA’lı hedonik regresyon; drift için KS + Wasserstein.' } },
         ],
