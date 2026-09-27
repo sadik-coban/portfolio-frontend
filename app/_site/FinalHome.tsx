@@ -1,162 +1,130 @@
 "use client";
 
+import { useCallback } from 'react';
 import Link from 'next/link';
 import { useLang, localize } from './i18n';
 import PaperShell from './PaperShell';
-import { HOME_RIBBON, HOME_PROJECTS, HOME_ARSENAL } from './home/content';
-import ProjectLink, { ProjectText } from './home/ProjectLink';
+import { AreaFigure } from './home/AreaFigure';
+import { ProjectCard } from './home/ProjectCard';
+import { HOME_PROJECTS, HOME_ARSENAL } from './home/content';
 import { site } from './site-config';
 import { WRITING_ENABLED } from './writing-config';
 
-// Editorial homepage: a full-width statement instead of a hero chart, an identity ribbon
-// instead of scattered KPIs, and a numbered work index instead of chart-cover cards — each
-// project row carries its own headline metric. Nav and footer come from PaperShell.
-export default function FinalHome({ recentPosts }: { recentPosts: any[] }) {
-    const { t, lang } = useLang();
+/** The price model's headline numbers, read server-side from public/report-data.json. */
+export type HomeMetrics = { listings: number; r2: number; mape: number; mae: number };
 
-    // The ribbon used to carry a computed "Work · N projects" cell, and the section header
-    // printed the same count again below it. With a focused body of work those counters only
-    // ever advertised how few entries there are, so the page states what the work IS instead.
+// Homepage in the July layout (254aee0): a two-column hero with a figure, one strip of the model's
+// numbers, work cards with covers, the toolset as "tool | what it did" rows. What changed from
+// July is the content, not the layout — every number and the figure are read from the current
+// pipeline run, where July's were typed in from an older one — plus quieter type contrast fixes.
+// Nav and footer come from PaperShell.
+export default function FinalHome({ recentPosts, curve, metrics }: {
+    recentPosts: any[];
+    curve: { x: number; price: number }[];
+    metrics: HomeMetrics | null;
+}) {
+    const { t, lang } = useLang();
+    const loc = lang === 'tr' ? 'tr-TR' : 'en-US';
+    const L = (tr: string, en: string) => (lang === 'tr' ? tr : en);
+    // Stable per language: AreaFigure memoises its chart options on it.
+    const ageLabel = useCallback((x: number) => (lang === 'tr' ? `${x} yaş` : `age ${x}`), [lang]);
+
+    const cells = metrics ? [
+        { v: metrics.listings.toLocaleString(loc), k: L('Modellenen ilan', 'Listings modelled') },
+        { v: metrics.r2.toFixed(4), k: L('Çapraz-doğrulanmış R²', 'Cross-validated R²'), accent: true },
+        { v: lang === 'tr' ? `%${metrics.mape.toFixed(2)}` : `${metrics.mape.toFixed(2)}%`, k: L('Out-of-fold MAPE', 'Out-of-fold MAPE') },
+        { v: '₺' + Math.round(metrics.mae / 1000).toLocaleString(loc) + 'K', k: L('Out-of-fold MAE', 'Out-of-fold MAE') },
+    ] : [];
+    // One row per tool, as July had them; the groups only ordered the list.
+    const tools = HOME_ARSENAL.flatMap((g) => g.items);
+
     return (
         <PaperShell>
-            {/* HERO — statement only, no figure */}
-            <section className="pt-16 pb-10 md:pt-24 md:pb-12">
-                <p className="mb-7 font-mono text-[12px] font-medium uppercase tracking-[0.2em] text-[#047857]">{t('home.heroEyebrow')}</p>
-                {/* The setup is muted and the payoff carries full ink — the emphasis used to run the
-                    other way, which put the four words that make the argument at 2.2:1 contrast.
-                    #86857e clears the 3:1 large-text floor and is already the palette's meta grey. */}
-                <h1 className="m-0 mb-7 max-w-[960px] text-[44px] font-bold leading-[1.02] tracking-[-0.035em] text-[#1a1a1a] text-balance sm:text-[62px] lg:text-[80px] lg:leading-[0.98] lg:tracking-[-0.045em]">
-                    <span className="text-[#86857e]">{t('home.heroH1Lead')}</span> {t('home.heroH1Payoff')}
-                </h1>
-                <div className="grid max-w-[1000px] grid-cols-1 items-end gap-7 md:grid-cols-[1fr_auto] md:gap-12">
-                    <p className="m-0 max-w-[560px] text-[17px] leading-[1.6] text-[#5f5f5a] md:text-[20px]">{t('home.heroSub')}</p>
-                    {/* Three nowrap items don't fit one 272px line, so the row wraps below sm. */}
-                    <div className="flex flex-wrap items-center gap-x-5 gap-y-3 whitespace-nowrap">
-                        <Link href="#work" className="inline-flex h-[44px] items-center rounded-[9px] bg-[#1a1a1a] px-[22px] text-[14px] font-semibold text-[#f7f6f3] transition-opacity hover:opacity-90">{t('home.viewWork')}</Link>
-                        <Link href={localize('/about', lang)} className="text-[14px] font-medium text-[#1a1a1a]">{t('home.getInTouch')}</Link>
-                        <a href={site.social.github} target="_blank" rel="noopener noreferrer" className="text-[14px] font-medium text-[#5f5f5a] transition-colors hover:text-[#1a1a1a]">GitHub ↗</a>
+            {/* HERO — the statement beside the model's own curve */}
+            <section className="grid grid-cols-1 items-center gap-10 py-14 lg:grid-cols-[1.05fr_0.95fr] lg:gap-14 lg:py-20">
+                <div>
+                    <p className="mb-6 font-mono text-[12px] font-medium uppercase tracking-[0.16em] text-[#047857]">{t('home.heroEyebrow')}</p>
+                    {/* The setup is muted and the payoff carries full ink. July's muted grey (#a8a7a0)
+                        sat at 2.2:1; #86857e clears the 3:1 large-text floor. */}
+                    <h1 className="m-0 mb-6 text-[40px] font-bold leading-[1.05] tracking-[-0.04em] text-[#1a1a1a] text-balance md:text-[56px]">
+                        <span className="text-[#86857e]">{t('home.heroH1Lead')}</span> {t('home.heroH1Payoff')}
+                    </h1>
+                    <p className="m-0 mb-9 max-w-[480px] text-[18px] leading-[1.6] text-[#5f5f5a]">{t('home.heroSub')}</p>
+                    <div className="flex flex-wrap items-center gap-5 md:gap-[22px]">
+                        <Link href="#work" className="inline-flex h-[44px] items-center rounded-[10px] bg-[#1a1a1a] px-5 text-[14px] font-semibold text-[#f7f6f3] transition-opacity duration-200 hover:opacity-90">{t('home.viewWork')}</Link>
+                        <Link href={localize('/about', lang)} className="text-[14px] font-medium text-[#1a1a1a] transition-colors duration-200 hover:text-[#047857]">{t('home.getInTouch')}</Link>
+                        <a href={site.social.github} target="_blank" rel="noopener noreferrer" className="text-[14px] font-medium text-[#5f5f5a] transition-colors duration-200 hover:text-[#1a1a1a]">GitHub ↗</a>
                     </div>
                 </div>
+
+                {/* July's card showed an older dataset marked "sample figure"; this is the median asking
+                    price by vehicle age from the run the reports are built on. */}
+                {curve.length > 1 && (
+                    <figure className="m-0 rounded-xl border border-[#e9e7e2] bg-[#fdfcf9] p-5 pb-4 shadow-[0_1px_2px_rgba(40,40,30,0.04)]">
+                        <figcaption className="mb-3.5 flex items-baseline justify-between gap-3">
+                            <span className="text-[14px] font-semibold text-[#1a1a1a]">{t('home.figCaption')}</span>
+                            {metrics && <span className="shrink-0 font-mono text-[11px] font-medium tracking-[0.05em] text-[#6b6a63]">{metrics.listings.toLocaleString(loc)} {L('ilan', 'listings')}</span>}
+                        </figcaption>
+                        <AreaFigure data={curve} variant="hero" xLabel={ageLabel} />
+                    </figure>
+                )}
             </section>
 
-            {/* IDENTITY RIBBON — one cohesive line, even weight.
-                The separators are the container's own background showing through a 1px grid gap,
-                not per-cell borders: a border-l picked by array index paints a stray vertical bar
-                on the left edge of every wrapped row, which is exactly what mobile used to show. */}
-            <div className="grid grid-cols-1 gap-px border-y border-[#e9e7e2] bg-[#e9e7e2] sm:grid-cols-3">
-                {HOME_RIBBON.map((r) => (
-                    <div key={r.label.en} className="flex items-center gap-[9px] bg-[#f7f6f3] px-4 py-3.5 md:px-[22px] md:py-4">
-                        {'live' in r && r.live && (
-                            <span className="relative h-[7px] w-[7px] shrink-0" aria-hidden="true">
-                                <span className="absolute inset-0 rounded-full bg-[#059669] motion-safe:animate-[pulseDot_2.4s_ease-in-out_infinite]" />
-                                <span className="absolute inset-0 rounded-full bg-[#059669]" />
-                            </span>
-                        )}
-                        <div>
-                            <div className="mb-[3px] font-mono text-[10px] font-medium uppercase tracking-[0.1em] text-[#9a9a92]">{r.label[lang]}</div>
-                            <div className={`text-[14px] font-medium ${'accent' in r && r.accent ? 'text-[#047857]' : 'text-[#33332f]'}`}>{r.value[lang]}</div>
-                        </div>
+            {/* METRIC STRIP — the price model's four numbers, 5-fold out-of-fold */}
+            {cells.length > 0 && (
+                <section className="pb-[60px]">
+                    <p className="mb-5 font-mono text-[12px] font-medium uppercase tracking-[0.15em] text-[#6b6a63]">{t('home.metricsLabel')}</p>
+                    <div className="grid grid-cols-2 border-t border-[#e9e7e2] md:grid-cols-4">
+                        {cells.map((m, i) => (
+                            <div key={m.k} className={`border-[#e9e7e2] pb-4 pr-6 pt-[22px] ${i % 2 === 0 ? 'pl-0' : 'pl-6'} ${i % 4 === 0 ? 'md:pl-0' : 'md:pl-6'} ${i % 2 !== 0 ? 'border-l' : ''} ${i % 4 !== 0 ? 'md:border-l' : ''} ${i >= 2 ? 'border-t md:border-t-0' : ''}`}>
+                                <div className={`font-mono text-[22px] font-medium tabular-nums tracking-[-0.035em] md:text-[28px] ${m.accent ? 'text-[#047857]' : 'text-[#1a1a1a]'}`}>{m.v}</div>
+                                <div className="mt-1.5 text-[13px] text-[#6b6a63]">{m.k}</div>
+                            </div>
+                        ))}
                     </div>
-                ))}
-            </div>
+                </section>
+            )}
 
-            {/* SELECTED WORK — the anchor lives here, not on the ribbon above: "View work" should
-                land on the work, not on a strip of metadata. */}
-            <section id="work" className="scroll-mt-8 pb-10 pt-14">
-                <h2 className="m-0 mb-2 font-mono text-[13px] font-medium uppercase tracking-[0.15em] text-[#5f5f5a]">{t('home.workLabel')}</h2>
-
-                {HOME_PROJECTS.map((p, i) => {
-                    const live = p.kind === 'live';
-                    return (
-                        <div
-                            key={p.title}
-                            className="group relative grid grid-cols-1 gap-4 border-t border-[#e9e7e2] py-8 pl-2 pr-2 transition-colors hover:bg-[#fdfcf9] sm:grid-cols-[104px_1fr] sm:items-stretch sm:gap-9 sm:py-9 sm:pr-5"
-                        >
-                            {/* Rail: a left column from sm up (index, badge, metric pinned to the bottom).
-                                Below sm there is no room for a 104px column — the badge alone is wider —
-                                so it lays itself out as one header line instead: index · badge · metric right. */}
-                            <div className="flex flex-wrap items-center gap-x-3 gap-y-2 sm:h-full sm:flex-col sm:flex-nowrap sm:items-start sm:gap-0">
-                                <div className="text-[26px] font-semibold leading-[0.9] tracking-[-0.043em] text-[#e0ddd6] sm:mb-5 sm:text-[46px]">
-                                    {String(i + 1).padStart(2, '0')}
-                                </div>
-                                <span className={`inline-flex w-max items-center gap-1.5 rounded-[6px] border px-2 py-[3px] font-mono text-[10px] font-medium tracking-[0.05em] ${live ? 'border-[#05966966] bg-[#0596691a] text-[#047857]' : 'border-[#d8d6d0] text-[#565650]'}`}>
-                                    <span className="relative h-[5px] w-[5px] shrink-0" aria-hidden="true">
-                                        <span className={`absolute inset-0 ${live ? 'rounded-full bg-[#059669] motion-safe:animate-[pulseDot_2.4s_ease-in-out_infinite]' : 'rounded-[1px] bg-[#86857e]'}`} />
-                                        <span className={`absolute inset-0 ${live ? 'rounded-full bg-[#059669]' : 'rounded-[1px] bg-[#86857e]'}`} />
-                                    </span>
-                                    {t(live ? 'home.live' : p.kind === 'package' ? 'home.package' : 'home.case')}
-                                </span>
-                                <div className="ml-auto text-right sm:ml-0 sm:mt-auto sm:pt-5 sm:text-left">
-                                    <div className="font-mono text-[17px] font-medium tabular-nums tracking-[-0.025em] text-[#1a1a1a] sm:text-[20px]">{p.metric}</div>
-                                    <div className="mt-0.5 font-mono text-[10px] uppercase tracking-[0.03em] text-[#86857e] sm:mt-1">{p.metricLabel[lang]}</div>
-                                </div>
-                            </div>
-
-                            {/* Body. The title is the row's real link and its ::after overlay makes the
-                                whole row clickable — the row can't be one big <a> any more, because the
-                                per-surface links below would then be anchors nested inside an anchor. */}
-                            <div>
-                                <div className="mb-3.5 font-mono text-[11px] font-medium uppercase tracking-[0.14em] text-[#047857]">{p.domain}</div>
-                                <h3 className="m-0 mb-3.5 text-[24px] font-semibold leading-[1.1] tracking-[-0.038em] text-[#1a1a1a] sm:text-[34px]">
-                                    <ProjectLink href={p.href} lang={lang} className="after:absolute after:inset-0 after:content-['']">{p.title}</ProjectLink>
-                                </h3>
-                                <p className="m-0 mb-[22px] max-w-[600px] text-[16px] leading-[1.6] text-[#5f5f5a] sm:text-[17px]"><ProjectText value={p.description[lang]} lang={lang} /></p>
-                                {/* The surfaces this one system actually ships — the row used to spend this
-                                    line on the stack string, which the arsenal grid repeats 200px below. */}
-                                <div className="relative z-10 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-[#ece9e3] pt-[18px]">
-                                    {p.surfaces.map((s) => (
-                                        <ProjectLink key={s.href} href={s.href} lang={lang} className="text-[13px] font-medium text-[#047857] transition-colors hover:text-[#1a1a1a]">
-                                            {s.label[lang]} <span aria-hidden="true">↗</span>
-                                        </ProjectLink>
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
-                    );
-                })}
+            {/* SELECTED WORK */}
+            <section id="work" className="scroll-mt-8 border-t border-[#e9e7e2] py-14">
+                <div className="mb-3.5 flex items-baseline justify-between gap-4">
+                    <h2 className="m-0 font-mono text-[13px] font-medium uppercase tracking-[0.15em] text-[#5f5f5a]">{t('home.workLabel')}</h2>
+                    <Link href={localize('/projects', lang)} className="text-[14px] font-medium text-[#1a1a1a] transition-colors duration-200 hover:text-[#047857]">{t('home.work.viewAll')} →</Link>
+                </div>
+                {HOME_PROJECTS.map((p) => <ProjectCard key={p.title} project={p} curve={curve} xLabel={ageLabel} />)}
                 <div className="border-t border-[#e9e7e2]" />
             </section>
 
-            {/* TECHNICAL ARSENAL — grouped, three columns */}
-            <section className="border-t border-[#e9e7e2] py-14">
+            {/* TECHNICAL ARSENAL — what each tool did, one row each. No top border and no closing
+                rule: the work list above already closes on one, and the footer opens on its own —
+                July drew both and got two hairlines back to back at each seam. */}
+            <section className="py-14">
                 <h2 className="m-0 mb-2 font-mono text-[13px] font-medium uppercase tracking-[0.15em] text-[#5f5f5a]">{t('home.arsenalLabel')}</h2>
-                <p className="m-0 mb-8 max-w-[560px] text-[16px] text-[#86857e]">{t('home.arsenalSub')}</p>
-                <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3 lg:gap-9">
-                    {HOME_ARSENAL.map((grp) => (
-                        <div key={grp.group.en}>
-                            <div className="mb-4 flex items-center gap-[9px] border-b border-[#e4e2dd] pb-3">
-                                <span className="h-1.5 w-1.5 rounded-[2px] bg-[#047857]" aria-hidden="true" />
-                                <span className="font-mono text-[12px] font-semibold uppercase tracking-[0.06em] text-[#1a1a1a]">{grp.group[lang]}</span>
-                            </div>
-                            {grp.items.map((it) => (
-                                <div key={it.tool} className="border-b border-[#f0eee9] py-[11px]">
-                                    <div className="font-mono text-[13px] font-medium text-[#047857]">{it.tool}</div>
-                                    <div className="mt-[3px] text-[13px] leading-[1.45] text-[#86857e]">{it.did[lang]}</div>
-                                </div>
-                            ))}
-                        </div>
-                    ))}
-                </div>
+                <p className="m-0 mb-3.5 max-w-[580px] text-[16px] text-[#6b6a63]">{t('home.arsenalSub')}</p>
+                {tools.map((item) => (
+                    <div key={item.tool} className="grid grid-cols-1 gap-2 border-t border-[#e9e7e2] py-5 sm:grid-cols-[260px_1fr] sm:gap-7">
+                        <span className="font-mono text-[14px] font-medium tracking-[0.02em] text-[#047857]">{item.tool}</span>
+                        <span className="text-[16px] leading-[1.5] text-[#33332f]">{item.did[lang]}</span>
+                    </div>
+                ))}
             </section>
 
-            {/* LATEST WRITING — compact rows. Gated with the blog: every row here links to
-                /blog/[slug] and the header to /blog, all of which answer 404 while the flag is off. */}
+            {/* LATEST WRITING — gated with the blog: every row links to /blog/[slug] and the header
+                to /blog, all of which answer 404 while the flag is off. */}
             {WRITING_ENABLED && (
-            <section className="border-t border-[#e9e7e2] py-14">
-                <div className="mb-3.5 flex items-baseline justify-between">
-                    <h2 className="m-0 font-mono text-[13px] font-medium uppercase tracking-[0.15em] text-[#5f5f5a]">{t('home.writingLabel')}</h2>
-                    <Link href={localize('/blog', lang)} className="text-[14px] font-medium text-[#1a1a1a] transition-colors hover:text-[#047857]">{t('home.allPosts')}</Link>
-                </div>
-                {recentPosts.length > 0 ? recentPosts.map((post) => (
-                    <Link key={post.slug} href={localize(`/blog/${post.slug}`, lang)} className="group flex items-center gap-4 rounded-[8px] border-t border-[#e9e7e2] px-2 py-[18px] transition-colors hover:bg-[#fdfcf9] sm:gap-6">
-                        {/* No fixed width: an ISO date is 72px in Geist Mono at 12px, so w-[64px] overflowed
-                            into the gap. Mono + tabular-nums keeps the column aligned across posts anyway. */}
-                        <span className="shrink-0 font-mono text-[12px] font-medium tabular-nums text-[#565650]">{post.meta.date}</span>
-                        <span className="flex-1 text-[15px] font-medium text-[#1a1a1a] transition-colors group-hover:text-[#047857] sm:text-[17px]">{post.meta.title}</span>
-                        {post.meta.readTime && <span className="shrink-0 font-mono text-[13px] text-[#86857e]">{post.meta.readTime} {t('blog.min')}</span>}
-                    </Link>
-                )) : <p className="border-t border-[#e9e7e2] py-6 text-[15px] text-[#86857e]">{t('blog.empty')}</p>}
-            </section>
+                <section className="border-t border-[#e9e7e2] py-14">
+                    <div className="mb-3.5 flex items-baseline justify-between">
+                        <h2 className="m-0 font-mono text-[13px] font-medium uppercase tracking-[0.15em] text-[#5f5f5a]">{t('home.writingLabel')}</h2>
+                        <Link href={localize('/blog', lang)} className="text-[14px] font-medium text-[#1a1a1a] transition-colors duration-200 hover:text-[#047857]">{t('home.allPosts')}</Link>
+                    </div>
+                    {recentPosts.length > 0 ? recentPosts.map((post) => (
+                        <Link key={post.slug} href={localize(`/blog/${post.slug}`, lang)} className="group flex items-center gap-4 border-t border-[#e9e7e2] py-[18px] sm:gap-6">
+                            <span className="shrink-0 font-mono text-[12px] font-medium tabular-nums text-[#565650]">{post.meta.date}</span>
+                            <span className="flex-1 text-[15px] font-medium text-[#1a1a1a] transition-colors duration-200 group-hover:text-[#047857] sm:text-[17px]">{post.meta.title}</span>
+                            {post.meta.readTime && <span className="shrink-0 font-mono text-[13px] text-[#565650]">{post.meta.readTime} {t('blog.min')}</span>}
+                        </Link>
+                    )) : <p className="border-t border-[#e9e7e2] py-6 text-[15px] text-[#6b6a63]">{t('blog.empty')}</p>}
+                </section>
             )}
         </PaperShell>
     );

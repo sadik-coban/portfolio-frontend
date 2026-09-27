@@ -26,7 +26,9 @@ export interface HomeProject {
     /** Rendered by ProjectText: plain copy, except `[label](href)` becomes a link. */
     description: Bi;
     stack: string;
-    cover: 'chart' | 'choropleth';
+    /** The homepage card's cover: a figure drawn from the project's data, the (unused)
+     *  choropleth sketch, or a typographic cover for a package that has no dataset to draw. */
+    cover: 'chart' | 'choropleth' | 'package';
     href: string;
     /** The one number the editorial work index carries on the right of each row. */
     metric: string;
@@ -38,14 +40,6 @@ export interface HomeProject {
     /** The pages this project actually ships, linked straight from the homepage row. */
     surfaces: { label: Bi; href: string }[];
 }
-
-/** Identity ribbon under the hero — who/where/what, not project KPIs (each project row
- *  carries its own metric). The "Work" cell is computed from HOME_PROJECTS. */
-export const HOME_RIBBON: { label: Bi; value: Bi; live?: boolean; accent?: boolean }[] = [
-    { label: { en: 'Status', tr: 'Durum' }, value: { en: 'Open to roles', tr: 'Yeni rollere açık' }, live: true, accent: true },
-    { label: { en: 'Role', tr: 'Rol' }, value: { en: 'Data Scientist · MLOps', tr: 'Veri Bilimci · MLOps' } },
-    { label: { en: 'Based', tr: 'Konum' }, value: { en: 'Istanbul', tr: 'İstanbul' } },
-];
 
 export const HOME_PROJECTS: HomeProject[] = [
     {
@@ -88,7 +82,7 @@ export const HOME_PROJECTS: HomeProject[] = [
             tr: 'CRAN’de yayımlanan, bulanık meta-topluluklar için bir R paketi. Birden çok temel öğrenicinin — cezalı regresyon, rastgele orman, XGBoost, LightGBM — doğrulama tahminlerini alıyor, bu uzayda Fuzzy C-Means, olabilirlikçi FCM, Gustafson–Kessel ya da k-ortalamalar ile üyelik ağırlıkları öğreniyor ve her küme için doğrulama kaybına göre ayarlanmış ayrı bir regresyon kuruyor. Paketin yazarı [Nihat Tak](https://www.nihattak.com); ben katkıda bulunan (ctb) olarak yer alıyorum.',
         },
         stack: 'R · glmnet · xgboost · lightgbm · ppclust',
-        cover: 'chart',
+        cover: 'package',
         href: 'https://cran.r-project.org/package=MFF',
         metric: 'v0.2.4',
         metricLabel: { en: 'on CRAN · MIT', tr: 'CRAN’de · MIT' },

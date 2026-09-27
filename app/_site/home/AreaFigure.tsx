@@ -6,12 +6,17 @@ import ReactECharts from 'echarts-for-react';
 const ACCENT = '#059669';
 const ACCENT_DARK = '#10b981';
 
+// The homepage figure: one smooth area line, first and last x labelled, the last point marked.
+// `x` is whatever the curve runs over (vehicle age for the car-price curve); `xLabel` names a
+// point for the axis ends and the tooltip, so the component doesn't assume years.
 export function AreaFigure({
     data,
     variant = 'hero',
+    xLabel = (x: number) => String(x),
 }: {
-    data: { year: number; price: number }[]; // price in ₺ millions
+    data: { x: number; price: number }[]; // price in ₺ millions
     variant?: 'hero' | 'thumb';
+    xLabel?: (x: number) => string;
 }) {
     const dark = false;
     const isThumb = variant === 'thumb';
@@ -26,14 +31,15 @@ export function AreaFigure({
             borderColor: dark ? 'rgba(255,255,255,0.1)' : '#e4e2dd',
             borderWidth: 1, padding: [8, 12],
             textStyle: { color: dark ? '#e2e8f0' : '#1a1a1a', fontFamily: 'var(--font-geist-sans)' },
-            formatter: (p: any[]) => `<span style="font-family:var(--font-geist-mono);font-size:11px;color:#86857e">${p[0].axisValue}</span><br/><span style="font-family:var(--font-geist-mono);font-weight:600;color:${accent}">₺${Number(p[0].data).toFixed(2)}M</span>`,
+            formatter: (p: any[]) => `<span style="font-family:var(--font-geist-mono);font-size:11px;color:#86857e">${xLabel(Number(p[0].axisValue))}</span><br/><span style="font-family:var(--font-geist-mono);font-weight:600;color:${accent}">₺${Number(p[0].data).toFixed(2)}M</span>`,
         },
         xAxis: {
-            type: 'category', data: data.map((d) => d.year), boundaryGap: false,
+            type: 'category', data: data.map((d) => d.x), boundaryGap: false,
             axisLine: { show: false }, axisTick: { show: false },
             axisLabel: {
                 show: !isThumb, color: dark ? '#64748b' : '#9a9a92', fontFamily: 'var(--font-geist-mono), monospace', fontSize: 11,
-                interval: (_i: number, v: string) => v === String(data[0]?.year) || v === String(data[data.length - 1]?.year),
+                interval: (_i: number, v: string) => v === String(data[0]?.x) || v === String(data[data.length - 1]?.x),
+                formatter: (v: string) => xLabel(Number(v)),
             },
         },
         yAxis: { type: 'value', show: false, scale: true },
@@ -43,7 +49,7 @@ export function AreaFigure({
             areaStyle: { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: dark ? 'rgba(16,185,129,0.18)' : 'rgba(5,150,105,0.14)' }, { offset: 1, color: 'rgba(5,150,105,0)' }] } },
             markPoint: { symbol: 'circle', symbolSize: isThumb ? 7 : 8, data: [{ coord: [data.length - 1, data[data.length - 1]?.price] }], itemStyle: { color: accent }, label: { show: false } },
         }],
-    }), [data, isThumb, dark, accent]);
+    }), [data, isThumb, dark, accent, xLabel]);
 
     return <ReactECharts option={option} opts={{ renderer: 'svg' }} style={{ width: '100%', height: isThumb ? '100%' : 200 }} notMerge />;
 }
