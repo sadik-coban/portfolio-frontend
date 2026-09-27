@@ -8,7 +8,7 @@ const nextConfig: NextConfig = {
     return [
       {
         source: '/linkedin',
-        destination: 'https://www.linkedin.com/in/sad%C4%B1k-%C3%A7oban-5239aa253',
+        destination: 'https://www.linkedin.com/in/sadikcoban',
         permanent: false,
       },
       {

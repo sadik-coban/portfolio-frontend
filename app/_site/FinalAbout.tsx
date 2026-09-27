@@ -7,7 +7,7 @@ import PaperShell from './PaperShell';
 const CHANNELS = [
     { label: 'Email', value: 's.c_2004@hotmail.com', href: 'mailto:s.c_2004@hotmail.com' },
     { label: 'GitHub', value: 'github.com/sadik-coban', href: 'https://github.com/sadik-coban' },
-    { label: 'LinkedIn', value: 'in/sadık-çoban', href: 'https://www.linkedin.com/in/sad%C4%B1k-%C3%A7oban-5239aa253' },
+    { label: 'LinkedIn', value: 'in/sadikcoban', href: 'https://www.linkedin.com/in/sadikcoban' },
 ];
 
 const SUBJECTS = ['about.subjJob', 'about.subjCollab', 'about.subjConsult', 'about.subjHi'];

@@ -55,7 +55,7 @@ export const site = {
     /** Public profiles — feed JSON-LD `sameAs`, the footer icons and the contact email. */
     social: {
         github: 'https://github.com/sadik-coban',
-        linkedin: 'https://www.linkedin.com/in/sad%C4%B1k-%C3%A7oban-5239aa253',
+        linkedin: 'https://www.linkedin.com/in/sadikcoban',
         email: 's.c_2004@hotmail.com',
     },
 
