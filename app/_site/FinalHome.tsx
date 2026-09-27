@@ -43,11 +43,13 @@ export default function FinalHome({ recentPosts, curve, metrics }: {
         <PaperShell>
             {/* HERO — the statement beside the model's own curve */}
             <section className="grid grid-cols-1 items-center gap-10 py-14 lg:grid-cols-[1.05fr_0.95fr] lg:gap-14 lg:py-20">
-                <div>
-                    <p className="mb-6 font-mono text-[12px] font-medium uppercase tracking-[0.16em] text-[#047857]">{t('home.heroEyebrow')}</p>
+                {/* The text column is set in the platform UI sans (font-hero): the role as a plain grey
+                    line rather than mono caps, the headline in the light weight. */}
+                <div className="font-hero">
+                    <p className="m-0 mb-4 text-[19px] leading-[1.35] text-[#5f5f5a] md:text-[21px]">{t('home.heroEyebrow')}</p>
                     {/* The setup is muted and the payoff carries full ink. July's muted grey (#a8a7a0)
                         sat at 2.2:1; #86857e clears the 3:1 large-text floor. */}
-                    <h1 className="m-0 mb-6 text-[40px] font-bold leading-[1.05] tracking-[-0.04em] text-[#1a1a1a] text-balance md:text-[56px]">
+                    <h1 className="m-0 mb-6 text-[40px] font-light leading-[1.08] tracking-[-0.02em] text-[#1a1a1a] text-balance md:text-[56px]">
                         <span className="text-[#86857e]">{t('home.heroH1Lead')}</span> {t('home.heroH1Payoff')}
                     </h1>
                     <p className="m-0 mb-9 max-w-[480px] text-[18px] leading-[1.6] text-[#5f5f5a]">{t('home.heroSub')}</p>
