@@ -19,9 +19,9 @@ import * as LBL from '@/lib/labels';
 // keyed by the pipeline's figure slug so the markdown can ask for one by name.
 //
 // The data is public/report-data.json, the current pipeline run. That matters: the site's
-// older public/site_data.json disagrees with the report text it would sit next to (MAPE 6.49
-// vs 6.5, dealer MAE ₺192K vs ₺191K), and a chart that contradicts the paragraph above it is
-// worse than no chart.
+// older public/site_data.json is a different run from the report text it would sit next to, and a
+// chart that contradicts the paragraph above it is worse than no chart. Since the generator's
+// 2026-09-25 restructure its keys are English (cardatasys/docs/site-data-renames.json).
 
 type Lang = 'tr' | 'en';
 type Fig = { traces: unknown[]; layout: Record<string, unknown>; height: number };
@@ -72,12 +72,12 @@ export function buildReportFigures(d: any, lang: Lang): Record<string, Fig> {
 
     // ---------- the headline: the dealer's reflex vs the model ----------
     // Same two numbers the generator draws (build_report.py derive(): model_compare.lightgbm and
-    // model_yil_medyani.taban) — the report names LightGBM as "the model" even where CatBoost
+    // model_year_median.baseline) — the report names LightGBM as "the model" even where CatBoost
     // edges it on MAPE, so the variant table's winner is not the right source here.
     const fmtK = (n: number) => '₺' + Math.round(n / 1e3).toLocaleString(loc) + 'K';
-    const baseMae = dom.model_yil_medyani?.taban?.MAE, modelMae = dom.model_compare?.lightgbm?.MAE;
+    const baseMae = dom.model_year_median?.baseline?.MAE, modelMae = dom.model_compare?.lightgbm?.MAE;
     put('00-base-vs-model', (baseMae != null && modelMae != null) ? [{
-        type: 'bar', x: [L('model+yıl medyanı', 'model+year median'), 'model'], y: [baseMae, modelMae],
+        type: 'bar', x: [L('emsal medyanı', 'comparable median'), 'model'], y: [baseMae, modelMae],
         marker: { color: ['#b8b6ae', green] }, text: [fmtK(baseMae), fmtK(modelMae)], textposition: 'outside', cliponaxis: false,
         hovertemplate: '%{x}: %{text}<extra></extra>',
     }] : null, base({ margin: { t: 24, r: 16, b: 28, l: 8 }, yaxis: { tickformat: '~s', title: { text: L('ortalama mutlak hata (₺)', 'mean absolute error (₺)'), font: { size: 10 } } } }), 260);
@@ -101,7 +101,7 @@ export function buildReportFigures(d: any, lang: Lang): Record<string, Fig> {
     // The bootstrap fit lives under hedonic_reliability, not hedonic — same source the
     // report page uses ("single hedonic source of truth: prefer the detailed bootstrap-fit").
     const boot = dom.hedonic_reliability?.bootstrap || [];
-    put('03-bootstrap-ci', boot.length ? [{ type: 'scatter', mode: 'markers', y: boot.map((b: any) => hedoTerm(b.terim)), x: boot.map((b: any) => b.nokta), error_x: { type: 'data', symmetric: false, array: boot.map((b: any) => b.ci_hi - b.nokta), arrayminus: boot.map((b: any) => b.nokta - b.ci_lo), color: '#b8b6ae', thickness: 1.5, width: 5 }, marker: { size: 9, color: boot.map((b: any) => (b.nokta >= 0 ? theme.accent : '#ef4444')) }, hovertemplate: '%{y}: β=%{x:.3f}<extra></extra>' }] : null,
+    put('03-bootstrap-ci', boot.length ? [{ type: 'scatter', mode: 'markers', y: boot.map((b: any) => hedoTerm(b.term)), x: boot.map((b: any) => b.point), error_x: { type: 'data', symmetric: false, array: boot.map((b: any) => b.ci_hi - b.point), arrayminus: boot.map((b: any) => b.point - b.ci_lo), color: '#b8b6ae', thickness: 1.5, width: 5 }, marker: { size: 9, color: boot.map((b: any) => (b.point >= 0 ? theme.accent : '#ef4444')) }, hovertemplate: '%{y}: β=%{x:.3f}<extra></extra>' }] : null,
         base({ margin: { t: 8, r: 16, b: 32, l: 8 }, xaxis: { zeroline: true, zerolinecolor: theme.muted, title: { text: L('katsayı (log-fiyat)', 'coefficient (log-price)'), font: { size: 10 } } } }), 320);
 
     // methodology.lofo holds 22 rows: 19 single-feature removals AND 3 group removals. Drawing all
@@ -131,7 +131,7 @@ export function buildReportFigures(d: any, lang: Lang): Record<string, Fig> {
     put('06-km-price', curve(dom.km_price, 'km', green), curveLayout, 260);
 
     const bc = dom.brand_compare;
-    put('07-brand', bc ? [{ type: 'bar', x: ['BMW', 'Audi'], y: [bc.bmw_medyan, bc.audi_medyan], marker: { color: [green, '#0d9aba'] }, text: [bc.bmw_medyan, bc.audi_medyan].map(fmtM), textposition: 'outside', hovertemplate: '%{x}: %{text}<extra></extra>' }] : null,
+    put('07-brand', bc ? [{ type: 'bar', x: ['BMW', 'Audi'], y: [bc.bmw_median, bc.audi_median], marker: { color: [green, '#0d9aba'] }, text: [bc.bmw_median, bc.audi_median].map(fmtM), textposition: 'outside', hovertemplate: '%{x}: %{text}<extra></extra>' }] : null,
         base({ margin: { t: 24, r: 16, b: 24, l: 8 } }), 260);
 
     // ---------- OOF diagnostics ----------
@@ -216,7 +216,7 @@ export function buildReportFigures(d: any, lang: Lang): Record<string, Fig> {
         }), 320);
 
     const cf = dom.conformal;
-    const cfHedef = cf?.coverage_hedef ?? 90;
+    const cfHedef = cf?.coverage_target ?? 90;
     put('12-coverage', cf ? [{ type: 'bar', x: cf.by_quantile.map((r: any) => r[0]), y: cf.by_quantile.map((r: any) => r[1]), marker: { color: cf.by_quantile.map((r: any) => (r[1] >= cfHedef ? green : '#e08a1e')) }, text: cf.by_quantile.map((r: any) => r[1].toFixed(1) + '%'), textposition: 'outside', hovertemplate: '%{x}: %{y:.1f}% ' + L('kapsama', 'coverage') + '<extra></extra>' }] : null,
         base({ margin: { t: 24, r: 16, b: 24, l: 8 }, yaxis: { ticksuffix: '%' }, shapes: [{ type: 'line', xref: 'paper', x0: 0, x1: 1, yref: 'y', y0: cfHedef, y1: cfHedef, line: { dash: 'dash', color: '#86857e', width: 1 } }] }), 260);
 
@@ -257,7 +257,7 @@ export function buildReportFigures(d: any, lang: Lang): Record<string, Fig> {
     // ---------- data quality ----------
     // Columns that share an identical missing rate are empty in the SAME rows — a co-missing
     // block. Each shared rate gets its own colour so the blocks are visible at a glance.
-    const sm = met.sistematik_missing;
+    const sm = met.systematic_missing;
     const smAll = sm?.column_missing_all ? [...sm.column_missing_all].sort((a: any, b: any) => a[1] - b[1]) : [];
     const SHARED_PALETTE = ['#7c5cff', '#0d9aba', '#0891b2', '#c026d3', '#059669', '#ef4444'];
     const smPctColor = new Map<number, string>();
@@ -311,7 +311,7 @@ export function buildReportFigures(d: any, lang: Lang): Record<string, Fig> {
     const ksel = met.kmeans_selection;
     put('24-k-selection', ksel ? [
         { type: 'scatter', mode: 'lines+markers', name: L('İnertia (elbow)', 'Inertia (elbow)'), x: ksel.elbow.map((r: any) => r[0]), y: ksel.elbow.map((r: any) => r[1]), line: { color: deep, width: 2 }, marker: { size: 5 }, hovertemplate: 'k=%{x}: inertia %{y:.4s}<extra></extra>' },
-        { type: 'scatter', mode: 'lines+markers', name: 'Silhouette', yaxis: 'y2', x: ksel.silhouette.map((r: any) => r[0]), y: ksel.silhouette.map((r: any) => r[1]), line: { color: '#e08a1e', width: 2 }, marker: { size: 7, color: ksel.silhouette.map((r: any) => (r[0] === ksel.secilen_k ? deep : '#e08a1e')) }, hovertemplate: 'k=%{x}: silhouette %{y:.3f}<extra></extra>' },
+        { type: 'scatter', mode: 'lines+markers', name: 'Silhouette', yaxis: 'y2', x: ksel.silhouette.map((r: any) => r[0]), y: ksel.silhouette.map((r: any) => r[1]), line: { color: '#e08a1e', width: 2 }, marker: { size: 7, color: ksel.silhouette.map((r: any) => (r[0] === ksel.chosen_k ? deep : '#e08a1e')) }, hovertemplate: 'k=%{x}: silhouette %{y:.3f}<extra></extra>' },
     ] : null,
         base({ showlegend: true, legend: { font: { size: 9 }, orientation: 'h', y: -0.24 }, margin: { t: 12, r: 40, b: 40, l: 8 }, xaxis: { title: { text: 'k', font: { size: 10 } }, dtick: 1 }, yaxis: { tickformat: '~s', tickfont: { size: 10, color: '#047857' } }, yaxis2: { fixedrange: true, overlaying: 'y', side: 'right', gridcolor: 'transparent', zeroline: false, tickfont: { size: 10, color: '#e08a1e' } } }), 300);
 

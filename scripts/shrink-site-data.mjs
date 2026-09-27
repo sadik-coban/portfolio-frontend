@@ -12,13 +12,13 @@
 // `n` (used for R²/stats); we add `sampled` = the rendered point count.
 //
 // A third argument merges the per-model error figures from the report generator's own
-// metrics/error_drivers.json. They belong to a separate pipeline file, but figure 11 plots them
+// metrics/08_large_errors.json (error_drivers). They belong to a separate pipeline file, but figure 11 plots them
 // beside data that lives here, and site_data's residual_vs_n only carries models with 5+ listings
 // — the 1–4 listing models the figure draws as open circles exist nowhere else.
 //
 // Re-run after each new full drop (keep the full file out of git):
 //   node scripts/shrink-site-data.mjs "site_data (9).json"
-//   node scripts/shrink-site-data.mjs <full.json> public/report-data.json [error_drivers.json]
+//   node scripts/shrink-site-data.mjs <full.json> public/report-data.json [08_large_errors.json]
 // ---------------------------------------------------------------------------
 import fs from 'node:fs';
 
@@ -112,7 +112,10 @@ for (const key of ['pca_scatter', 'pca_scatter_13']) {
 
 const DRIVERS = process.argv[4];
 if (DRIVERS) {
-    const ed = JSON.parse(fs.readFileSync(DRIVERS, 'utf8').replace(/-?Infinity/g, 'null').replace(/\bNaN\b/g, 'null'));
+    const file = JSON.parse(fs.readFileSync(DRIVERS, 'utf8').replace(/-?Infinity/g, 'null').replace(/\bNaN\b/g, 'null'));
+    // The generator used to write these to metrics/error_drivers.json at the top level; since the
+    // 2026-09 restructure they sit under "error_drivers" in metrics/08_large_errors.json. Both read.
+    const ed = file.error_drivers ?? file;
     // [listings, median error %] per model, and the bucket medians the figure's line is drawn from
     dom.per_model_error = ed.per_model_error || [];
     dom.per_model_buckets = ed.per_model_buckets || [];

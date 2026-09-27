@@ -41,6 +41,14 @@ const PROVENANCE_LINE = /^>\s*(?:Üretilmiş dosya|Generated file)\b/;
 
 const FIGURE_LINE = /^!\[([^\]]*)\]\(figures\/(?:tr|en)-([a-z0-9-]+)\.png\)\s*$/;
 
+// The generator wraps a long figure caption onto a second line. The loop below reads the document
+// one line at a time, so such a figure would miss FIGURE_LINE and fall through as a plain markdown
+// image with a relative src — a 404 in place of the chart. A line break inside the brackets of an
+// image that points at figures/ is folded back into a space before the loop sees it; like the
+// provenance line, this is done here so the copy under content/ stays byte-identical.
+const unwrapFigureCaptions = (md: string) =>
+    md.replace(/!\[([^\]]*)\]\(figures\//g, (_m, cap: string) => `![${cap.replace(/\s*\r?\n\s*/g, ' ')}](figures/`);
+
 type HastNode = { type: string; tagName?: string; properties?: Record<string, unknown>; children?: HastNode[] };
 
 /**
@@ -260,7 +268,7 @@ export const getReport = cache(async (
         buffer = [];
     };
 
-    for (const line of raw.split('\n')) {
+    for (const line of unwrapFigureCaptions(raw).split('\n')) {
         if (PROVENANCE_LINE.test(line)) continue;
         const hit = line.match(FIGURE_LINE);
         if (hit) {
