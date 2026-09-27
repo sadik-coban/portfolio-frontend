@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback } from 'react';
+import { Fragment, useCallback } from 'react';
 import Link from 'next/link';
 import { useLang, localize } from './i18n';
 import PaperShell from './PaperShell';
@@ -35,8 +35,9 @@ export default function FinalHome({ recentPosts, curve, metrics }: {
         { v: lang === 'tr' ? `%${metrics.mape.toFixed(2)}` : `${metrics.mape.toFixed(2)}%`, k: L('Out-of-fold MAPE', 'Out-of-fold MAPE') },
         { v: '₺' + Math.round(metrics.mae / 1000).toLocaleString(loc) + 'K', k: L('Out-of-fold MAE', 'Out-of-fold MAE') },
     ] : [];
-    // One row per tool, as July had them; the groups only ordered the list.
-    const tools = HOME_ARSENAL.flatMap((g) => g.items);
+    // One row per group, its tools on a single line: the entries hold pairs ("LightGBM · CatBoost"),
+    // split so the row reads as one list rather than pairs of pairs.
+    const skills = HOME_ARSENAL.map((g) => ({ group: g.group[lang], tools: g.items.flatMap((it) => it.tool.split(' · ')) }));
 
     return (
         <PaperShell>
@@ -95,16 +96,24 @@ export default function FinalHome({ recentPosts, curve, metrics }: {
                 <div className="border-t border-[#e9e7e2]" />
             </section>
 
-            {/* TECHNICAL ARSENAL — what each tool did, one row each. No top border and no closing
-                rule: the work list above already closes on one, and the footer opens on its own —
-                July drew both and got two hairlines back to back at each seam. */}
+            {/* TECHNICAL SKILLS — three group rows in July's two-column row style. No top border and
+                no closing rule: the work list above already closes on one, and the footer opens on
+                its own — July drew both and got two hairlines back to back at each seam. */}
             <section className="py-14">
-                <h2 className="m-0 mb-2 font-mono text-[13px] font-medium uppercase tracking-[0.15em] text-[#5f5f5a]">{t('home.arsenalLabel')}</h2>
-                <p className="m-0 mb-3.5 max-w-[580px] text-[16px] text-[#6b6a63]">{t('home.arsenalSub')}</p>
-                {tools.map((item) => (
-                    <div key={item.tool} className="grid grid-cols-1 gap-2 border-t border-[#e9e7e2] py-5 sm:grid-cols-[260px_1fr] sm:gap-7">
-                        <span className="font-mono text-[14px] font-medium tracking-[0.02em] text-[#047857]">{item.tool}</span>
-                        <span className="text-[16px] leading-[1.5] text-[#33332f]">{item.did[lang]}</span>
+                <h2 className="m-0 mb-3.5 font-mono text-[13px] font-medium uppercase tracking-[0.15em] text-[#5f5f5a]">{t('home.arsenalLabel')}</h2>
+                {skills.map((s) => (
+                    <div key={s.group} className="grid grid-cols-1 gap-1.5 border-t border-[#e9e7e2] py-4 sm:grid-cols-[260px_1fr] sm:gap-7">
+                        <span className="font-mono text-[13px] font-medium tracking-[0.02em] text-[#047857]">{s.group}</span>
+                        {/* Each tool unbreakable, its separator glued to it: on a phone the line wraps only
+                            after a "·" — never inside "TF-IDF+SVD", never leaving a dot at a line start. */}
+                        <span className="text-[16px] leading-[1.6] text-[#33332f]">
+                            {s.tools.map((tool, i) => (
+                                <Fragment key={tool}>
+                                    <span className="whitespace-nowrap">{tool}{i < s.tools.length - 1 ? ' ·' : ''}</span>
+                                    {i < s.tools.length - 1 ? ' ' : ''}
+                                </Fragment>
+                            ))}
+                        </span>
                     </div>
                 ))}
             </section>
