@@ -105,7 +105,7 @@ const en: Dict = {
     // "versioned" was the one claim the repo contradicts — there is no model registry. Cut it,
     // and replaced the chiasmus with the thesis the rest of the page actually proves.
     'home.heroSub': 'I build the whole path — from the first notebook to a deployed, monitored API. Evaluated out-of-fold, so the number you see is the number you get.',
-    'home.viewWork': 'View work',
+    'home.viewWork': 'View projects',
     'home.getInTouch': 'Get in touch →',
     'home.figCaption': 'Median asking price by vehicle age',
     'home.sampleFigure': 'SAMPLE FIGURE',
@@ -385,7 +385,7 @@ const tr: Dict = {
     'home.heroH1Lead': 'Üretime çıkan ve',
     'home.heroH1Payoff': 'doğruyu söyleyen modeller.',
     'home.heroSub': 'Yolun tamamını kuruyorum — ilk defterden dağıtılmış, izlenen bir API’ye. Out-of-fold değerlendirildi; gördüğün sayı, alacağın sayı.',
-    'home.viewWork': 'Çalışmaları gör',
+    'home.viewWork': 'Projeleri gör',
     'home.getInTouch': 'İletişime geç →',
     'home.figCaption': 'Araç yaşına göre medyan ilan fiyatı',
     'home.sampleFigure': 'ÖRNEK GRAFİK',

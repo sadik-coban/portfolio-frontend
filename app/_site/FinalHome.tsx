@@ -36,9 +36,8 @@ export default function FinalHome({ recentPosts, curve, metrics }: {
         { v: lang === 'tr' ? `%${metrics.mape.toFixed(2)}` : `${metrics.mape.toFixed(2)}%`, k: L('Out-of-fold MAPE', 'Out-of-fold MAPE') },
         { v: '₺' + Math.round(metrics.mae / 1000).toLocaleString(loc) + 'K', k: L('Out-of-fold MAE', 'Out-of-fold MAE') },
     ] : [];
-    // One row per group, its tools on a single line: the entries hold pairs ("LightGBM · CatBoost"),
-    // split so the row reads as one list rather than pairs of pairs.
-    const skills = HOME_ARSENAL.map((g) => ({ group: g.group[lang], tools: g.items.flatMap((it) => it.tool.split(' · ')) }));
+    // One row per group, its tools on a single line.
+    const skills = HOME_ARSENAL.map((g) => ({ group: g.group[lang], tools: g.tools }));
 
     return (
         <PaperShell>

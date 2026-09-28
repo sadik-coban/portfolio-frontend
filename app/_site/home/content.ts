@@ -81,7 +81,8 @@ export const HOME_PROJECTS: HomeProject[] = [
             en: 'An R package on CRAN for fuzzy meta-ensembles. It takes the validation predictions of several base learners — penalised regression, random forest, XGBoost, LightGBM — learns membership weights over that prediction space with Fuzzy C-Means, possibilistic FCM, Gustafson–Kessel or k-means, and fits one regression per cluster, tuned by grid search on validation loss. [Nihat Tak](https://www.nihattak.com) is the author; I am a contributor (ctb).',
             tr: 'CRAN’de yayımlanan, bulanık meta-topluluklar için bir R paketi. Birden çok temel öğrenicinin — cezalı regresyon, rastgele orman, XGBoost, LightGBM — doğrulama tahminlerini alıyor, bu uzayda Fuzzy C-Means, olabilirlikçi FCM, Gustafson–Kessel ya da k-ortalamalar ile üyelik ağırlıkları öğreniyor ve her küme için doğrulama kaybına göre ayarlanmış ayrı bir regresyon kuruyor. Paketin yazarı [Nihat Tak](https://www.nihattak.com); ben katkıda bulunan (ctb) olarak yer alıyorum.',
         },
-        stack: 'R · glmnet · xgboost · lightgbm · ppclust',
+        // The card's stack line names the language only; the dependencies stay in the tags.
+        stack: 'R',
         cover: 'package',
         href: 'https://cran.r-project.org/package=MFF',
         metric: 'v0.2.4',
@@ -127,35 +128,19 @@ export const HOME_PROJECTS: HomeProject[] = [
     // },
 ];
 
-// What each tool actually did on the car-price system — kept honest against the code:
-// LightGBM and CatBoost tie on a shared leak-free split (CatBoost takes the MAPE-only rule by
-// 0.05 points; LightGBM is the model that ships), the model ships as one S3 pickle on Railway,
-// and the raw rows stay in DuckDB behind the API. No registry, no MultiQuantile.
-// Grouped by where each tool earns its place — the editorial homepage renders these as
-// three columns, so the copy per item stays short (one line of what it actually did).
-export const HOME_ARSENAL: { group: Bi; items: { tool: string; did: Bi }[] }[] = [
+// The homepage's "Technical skills" rows: one row per group, its tools on one line. Only what
+// the work shown here actually used — R is MFF's language, SQL the DuckDB queries behind the API.
+export const HOME_ARSENAL: { group: Bi; tools: string[] }[] = [
     {
         group: { en: 'Modelling & Stats', tr: 'Modelleme & İstatistik' },
-        items: [
-            { tool: 'LightGBM · CatBoost', did: { en: 'One leak-free 5-fold split — LightGBM and CatBoost tie at ~6.5% MAPE.', tr: 'Tek sızıntısız 5-fold bölünme — LightGBM ve CatBoost ~%6.5 MAPE’de berabere.' } },
-            { tool: 'scikit-learn · TF-IDF+SVD', did: { en: 'Listing titles into 170 dense dimensions, bundled with the model.', tr: 'İlan başlıkları 170 yoğun boyuta; modelle aynı pakette.' } },
-            { tool: 'SciPy · statsmodels', did: { en: 'Hedonic regression with bootstrap CIs; KS + Wasserstein for drift.', tr: 'Bootstrap GA’lı hedonik regresyon; drift için KS + Wasserstein.' } },
-        ],
+        tools: ['LightGBM', 'CatBoost', 'scikit-learn', 'TF-IDF+SVD', 'SciPy', 'statsmodels', 'R'],
     },
     {
         group: { en: 'Serving & Data', tr: 'Servis & Veri' },
-        items: [
-            { tool: 'FastAPI · DuckDB', did: { en: 'Prediction, drift and BI endpoints aggregating 30K rows server-side.', tr: '30 bin satırı sunucuda toplayan tahmin, drift ve BI uç noktaları.' } },
-            { tool: 'Railway · S3', did: { en: 'Model bundle and listing database load from object storage at boot.', tr: 'Model paketi ve ilan veritabanı açılışta nesne depolamadan yükleniyor.' } },
-            { tool: 'pandas · NumPy', did: { en: 'Scraping, dedup and the columnar aggregation behind the dashboard.', tr: 'Kazıma, tekilleştirme ve panonun arkasındaki kolonlu toplama.' } },
-        ],
+        tools: ['FastAPI', 'DuckDB', 'SQL', 'Railway', 'S3', 'pandas', 'NumPy'],
     },
     {
         group: { en: 'Frontend & Viz', tr: 'Arayüz & Görselleştirme' },
-        items: [
-            { tool: 'Next.js', did: { en: 'Static analysis report and the app pages rendering this work.', tr: 'Statik analiz raporu ve bu çalışmayı gösteren uygulama sayfaları.' } },
-            { tool: 'Plotly · ECharts', did: { en: 'Notebook-grade figures and the live market dashboard.', tr: 'Defter kalitesinde grafikler ve canlı pazar panosu.' } },
-            { tool: 'Tailwind', did: { en: 'The editorial and app layers of this design system.', tr: 'Bu tasarım sisteminin editorial ve uygulama katmanları.' } },
-        ],
+        tools: ['Next.js', 'Plotly', 'ECharts', 'Tailwind'],
     },
 ];
