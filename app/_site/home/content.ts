@@ -45,7 +45,7 @@ export const HOME_PROJECTS: HomeProject[] = [
     {
         domain: 'Deployment · MLOps',
         kind: 'live',
-        title: 'Car Price Prediction & MLOps',
+        title: 'Used Car Market Analysis',
         description: {
             en: 'End-to-end ML system on LightGBM with TF-IDF+SVD text features — scraping, dedup, leak-free 5-fold evaluation, drift monitoring, SHAP explainability, and a FastAPI serving layer. The complete production cycle, not just a notebook.',
             tr: 'LightGBM ve TF-IDF+SVD metin öznitelikleriyle kurulmuş, uçtan uca bir ML sistemi: veri toplama, tekilleştirme, sızıntısız 5-fold değerlendirme, drift izleme, SHAP açıklanabilirliği ve FastAPI servis katmanı. Bu sadece bir defter değil, eksiksiz bir üretim döngüsü.',

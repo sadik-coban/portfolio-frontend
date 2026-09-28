@@ -88,7 +88,7 @@ export const site = {
             },
         },
         '/projects/car-price': {
-            title: { en: 'Car Price Prediction & MLOps', tr: 'Araç Fiyat Tahmini & MLOps' },
+            title: { en: 'Used Car Market Analysis', tr: 'İkinci El Araç Piyasası Analizi' },
             description: {
                 en: 'An end-to-end car-price prediction & MLOps system on LightGBM with TF-IDF+SVD text features — scraping, dedup, leak-free 5-fold evaluation, drift monitoring, SHAP explainability and a FastAPI serving layer.',
                 tr: 'LightGBM ve TF-IDF+SVD metin öznitelikleriyle kurulmuş uçtan uca araç fiyat tahmini ve MLOps sistemi — veri toplama, tekilleştirme, sızıntısız 5-fold değerlendirme, drift izleme, SHAP açıklanabilirliği ve FastAPI servis katmanı.',
