@@ -11,11 +11,11 @@ const nextConfig: NextConfig = {
         destination: 'https://www.linkedin.com/in/sadikcoban',
         permanent: false,
       },
-      // The /projects index is gone: the homepage's work section is the list. Temporary, so the
+      // The /projects index is gone: the homepage's projects section is the list. Temporary, so the
       // page can come back without browsers holding on to a permanent redirect.
       {
         source: '/projects',
-        destination: '/#work',
+        destination: '/#projects',
         permanent: false,
       },
       {

@@ -131,7 +131,7 @@ export default function FinalShell({
                             </button>
                         </div>
                         <Link
-                            href={localize('/#work', lang)}
+                            href={localize('/#projects', lang)}
                             onClick={() => setOpen(false)}
                             className="mb-4 flex items-center gap-[11px] rounded-[8px] px-[10px] py-[9px] text-[13px] font-medium text-[#86857e] transition-colors hover:bg-[#f1efe9] hover:text-[#5f5f5a]"
                         >
@@ -154,10 +154,10 @@ export default function FinalShell({
                     {/* Brand mark in the same 40px slot → stays put as the rail animates. */}
                     <div className={collapsed ? 'flex w-[40px] shrink-0 items-center justify-center' : 'pl-3'}><Monogram /></div>
 
-                    {/* Up one level → the work section on the homepage (there is no /projects index).
+                    {/* Up one level → the projects section on the homepage (there is no /projects index).
                         Same row shape as the nav, so it animates identically. */}
                     <Link
-                        href={localize('/#work', lang)}
+                        href={localize('/#projects', lang)}
                         title={collapsed ? t('nav.projects') : undefined}
                         aria-label={t('nav.projects')}
                         className="mt-3 flex items-center rounded-[8px] py-[9px] text-[13px] font-medium text-[#86857e] transition-colors hover:bg-[#f1efe9] hover:text-[#5f5f5a]"

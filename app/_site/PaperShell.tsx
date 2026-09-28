@@ -10,9 +10,9 @@ import { WRITING_ENABLED } from './writing-config';
 import { jumpToSection } from './jump';
 
 // `writing: true` marks an entry that only exists while WRITING_ENABLED is on. `section` marks
-// an in-page target: there is no /projects index, "Projects" is the homepage's work section.
+// an in-page target: there is no /projects index, "Projects" is the homepage's projects section.
 const NAV: { key: string; href: string; writing?: boolean; section?: string }[] = [
-    { key: 'nav.projects', href: '/#work', section: 'work' },
+    { key: 'nav.projects', href: '/#projects', section: 'projects' },
     { key: 'nav.blog', href: '/blog', writing: true },
     { key: 'nav.about', href: '/about' },
 ].filter((n) => WRITING_ENABLED || !n.writing);

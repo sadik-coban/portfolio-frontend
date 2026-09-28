@@ -53,7 +53,7 @@ export default function FinalHome({ recentPosts, curve, metrics }: {
                     </h1>
                     <p className="m-0 mb-9 max-w-[480px] text-[18px] leading-[1.6] text-[#5f5f5a]">{t('home.heroSub')}</p>
                     <div className="flex flex-wrap items-center gap-5 md:gap-[22px]">
-                        <Link href="#work" onClick={(e) => jumpToSection(e, 'work')} className="inline-flex h-[44px] items-center rounded-[10px] bg-[#1a1a1a] px-5 text-[14px] font-semibold text-[#f7f6f3] transition-opacity duration-200 hover:opacity-90">{t('home.viewWork')}</Link>
+                        <Link href="#projects" onClick={(e) => jumpToSection(e, 'projects')} className="inline-flex h-[44px] items-center rounded-[10px] bg-[#1a1a1a] px-5 text-[14px] font-semibold text-[#f7f6f3] transition-opacity duration-200 hover:opacity-90">{t('home.viewWork')}</Link>
                         <Link href={localize('/about', lang)} className="text-[14px] font-medium text-[#1a1a1a] transition-colors duration-200 hover:text-[#047857]">{t('home.getInTouch')}</Link>
                         <a href={site.social.github} target="_blank" rel="noopener noreferrer" className="text-[14px] font-medium text-[#5f5f5a] transition-colors duration-200 hover:text-[#1a1a1a]">GitHub ↗</a>
                     </div>
@@ -88,7 +88,7 @@ export default function FinalHome({ recentPosts, curve, metrics }: {
             )}
 
             {/* SELECTED WORK */}
-            <section id="work" className="scroll-mt-8 border-t border-[#e9e7e2] py-14">
+            <section id="projects" className="scroll-mt-8 border-t border-[#e9e7e2] py-14">
                 {/* This section is the whole list — there is no /projects index to point to. */}
                 <h2 className="m-0 mb-3.5 font-mono text-[13px] font-medium uppercase tracking-[0.15em] text-[#5f5f5a]">{t('home.workLabel')}</h2>
                 {HOME_PROJECTS.map((p) => <ProjectCard key={p.title} project={p} curve={curve} xLabel={ageLabel} />)}
