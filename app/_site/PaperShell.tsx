@@ -10,7 +10,8 @@ import { WRITING_ENABLED } from './writing-config';
 
 // `writing: true` marks an entry that only exists while WRITING_ENABLED is on.
 const NAV = [
-    { key: 'nav.projects', href: '/projects' },
+    // No /projects index any more: the homepage's work section is the list.
+    { key: 'nav.work', href: '/#work' },
     { key: 'nav.blog', href: '/blog', writing: true },
     { key: 'nav.about', href: '/about' },
 ].filter((n) => WRITING_ENABLED || !n.writing);

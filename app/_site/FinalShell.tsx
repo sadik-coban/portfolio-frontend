@@ -131,11 +131,11 @@ export default function FinalShell({
                             </button>
                         </div>
                         <Link
-                            href={localize('/projects', lang)}
+                            href={localize('/#work', lang)}
                             onClick={() => setOpen(false)}
                             className="mb-4 flex items-center gap-[11px] rounded-[8px] px-[10px] py-[9px] text-[13px] font-medium text-[#86857e] transition-colors hover:bg-[#f1efe9] hover:text-[#5f5f5a]"
                         >
-                            <ArrowLeft size={16} className="shrink-0" /> {t('nav.projects')}
+                            <ArrowLeft size={16} className="shrink-0" /> {t('nav.work')}
                         </Link>
                         <NavList onNavigate={() => setOpen(false)} flat />
                         <div className="mt-auto pt-6">
@@ -154,16 +154,16 @@ export default function FinalShell({
                     {/* Brand mark in the same 40px slot → stays put as the rail animates. */}
                     <div className={collapsed ? 'flex w-[40px] shrink-0 items-center justify-center' : 'pl-3'}><Monogram /></div>
 
-                    {/* Up one level → projects list. Same row shape as the nav, so it
-                        animates identically (no special-casing of the "Projects" button). */}
+                    {/* Up one level → the work section on the homepage (there is no /projects index).
+                        Same row shape as the nav, so it animates identically. */}
                     <Link
-                        href={localize('/projects', lang)}
-                        title={collapsed ? t('nav.projects') : undefined}
-                        aria-label={t('nav.projects')}
+                        href={localize('/#work', lang)}
+                        title={collapsed ? t('nav.work') : undefined}
+                        aria-label={t('nav.work')}
                         className="mt-3 flex items-center rounded-[8px] py-[9px] text-[13px] font-medium text-[#86857e] transition-colors hover:bg-[#f1efe9] hover:text-[#5f5f5a]"
                     >
                         <span className="flex w-[40px] shrink-0 items-center justify-center"><ArrowLeft size={16} /></span>
-                        <span className={`whitespace-nowrap transition-opacity duration-200 ${collapsed ? 'opacity-0' : 'opacity-100'}`}>{t('nav.projects')}</span>
+                        <span className={`whitespace-nowrap transition-opacity duration-200 ${collapsed ? 'opacity-0' : 'opacity-100'}`}>{t('nav.work')}</span>
                     </Link>
 
                     {/* Hairline that frames the header zone — fades in only while collapsed. */}

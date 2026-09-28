@@ -31,7 +31,7 @@ export default function Footer() {
                                 </a>
                             </li>
                             <li>
-                                <a href="/projects" className="text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 transition-colors">
+                                <a href="/#work" className="text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 transition-colors">
                                     Projects
                                 </a>
                             </li>

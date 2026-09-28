@@ -88,10 +88,8 @@ export default function FinalHome({ recentPosts, curve, metrics }: {
 
             {/* SELECTED WORK */}
             <section id="work" className="scroll-mt-8 border-t border-[#e9e7e2] py-14">
-                <div className="mb-3.5 flex items-baseline justify-between gap-4">
-                    <h2 className="m-0 font-mono text-[13px] font-medium uppercase tracking-[0.15em] text-[#5f5f5a]">{t('home.workLabel')}</h2>
-                    <Link href={localize('/projects', lang)} className="text-[14px] font-medium text-[#1a1a1a] transition-colors duration-200 hover:text-[#047857]">{t('home.work.viewAll')} →</Link>
-                </div>
+                {/* This section is the whole list — there is no /projects index to point to. */}
+                <h2 className="m-0 mb-3.5 font-mono text-[13px] font-medium uppercase tracking-[0.15em] text-[#5f5f5a]">{t('home.workLabel')}</h2>
                 {HOME_PROJECTS.map((p) => <ProjectCard key={p.title} project={p} curve={curve} xLabel={ageLabel} />)}
                 <div className="border-t border-[#e9e7e2]" />
             </section>

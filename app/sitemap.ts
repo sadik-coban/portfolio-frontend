@@ -20,7 +20,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
         return {
             url,
             lastModified,
-            changeFrequency: (['/', '/projects', '/blog'].includes(path) ? 'weekly' : 'monthly') as 'weekly' | 'monthly',
+            changeFrequency: (['/', '/blog'].includes(path) ? 'weekly' : 'monthly') as 'weekly' | 'monthly',
             priority: path === '/' ? 1 : path.split('/').filter(Boolean).length <= 1 ? 0.8 : 0.6,
             alternates: { languages: I18N_ENABLED ? { en: url, tr: trUrl } : { en: url } },
         };

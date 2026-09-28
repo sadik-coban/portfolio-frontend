@@ -59,7 +59,7 @@ export default function FinalMrfei() {
     return (
         <PaperShell>
             <article className="py-14 lg:py-16">
-                <Link href={localize('/projects', lang)} className="inline-flex items-center gap-2 text-[14px] font-medium text-[#5f5f5a] hover:text-[#047857] transition-colors mb-8">
+                <Link href={localize('/#work', lang)} className="inline-flex items-center gap-2 text-[14px] font-medium text-[#5f5f5a] hover:text-[#047857] transition-colors mb-8">
                     <ArrowLeft size={16} /> {t('projects.title')}
                 </Link>
 
@@ -137,7 +137,7 @@ export default function FinalMrfei() {
                     <span className="font-mono text-[13px] font-medium text-[#565650]">{MRFEI_META.stack}</span>
                     <div className="flex gap-5 text-[14px] font-medium">
                         <a href="https://github.com/sadik-coban" target="_blank" rel="noopener noreferrer" className="text-[#5f5f5a] hover:text-[#1a1a1a] transition-colors">GitHub ↗</a>
-                        <Link href={localize('/projects', lang)} className="text-[#047857] hover:text-[#1a1a1a] transition-colors">{t('home.work.viewAll')} →</Link>
+                        <Link href={localize('/#work', lang)} className="text-[#047857] hover:text-[#1a1a1a] transition-colors">{t('home.work.viewAll')} →</Link>
                     </div>
                 </section>
             </article>

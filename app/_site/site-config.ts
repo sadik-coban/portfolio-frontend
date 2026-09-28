@@ -87,13 +87,6 @@ export const site = {
                 tr: 'Sadık Çoban hakkında — modeli veri toplamadan izlenen üretim API’sine kadar uçtan uca kuran bir Veri Bilimci ve MLOps Mühendisi.',
             },
         },
-        '/projects': {
-            title: { en: 'Projects', tr: 'Projeler' },
-            description: {
-                en: 'Selected end-to-end data science and MLOps projects — from predictive models to live production dashboards.',
-                tr: 'Seçilmiş uçtan uca veri bilimi ve MLOps projeleri — tahmin modellerinden canlı üretim panolarına.',
-            },
-        },
         '/projects/car-price': {
             title: { en: 'Car Price Prediction & MLOps', tr: 'Araç Fiyat Tahmini & MLOps' },
             description: {
