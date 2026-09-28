@@ -9,6 +9,7 @@ import { ProjectCard } from './home/ProjectCard';
 import { HOME_PROJECTS, HOME_ARSENAL } from './home/content';
 import { site } from './site-config';
 import { WRITING_ENABLED } from './writing-config';
+import { jumpToSection } from './jump';
 
 /** The price model's headline numbers, read server-side from public/report-data.json. */
 export type HomeMetrics = { listings: number; r2: number; mape: number; mae: number };
@@ -52,7 +53,7 @@ export default function FinalHome({ recentPosts, curve, metrics }: {
                     </h1>
                     <p className="m-0 mb-9 max-w-[480px] text-[18px] leading-[1.6] text-[#5f5f5a]">{t('home.heroSub')}</p>
                     <div className="flex flex-wrap items-center gap-5 md:gap-[22px]">
-                        <Link href="#work" className="inline-flex h-[44px] items-center rounded-[10px] bg-[#1a1a1a] px-5 text-[14px] font-semibold text-[#f7f6f3] transition-opacity duration-200 hover:opacity-90">{t('home.viewWork')}</Link>
+                        <Link href="#work" onClick={(e) => jumpToSection(e, 'work')} className="inline-flex h-[44px] items-center rounded-[10px] bg-[#1a1a1a] px-5 text-[14px] font-semibold text-[#f7f6f3] transition-opacity duration-200 hover:opacity-90">{t('home.viewWork')}</Link>
                         <Link href={localize('/about', lang)} className="text-[14px] font-medium text-[#1a1a1a] transition-colors duration-200 hover:text-[#047857]">{t('home.getInTouch')}</Link>
                         <a href={site.social.github} target="_blank" rel="noopener noreferrer" className="text-[14px] font-medium text-[#5f5f5a] transition-colors duration-200 hover:text-[#1a1a1a]">GitHub ↗</a>
                     </div>

@@ -135,7 +135,7 @@ export default function FinalShell({
                             onClick={() => setOpen(false)}
                             className="mb-4 flex items-center gap-[11px] rounded-[8px] px-[10px] py-[9px] text-[13px] font-medium text-[#86857e] transition-colors hover:bg-[#f1efe9] hover:text-[#5f5f5a]"
                         >
-                            <ArrowLeft size={16} className="shrink-0" /> {t('nav.work')}
+                            <ArrowLeft size={16} className="shrink-0" /> {t('nav.projects')}
                         </Link>
                         <NavList onNavigate={() => setOpen(false)} flat />
                         <div className="mt-auto pt-6">
@@ -158,12 +158,12 @@ export default function FinalShell({
                         Same row shape as the nav, so it animates identically. */}
                     <Link
                         href={localize('/#work', lang)}
-                        title={collapsed ? t('nav.work') : undefined}
-                        aria-label={t('nav.work')}
+                        title={collapsed ? t('nav.projects') : undefined}
+                        aria-label={t('nav.projects')}
                         className="mt-3 flex items-center rounded-[8px] py-[9px] text-[13px] font-medium text-[#86857e] transition-colors hover:bg-[#f1efe9] hover:text-[#5f5f5a]"
                     >
                         <span className="flex w-[40px] shrink-0 items-center justify-center"><ArrowLeft size={16} /></span>
-                        <span className={`whitespace-nowrap transition-opacity duration-200 ${collapsed ? 'opacity-0' : 'opacity-100'}`}>{t('nav.work')}</span>
+                        <span className={`whitespace-nowrap transition-opacity duration-200 ${collapsed ? 'opacity-0' : 'opacity-100'}`}>{t('nav.projects')}</span>
                     </Link>
 
                     {/* Hairline that frames the header zone — fades in only while collapsed. */}

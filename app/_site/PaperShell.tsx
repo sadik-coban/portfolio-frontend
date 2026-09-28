@@ -7,11 +7,12 @@ import { useLang, LangSwitch, localize } from './i18n';
 import { Monogram } from './Monogram';
 import { site } from './site-config';
 import { WRITING_ENABLED } from './writing-config';
+import { jumpToSection } from './jump';
 
-// `writing: true` marks an entry that only exists while WRITING_ENABLED is on.
-const NAV = [
-    // No /projects index any more: the homepage's work section is the list.
-    { key: 'nav.work', href: '/#work' },
+// `writing: true` marks an entry that only exists while WRITING_ENABLED is on. `section` marks
+// an in-page target: there is no /projects index, "Projects" is the homepage's work section.
+const NAV: { key: string; href: string; writing?: boolean; section?: string }[] = [
+    { key: 'nav.projects', href: '/#work', section: 'work' },
     { key: 'nav.blog', href: '/blog', writing: true },
     { key: 'nav.about', href: '/about' },
 ].filter((n) => WRITING_ENABLED || !n.writing);
@@ -30,7 +31,7 @@ export default function PaperShell({ children }: { children: React.ReactNode }) 
                     <div className="flex items-center gap-5 md:gap-[30px] text-[14px] font-medium text-[#5f5f5a]">
                         <div className="hidden md:flex items-center gap-[30px]">
                             {NAV.map((n) => (
-                                <Link key={n.key} href={localize(n.href, lang)} className="transition-colors hover:text-[#1a1a1a]">{t(n.key)}</Link>
+                                <Link key={n.key} href={localize(n.href, lang)} onClick={(e) => { if (n.section) jumpToSection(e, n.section); }} className="transition-colors hover:text-[#1a1a1a]">{t(n.key)}</Link>
                             ))}
                         </div>
                         <LangSwitch />
@@ -45,7 +46,7 @@ export default function PaperShell({ children }: { children: React.ReactNode }) 
                 {open && (
                     <div className="md:hidden flex flex-col border-b border-[#e9e7e2] py-2">
                         {NAV.map((n) => (
-                            <Link key={n.key} href={localize(n.href, lang)} onClick={() => setOpen(false)} className="py-2.5 text-[15px] font-medium text-[#5f5f5a] hover:text-[#047857] transition-colors">{t(n.key)}</Link>
+                            <Link key={n.key} href={localize(n.href, lang)} onClick={(e) => { setOpen(false); if (n.section) jumpToSection(e, n.section, { afterLayout: true }); }} className="py-2.5 text-[15px] font-medium text-[#5f5f5a] hover:text-[#047857] transition-colors">{t(n.key)}</Link>
                         ))}
                     </div>
                 )}
@@ -65,7 +66,7 @@ export default function PaperShell({ children }: { children: React.ReactNode }) 
                             <ul className="space-y-2.5 text-[14px] font-medium text-[#5f5f5a]">
                                 <li><Link href={localize('/', lang)} className="transition-colors hover:text-[#047857]">{t('footer.home')}</Link></li>
                                 {NAV.map((n) => (
-                                    <li key={n.key}><Link href={localize(n.href, lang)} className="transition-colors hover:text-[#047857]">{t(n.key)}</Link></li>
+                                    <li key={n.key}><Link href={localize(n.href, lang)} onClick={(e) => { if (n.section) jumpToSection(e, n.section); }} className="transition-colors hover:text-[#047857]">{t(n.key)}</Link></li>
                                 ))}
                             </ul>
                         </div>
