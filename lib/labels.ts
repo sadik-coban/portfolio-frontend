@@ -214,6 +214,21 @@ export const hedonicTerm = trEn({
     '+1 litre': '+1 litre',
 });
 
+/** hedonic_reliability.columns.{segment,model}.coefficients[].term — the generator's term ids,
+ *  displayed as its HED_TERM does (cardatasys builders/report_lib/report_common.py). */
+export const hedonicTermId: LabelMap = {
+    age: { tr: 'yaş', en: 'age' },
+    age_sq: { tr: 'yaş²', en: 'age²' },
+    km100k: { tr: 'km (100 bin)', en: 'km (100k)' },
+    km_sq: { tr: 'km²', en: 'km²' },
+    age_x_km: { tr: 'yaş×km', en: 'age×km' },
+    heavy_damage: { tr: 'ağır hasar', en: 'heavy damage' },
+    painted: { tr: 'boyalı', en: 'painted' },
+    changed: { tr: 'değişen', en: 'changed' },
+    hp100: { tr: '+100 hp', en: '+100 hp' },
+    litre: { tr: '+1 litre', en: '+1 litre' },
+};
+
 /** hedonic_reliability.vif[][0] — English tokens, localised for the TR site. */
 export const vifTerm: LabelMap = {
     age: { tr: 'yaş', en: 'age' },

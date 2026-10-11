@@ -1,6 +1,6 @@
 # İkinci El Araç Piyasası Analizi — Teknik Rapor
 
-Bu rapor iki soruya yanıt arar: İkinci el araç fiyatını ne belirler ve model bunu ne kadar isabetle öngörebilir? Analiz; **29.988** TR plakalı BMW/Audi ilanında veri temizliği ve sızıntı kontrolünden geçerek kontrollü fiyat etkileri, piyasa yapısı, model karşılaştırması ve zamansal testleri ortaya koyar. LightGBM ortalama **%6.49** yüzde hatayla (MAE: **₺110K**, R²: **0.9745**) çalışarak emsal medyanına (aynı model ve yıl; emsal yoksa daha geniş medyan) göre ortalama mutlak hatada (MAE) **%43** daha iyi sonuç verir. Paylaşılan tüm metrikler, modelin daha önce görmediği veriler üzerinden **5-fold out-of-fold** kurgusuyla hesaplanmıştır.
+Bu rapor iki soruya yanıt arar: İkinci el araç fiyatını ne belirler ve model bunu ne kadar isabetle öngörebilir? Analiz; **29.988** TR plakalı BMW/Audi ilanında veri temizliği ve sızıntı kontrolünden geçerek kontrollü fiyat etkileri, piyasa yapısı, model karşılaştırması ve zamansal testleri ortaya koyar. LightGBM ortalama **%6.49** yüzde hatayla (MAE: **₺110K**, R²: **0.9745**) çalışarak emsal medyanına (aynı model ve yıl; emsal yoksa daha geniş medyan) göre ortalama mutlak hatada (MAE) **%43** daha iyi sonuç verir. Paylaşılan tüm metrikler, modelin daha önce görmediği veriler üzerinden **5-fold out-of-fold** kurgusuyla hesaplanmıştır. Hedef ilan fiyatıdır, satış fiyatı değil: satış fiyatı pazarlıkla bundan ayrılır.
 
 ## 1. Veri temizleme ve sızıntı tespiti
 
@@ -45,7 +45,7 @@ Toplanan veriye modelden önce sırasıyla şunlar uygulandı:
 
 1. **Yapısal** — yaş · km · motor gücü/hacmi · kasa · yakıt · vites · çekiş · segment.
 2. **Hasar / ekspertiz** — 13 kaporta paneli × {değişen, boyalı, lokal boya} + ağır hasar kaydı. Bu 39 ham bayrak modele 12 öznitelik olarak giriyor: tavan · kaput · bagaj tek panel olduğu için **durum** (orijinal/lokal/boyalı/değişen), kapı · çamurluk · tampon ise grup içi **sayı** (kapı 0–4, çamurluk 0–4, tampon 0–2).
-3. **Serbest metin** — satıcı açıklaması; modelde **kullanılmıyor**. Ölçüldü: R²'ye katkısı 0.0015; ayrıntısı §10'da.
+3. **Serbest metin** — satıcı açıklaması; modelde **kullanılmıyor**. Ölçüldü: log R²'ye katkısı 0.0008; ayrıntısı §10'da.
 
 **"Belirtilmemiş" panel orijinal sayıldı.** Site her panel için beş cevaptan birini veriyor: orijinal, belirtilmemiş, boyalı, lokal boyalı, değişmiş. Modele giren ilanlarda 59.651 panel (%15.3) belirtilmemiş; 1.235 ilanda 13 panelin hiçbiri belirtilmemiş. Bu cevap bilinçli bir kararla orijinal gibi kodlandı; gerekçe, satıcının hasarı yazmayı unutmuş olabileceği ama hasar olmamasının daha olası sayılması.
 
@@ -150,35 +150,13 @@ Geriye kalan 25 öznitelikte eksiklik sorun değil: en yükseği `kb_drivetrain`
 
 ## 3. Fazlalık, bağıntı ve marka
 
-Cramér's V ilişkinin gücünü (simetrik), Theil's U yönünü (asimetrik) verir. Asimetri bulgunun kendisi: `model` `brand`, `segment`, `series` değerini neredeyse tam belirliyor (U ≥ 0.99) ama tersi değil — yani `seri`, `model`in kabalaştırılmış hâli, bağımsız bilgi değil. Öteki kolonlarda U daha düşük; en düşüğü Kaput Durumu (0.10).
-
-**Neden tabanla okunmalı?** `model` 745 farklı değer taşıyor ve çoğunun yalnız birkaç ilanı var. Birkaç ilanlık bir grupta başka bir alanın değerleri şans eseri aynı çıkabilir (ör. iki ilanın ikisinin de kaputu orijinal); ölçü bunu "model kaputu belirliyor" diye sayar. Bu yüzden `model`le eşleşen her alan, gerçek bir ilişki olmasa da yüksek görünür: iki ölçü de yüksek kardinalitede **üste yanlı**. Bu şişmenin boyunu görmek için `model` sütunu ilanlar arasında rastgele karıştırıldı ve ölçü yeniden hesaplandı; karıştırma her değerin sayısını korur ama gerçek ilişkiyi yok eder. 5 karıştırmanın ortalaması permütasyon tabanı: Cramér's V'de ~0.16, Theil's U'da alana göre 0.02–0.15. `model` sütunundaki değer bu tabanın üstünde kalan kadar anlam taşır:
-
-- Kaput Durumu: Theil's U 0.10, tabanı 0.04.
-- Tavan Durumu: Cramér's V 0.18, tabanı 0.16; farkın neredeyse tamamı şans.
-
-Theil's U'nun yön vermesi bu şişmeyi gidermez, onun da kendi tabanı var. Hasar sayaçları ile motor (hp/cc) sayısal olduğu için bu iki matriste yok — onların karşılığı aşağıdaki korelasyon tablosu.
-
-![Theil's U (satır | sütun): sütun bilinince satır ne kadar belli](figures/tr-17-theils-u.png)
-
-![Cramér's V (simetrik ilişki gücü)](figures/tr-18-cramers-v.png)
+Theil's U(a | b), b bilinince a'nın belirsizliğinin ne kadarının gittiğini verir (0–1) ve yönlüdür. Asimetri bulgunun kendisi: `model` `brand`, `segment`, `series` değerini neredeyse tam belirliyor (U ≥ 0.99) ama tersi değil — yani `seri`, `model`in kabalaştırılmış hâli, bağımsız bilgi değil.
 
 ![Seri × segment — medyan fiyat (₺M); 3 seri birden fazla segmente düşüyor · • = tek ilan](figures/tr-19-series-segment.png)
 
-### Theil's U asimetrisi
+Ters yönde seri modeli yalnız 0.39 belirliyor. Marka hem modelden hem seriden tamamen okunuyor (U(marka | model) = 1.00): marka ayrı bilgi taşımaz; aşağıdaki marka ablasyonu aynı sonucu ölçer.
 
-| yön | okunuşu | U |
-|---|---|---:|
-| U(seri \| model) | model bilinince seri ne kadar belli | 0.999 |
-| U(model \| seri) | seri bilinince model ne kadar belli | 0.387 |
-| U(marka \| model) | model bilinince marka | 1.000 |
-| U(marka \| seri) | seri bilinince marka | 1.000 |
-
-Model seriyi 1.00 belirliyor, seri modeli yalnız 0.39. Marka hem modelden hem seriden tamamen okunuyor → marka ayrı bilgi taşımaz (aşağıdaki marka ablasyonu aynı sonucu ölçer).
-
-Sayısal öznitelikler arası korelasyon — yukarıdaki kategorik bağıntının sayısal karşılığı. |r|>0.5 çiftler çoklu-bağlantı için işaretlendi. §6'nın VIF tablosu yalnız hedonik modelin terimlerini sınar; kapı ve çamurluk boyaları orada ayrı değil, toplam boyalı parça sayısı olarak girer.
-
-![Pearson korelasyonu](figures/tr-20-pearson.png)
+Sayısal öznitelikler arasında Spearman korelasyonu (sıra ilişkisi; aşağıdaki harita). |ρ| > 0.5 olan çiftler: Yaş (yıl)–Kilometre 0.74, Motor Gücü (hp)–Motor Hacmi (cc) 0.61, Kapı Boyalı–Çamurluk Boyalı 0.60. Hedonik modeldeki çoklu bağlantı §6'da VIF ile ölçülüyor; orada kapı ve çamurluk boyaları ayrı değil, toplam boyalı parça sayısı olarak giriyor.
 
 ![Spearman korelasyonu](figures/tr-21-spearman.png)
 
@@ -189,14 +167,6 @@ Ham `gb_segment` kullanılmıyor ve gerekçesi yalnız eksiklik değil: beslemen
 İlanların 29.832 tanesi segmentini doğrudan serisinden alıyor. Bazı ailelerde (`M Serisi`, `RS`, `S`, `i Serisi`) segment seriden değil model adından çözülüyor — örneğin M3 → 3 Serisi, S3 → A3 — toplam 156 ilan. Bu yüzden segment yalnız serinin değil (seri, model) çiftinin fonksiyonu: U(segment | seri) = 0.997, tam 1 değil. Çözülemeyen seri ya da model kalırsa üreteç durur; sessiz bir varsayılan segment yok.
 
 Türetilen etiket, ham segmenti dolu 21.723 ilanın 404 tanesinde (%1.9) beslemeden ayrılıyor; 215 tanesi bilinçli G düzeltmesi, en büyük ikinci kaynak beslemenin E dediği 95 ilanın burada D olması.
-
-### Yüksek korelasyon çiftleri (|r| > 0.5)
-
-| öznitelik A | öznitelik B | Pearson r |
-|---|---|---:|
-| Yaş (yıl) | Kilometre | 0.737 |
-| Motor Gücü (hp) | Motor Hacmi (cc) | 0.730 |
-| Kapı Boyalı | Çamurluk Boyalı | 0.670 |
 
 ### Marka ablasyonu
 
@@ -216,98 +186,44 @@ Ham fiyat sağa çarpık (çarpıklık 1.62); log dönüşümü simetriğe yakla
 
 ![Kasa tipine göre medyan fiyat (en az 80 ilanlı tipler; kasa tipi verilmeyen 291 ve daha az ilanlı tiplerdeki 101 ilan dışarıda)](figures/tr-01-body-median.png)
 
-## 5. Piyasa yapısı — segmentasyon (KMeans + PCA)
+## 5. Piyasa yapısı — belirgin küme yok
 
-**k=3 silhouette ile seçilmedi.** k=3 için silhouette 0.188 — denenen 7 değer içinde 7. sırada; en yüksek k=2 (0.242). Hepsi 0.25'in altında: veride belirgin doğal küme yok. k=3 yorumlanabilirlik için sabit seçildi; kümeler aşağıdaki eksenleriyle okunmalı, "piyasanın doğal yapısı" olarak değil.
-
-![k seçimi — dirsek + siluet](figures/tr-24-k-selection.png)
-
-![PCA — PC1 %19.7 × PC2 %12.4](figures/tr-22-pca-scatter.png)
-
-![PCA — PC1 %19.7 × PC3 %11.0](figures/tr-23-pca-scatter-13.png)
-
-### Kümeleri ayıran eksenler
-
-| küme | ilan | ortalamadan en çok ayrıldığı 3 eksen |
-|---|---:|---|
-| Küme 1 · ağır hasar %5 | 9.046 | Kilometre ↑ · Çamurluk Lokal Boya ↑ · Motor Hacmi (cc) ↑ |
-| Küme 2 · ağır hasar %2 | 15.976 | Kilometre ↓ · Yaş (yıl) ↓ · Motor Hacmi (cc) ↓ |
-| Küme 3 · ağır hasar %13 | 4.966 | Kapı Boyalı ↑ · Çamurluk Boyalı ↑ · Çamurluk Değişen ↑ |
-
-↑/↓ = kümenin ortalaması genelin üstünde/altında (z-skoru büyüklüğüne göre ilk 3). Kümelere ad verilmedi: k yorumlanabilirlik için sabitlendi, ayrım bu sütunda okunur.
-
-### PCA yükleri
-
-| PC | varyans | en büyük 4 yük |
-|---|---:|---|
-| PC1 | %19.7 | Kilometre (+0.46) · Yaş (yıl) (+0.45) · Çamurluk Boyalı (+0.41) · Kapı Boyalı (+0.41) |
-| PC2 | %12.4 | Motor Gücü (hp) (+0.65) · Motor Hacmi (cc) (+0.61) · Çamurluk Boyalı (-0.24) · Kapı Boyalı (-0.24) |
-| PC3 | %11.0 | Çamurluk Lokal Boya (+0.58) · Kapı Lokal Boya (+0.57) · Motor Gücü (hp) (-0.28) · Tampon Lokal Boya (+0.22) |
-
-İlk 3 bileşenin açıkladığı varyans: %43.1. PC1 ≈ Kilometre + Yaş (yıl) + Çamurluk Boyalı + Kapı Boyalı · PC2 ≈ Motor Gücü (hp) + Motor Hacmi (cc) · PC3 ≈ Çamurluk Lokal Boya + Kapı Lokal Boya.
+Veride belirgin doğal küme yok: standartlaştırılmış sayısal özniteliklerde KMeans, denenen yedi k değerinin (2–8) hepsinde silhouette 0.25'in altında kalıyor (en yüksek k=2, 0.242). Kümeler ve PCA bu yüzden analizde kullanılmadı; piyasa yapısı segment ve kasa tipi gibi açık özniteliklerle okunuyor.
 
 ## 6. Hedonik model — kontrollü etkiler
 
-Hedonik regresyon her sürücünün *kontrollü* (diğer her şey sabitken) fiyat etkisini verir — R² **0.9312**, n **29.554**. Katsayılar bootstrap ile güven aralıklı; 10 terimin hepsinin %95 GA'sı sıfırı dışlıyor → her sürücü güvenilir şekilde anlamlı.
+Hedonik regresyon her sürücünün *kontrollü* (diğer her şey sabitken) fiyat etkisini verir; hedef log fiyat, n **29.554**. İki sütun yan yana. **Segment kontrolü** segment, marka, yakıt ve vites kuklalarıyla kurulur (R² **0.9312**). **Model kontrolü** bunlara `C(model)` ekler (735 model adı), yani her etki aynı model adı içinde ölçülür (R² **0.9648**). Model kimliği, hedonik R² ile modelin aynı ölçekteki OOF R²'si (0.9699, log fiyat) arasındaki farkın yaklaşık %87 kadarını kapatıyor — bir üst tahmin: C(model)'li R² örneklem içi, modelinki OOF. Modelin başlıktaki R²'si (0.9745) ham ₺ ölçeğinde; hedonikle o karşılaştırılmamalı.
 
-**`model` bu regresyona girmiyor.** Kardinalitesi çok yüksek (745 ayrı değer); regresyonda seri de yok, yalnız segment var. Ölçüldü: `C(model)` eklenince R² 0.9312 → 0.9648 — hedonik R² ile modelin aynı ölçekteki OOF R²'si (0.9699, log fiyat) arasındaki farkın yaklaşık %87 kadarı model kimliğinden — bir üst tahmin: C(model)'li R² örneklem içi, modelinki OOF (iki R² farklı n'de de: hedonik 29.554, model 29.988 ilan). Doğrusal katsayılar yönünü koruyor, büyüklükleri kayıyor: yaş -%6.64 → -%5.80, +100 hp +%19.86 → +%19.30, 1 litre +%7.49 → +%5.97, 100 bin km -%15.11 → -%14.83. Yani buradaki "kontrollü" etkiler **model kimliği hariç** kontrollüdür. Modelin başlıktaki R²'si (0.9745) ham ₺ ölçeğinde; hedonikle o karşılaştırılmamalı.
+**Güven aralıkları.** Aynı modelin ilanları birbirinden bağımsız değil ve hata varyansı eşit değil (Breusch-Pagan p <0.001); bu yüzden %95 güven aralıkları modele göre kümelenmiş standart hatalardan (735 küme). Segment sütununda 10 terimin hepsinin aralığı sıfırı dışlıyor; model sütununda yaş², +1 litre terimlerinin aralığı sıfırı içeriyor. Duyarlılık: seriye göre kümelenince (22 küme; az ve dengesiz, bu yüzden yalnız karşılaştırma için) aralığı sıfırı içeren terimler segment sütununda +1 litre, model sütununda yaş², yaş×km, +1 litre. Aynı serinin modelleri de birbirinden bağımsız değil; bu terimlerin anlamlılığı kümelemenin seçimine bağlı.
 
 **Not:** Hedonik model bir OLS modelidir ve eksik değerlerle çalışamaz; bu yüzden eksik motor gücü (426) ve eksik motor hacmi (356) bulunan ilanlar analiz öncesinde elenmiştir. Her iki alanın da ortak eksik olduğu satırlar düşüldüğünde veri setinden toplam 434 satır çıkarılmıştır.
 
-![Bootstrap katsayıları (nokta + %95 GA)](figures/tr-03-bootstrap-ci.png)
+![Hedonik etkiler (nokta + modele göre kümeli %95 GA)](figures/tr-03-hedonic-ci.png)
 
-### Bootstrap katsayıları
+### Kontrollü etkiler
 
-| terim | etki | log katsayı [%95 GA] | etki %95 GA | anlamlı |
-|---|---:|---:|---:|---|
-| yaş | -%6.64 | -0.0687 [-0.0695, -0.0680] | -%6.71 … -%6.57 | evet |
-| yaş² | +%0.08 | +0.0008 [+0.0007, +0.0010] | +%0.07 … +%0.10 | evet |
-| km(100K) | -%15.11 | -0.1638 [-0.1673, -0.1604] | -%15.41 … -%14.82 | evet |
-| km² | +%1.56 | +0.0155 [+0.0127, +0.0184] | +%1.28 … +%1.86 | evet |
-| yaş×km | -%0.62 | -0.0062 [-0.0074, -0.0050] | -%0.74 … -%0.50 | evet |
-| ağır hasar | -%11.60 | -0.1233 [-0.1321, -0.1140] | -%12.37 … -%10.77 | evet |
-| boyalı | -%1.05 | -0.0105 [-0.0114, -0.0096] | -%1.13 … -%0.96 | evet |
-| değişen | -%3.06 | -0.0311 [-0.0332, -0.0290] | -%3.27 … -%2.86 | evet |
-| +100 HP | +%19.86 | +0.1812 [+0.1659, +0.1972] | +%18.05 … +%21.80 | evet |
-| +1 litre | +%7.49 | +0.0723 [+0.0510, +0.0933] | +%5.23 … +%9.78 | evet |
+| terim | segment kontrolü [%95 GA] | model kontrolü [%95 GA] |
+|---|---:|---:|
+| yaş | -%6.64 [-%6.92, -%6.37] | -%5.80 [-%6.33, -%5.27] |
+| yaş² | +%0.08 [+%0.04, +%0.13] | +%0.03 [-%0.03, +%0.08] |
+| km (100 bin) | -%15.11 [-%15.81, -%14.40] | -%14.83 [-%15.31, -%14.34] |
+| km² | +%1.56 [+%1.08, +%2.05] | +%1.67 [+%1.34, +%2.01] |
+| yaş×km | -%0.62 [-%0.89, -%0.35] | -%0.33 [-%0.56, -%0.10] |
+| ağır hasar | -%11.60 [-%12.51, -%10.68] | -%12.46 [-%13.25, -%11.67] |
+| boyalı | -%1.05 [-%1.17, -%0.92] | -%0.98 [-%1.09, -%0.88] |
+| değişen | -%3.06 [-%3.33, -%2.79] | -%3.12 [-%3.35, -%2.88] |
+| +100 hp | +%19.86 [+%13.89, +%26.15] | +%19.30 [+%6.90, +%33.12] |
+| +1 litre | +%7.49 [+%0.71, +%14.73] | +%5.97 [-%0.92, +%13.35] |
 
-Etki = exp(β)−1. Yaş ve km **medyan araca** (11 yaş, 181.000 km) ortalandı: yaş ve km satırları o araçtaki marjinal etki. Kare ve etkileşim terimleri (yaş², km², yaş×km) tek başına okunmaz; eğrinin bükülmesini taşır.
+Etki = exp(β)−1. Yaş ve km **medyan araca** (11 yaş, 181.000 km) ortalandı: yaş ve km satırları o araçtaki marjinal etki. Kare ve etkileşim terimleri (yaş², km², yaş×km) tek başına okunmaz; eğrinin bükülmesini taşır. İki sütunun farkı her terim için modele göre kümeli bir testle sınandı: fark yaş, yaş×km, ağır hasar, boyalı terimlerinde örnekleme hatasından büyük (%5 düzeyinde); öteki terimlerde değil. Karar notundaki etkiler model sütunundan: aynı model adı içinde.
+
+**Katsayılar nedensel etki değil, kontrollü ilişkidir.** Ör. boyalı panelin katsayısı boyamanın fiyatı düşürdüğünü değil, boyalı panelli ilanların benzerlerinden o kadar ucuz ilan edildiğini söyler.
+
+**Çoklu bağlantı.** Segment sütununun tasarımında en yüksek VIF yaş×km 7.25 (10'un altında); ortalanmamış tasarımda en yüksek yaş×km 96.28. Yaş, yaş², km, km² ve yaş×km aynı iki değişkenden türediği için yapısal olarak bağlı; medyan araca ortalamak bunu giderir, tahminler ve R² değişmez.
 
 ### Motor etkisi
 
-+100 HP → **+%19.9**, +1 litre → **+%7.5** (aynı regresyonda, diğeri sabitken). Hacmin etkisi, güç sabitlendikten sonra kalan kısımdır; birimler farklı olduğu için iki sayı doğrudan kıyaslanmaz.
-
-### Yakıt bazında cc–HP korelasyonu
-
-| yakıt | Pearson | Pearson (log) | Spearman | cc / HP | n |
-|---|---:|---:|---:|---:|---:|
-| Benzin | 0.806 | 0.731 | 0.407 | 9.8 | 14.693 |
-| Dizel | 0.836 | 0.863 | 0.694 | 11.1 | 12.783 |
-| LPG & Benzin | 0.900 | 0.863 | 0.805 | 13.9 | 1.199 |
-| Hibrit | 0.429 | 0.522 | 0.308 | 10.0 | 879 |
-
-Genel korelasyon 0.73. İlişki yakıta göre değişiyor — en zayıf Hibrit (Pearson 0.429, n 879). Hacim güçten türetilemiyor; ikisi ayrı öznitelik olarak kalır.
-
-### VIF — çoklu bağlantı
-
-| terim | VIF (kurulan model) | VIF (ortalanmamış) |
-|---|---:|---:|
-| yaş | 3.69 | 34.54 |
-| yaş² | 4.84 | 66.54 |
-| km | 4.03 | 29.95 |
-| km² | 3.61 | 34.49 |
-| yaş×km | 7.25 | 96.28 |
-| ağır hasar | 1.05 | 1.05 |
-| boyalı | 1.25 | 1.25 |
-| değişen | 1.12 | 1.12 |
-| +100 HP | 4.77 | 4.77 |
-| motor (L) | 5.56 | 5.56 |
-
-Tablodaki değerler kurulan modelin kendi tasarım matrisinden. En yüksek **yaş×km 7.25** — 10'un altında. Ortalanmamış tasarımda aynı terim grubu çok daha yüksek (**yaş×km 96.28**): yaş, yaş², km, km² ve yaş×km aynı iki değişkenden türediği için birbirine yapısal olarak bağlı. Medyan araca ortalamak bunu giderir; tahminler ve R² değişmez, yalnız doğrusal katsayıların anlamı netleşir. Kuklalar arasında en yüksek VIF `C(segment)[T.D]` (62.42): kukla VIF'i referans seviyesi küçük olduğunda şişer ve yalnız o kukla katsayılarının standart hatasını etkiler — burada raporlanmıyor.
-
-### Varsayım testleri
-
-Breusch-Pagan (eşit varyans) p = **<0.001** · Jarque-Bera (normallik) p = **<0.001** → ikisi de ihlal. Bu yüzden çıkarım çıplak OLS p-değerine dayanmıyor: güven aralıkları, veriyi **1000 kez yerine koymalı yeniden örnekleyip** modeli her turda yeniden kuran bootstrap'in **%2.5–97.5 yüzdeliklerinden** geliyor. Model ayrıca HC3 robust kovaryansla kuruluyor; bu, yayımlanan aralıklara girmiyor.
++100 hp segment kontrolünde **+%19.9**, model kontrolünde **+%19.3**; +1 litre **+%7.5** ile **+%6.0** (aynı regresyonda, diğeri sabitken). Model adı motoru büyük ölçüde belirlediği için model sütununda motor terimleri yalnız aynı model adı içindeki güç ve hacim farkından ölçülür; aralıkları bu yüzden daha geniş. Bu fark ince: model adlarının yalnız 354/735 tanesinde güç ilanlar arasında değişiyor (model içi standart sapma 9.0 hp, genelde 43.1 hp) ve bir kısmı katalog hatası: §8'in motor değeri tutarsız ilanları çıkarılınca (15 ilandan 14 tanesi hedonik örneklemde; kalan 1 ilan geçerli motor gücü ya da hacmi olmadığı için örneklemde hiç yer almıyor) model sütununda +100 hp +%19.3 → +%26.0. Hacim ve güç birbirine bağlı (Pearson korelasyonu 0.73): hacmin etkisi güç sabitken kalan kısım, iki katsayı birlikte okunmalı; birimler farklı olduğu için doğrudan kıyaslanmaz.
 
 ### LOFO — çıkarma testi
 
@@ -315,13 +231,7 @@ LOFO ikinci ve bağımsız bir yöntem: her özniteliği çıkarıp CV hatasın�
 
 ![LOFO — öznitelik çıkınca ΔRMSE (çakışmayan gruplar)](figures/tr-04-lofo-flat.png)
 
-Grafik 5 çubuk gösteriyor, model 25 öznitelik kullanıyor. Kapsam:
-
-| kapsam | sayı | nerede |
-|---|---:|---|
-| ölçülen öznitelik | 19 | 2'si kendi çubuğunda, 17'si grupların içinde |
-| grup olarak ölçülen | 3 grup | `DAMAGE_COLS` · `MODEL_SERIES` · `ENGINE` |
-| **hiç ölçülmeyen öznitelik** | **6** | `brand` · `kb_body_type` · `kb_drivetrain` · `segment` · `kb_transmission` · `kb_fuel` |
+Grafik 5 çubuk gösteriyor, model 25 öznitelik kullanıyor: 19 öznitelik ölçüldü (2'si kendi çubuğunda, 17'si 3 grubun içinde: `DAMAGE_COLS` · `MODEL_SERIES` · `ENGINE`); **6 öznitelik hiç ölçülmedi**: `brand` · `kb_body_type` · `kb_drivetrain` · `segment` · `kb_transmission` · `kb_fuel`.
 
 ## 7. Model karşılaştırma ve kısıtlar
 
@@ -338,7 +248,7 @@ Rapordaki model: **LightGBM (model/seri adı TF-IDF+SVD)** — MAPE **%6.49**, R
 | CatBoost (model/seri adı native text) | %6.58 | 0.9739 | ₺112.925 | ₺77.660 | ₺178.312 |
 | emsal medyanı (taban, merdivenli) | %11.20 | 0.9235 | ₺191.224 | ₺130.000 | ₺305.050 |
 
-★ = yalnız MAPE'ye bakan kuralın kazananı: **CatBoost (model/seri adı TF-IDF+SVD)**. Ama iki TF-IDF+SVD varyantı arasındaki fark 0.05 MAPE puanı ve ₺309 MAE; LightGBM şu metriklerde önde: MAE; CatBoost şunlarda: MAPE, MedAE, RMSE → pratikte **eşitler**. Rapor boyunca "model" LightGBM'dir: CPU'da deterministik, CatBoost'un ağaçları ise cihaza (GPU/CPU) göre değişir — önceki bir GPU koşumunda MAPE sırası tersti. Conformal aralık, marka ablasyonu ve örnek tahminler LightGBM'den.
+★ = yalnız MAPE'ye bakan kuralın kazananı: **CatBoost (model/seri adı TF-IDF+SVD)**. Ama iki TF-IDF+SVD varyantı arasındaki fark 0.05 MAPE puanı ve ₺309 MAE; LightGBM şu metriklerde önde: MAE; CatBoost şunlarda: MAPE, MedAE, RMSE → pratikte **eşitler**. Rapor boyunca "model" LightGBM'dir: CPU'da deterministik, CatBoost'un ağaçları ise cihaza (GPU/CPU) göre değişir — önceki bir GPU koşumunda MAPE sırası tersti. Conformal aralık ve marka ablasyonu LightGBM'den.
 
 ### Taban basamak kırılımı
 
@@ -352,15 +262,7 @@ Merdiven: (model, yıl) medyanı → (model) medyanı — tüm yıllar → globa
 
 **Model Kısıtları ve Gözlemler.** Modifiye, özel donanım veya ÖTV muafiyeti gibi form alanlarında yer almayıp serbest metne gizlenen bilgiler modele girmiyor; metninde dönüşüm ya da modifiye ifadesi geçen ilanlarda büyük hata oranı ham olarak %4.9, diğerlerinde %3.9; yaş, km, fiyat, performans ailesi, emsal sayısı ve marka sabitken olasılık oranı 1.14 (%95 GA 0.94–1.37): anlamlı bir fark ölçülmedi. Bu ifade performans ailelerindeki ilanların %43.6 kadarında geçiyor. Emsali olmayan ilanlarda hata belirgin şekilde büyüyor: aynı model ve yıldan başka ilan yoksa büyük hata oranı %19.0, 100+ emsal varsa %2.9; lira ölçeğindeki en büyük hatalar da bu uçta (§8). Kapsamlı bir hiperparametre optimizasyonuna bilinçli olarak gidilmedi; getirisi bu raporda ölçülmedi.
 
-### Örnek tahminler
-
-| bant | araç | yaş | km | gerçek | LightGBM | sapma | OOF artık | CatBoost (model/seri adı SVD) |
-|---|---|---:|---:|---:|---:|---:|---:|---:|
-| ekonomik | 116i Comfort | 17 | 174.000 | ₺718.000 | ₺714.062 | %0.5 | %0.0 | ₺709.186 |
-| orta | 520d Premium | 14 | 300.000 | ₺1.480.000 | ₺1.490.900 | %0.7 | %0.0 | ₺1.437.492 |
-| premium | 520i Luxury Line | 4 | 96.000 | ₺3.680.000 | ₺3.640.718 | %1.1 | %0.0 | ₺3.615.892 |
-
-> **Bunlar tipik değil, en iyi durum örnekleri.** Her fiyat diliminde ağır hasarsız ve |OOF artık|'ı en küçük ilanı seçer. "sapma" tüm veriyle eğitilmiş final modelin tahminidir (ilanı eğitimde görmüştür); sızıntısız ölçü "OOF artık". Tipik hata için MAPE'ye bakın.
+Servis edilen LightGBM bütün ilanlarla, CV'de erken durdurmanın seçtiği ağaç sayılarının medyanıyla (258 ağaç) eğitiliyor; yani yukarıdaki ölçümle aynı ayarda.
 
 ## 8. Kalibrasyon, artıklar ve zayıflık
 
@@ -410,8 +312,10 @@ Hatası ±%20 sınırını aşan 1.208 ilan (768 fazla, 440 düşük tahmin). A�
 | BMW 750i Long | 2007 | 271.000 | ₺1.190.000 | ₺2.831.842 | -%138.0 |
 
 - **BMW 640i · 2011:** İlan metnine göre araç komple M6 dönüşümü: M6 motoru ve M6 kasa parçaları takılmış. Form hâlâ 640i dediği için model onu sıradan bir 640i gibi fiyatlıyor; alıcı ise bir M6'ya bakıyor.
-- **Audi 4.2 FSI Quattro R-tronic (R8) · 2008:** Veride tek R8. Formdaki model adı yalnız "4.2 FSI Quattro R-tronic"; aynı motor adını taşıyan S5 4.2 FSI Quattro'ların medyanı ₺2.62M ve model tahmini buna yakın. Emsali olmayan bir süper otomobili model, adı benzeyen S5 gibi fiyatlamış.
-- **BMW 750i Long · 2007:** Veride bu addan iki ilan var; diğeri ₺5.3M'lik dönüşümlü bir 2009 araç. Bu ilan ise aynı yılın 730d'leriyle (15 ilan, medyan ₺1.18M) uyumlu ve metni bakımlı, masrafsız diyor. İlan piyasaya uygun, yanılan model: emsali olmadığı için muhtemelen adın diğer, pahalı ilanından etkileniyor.
+- **Audi 4.2 FSI Quattro R-tronic (R8) · 2008:** Veride tek R8. Formdaki model adı yalnız "4.2 FSI Quattro R-tronic"; aynı motor adını taşıyan S5 4.2 FSI Quattro'ların medyanı ₺2.62M (4 ilan) ve model tahmini buna yakın. Emsali olmayan bir süper otomobili model, adı benzeyen S5 gibi fiyatlamış.
+- **BMW 750i Long · 2007:** Veride bu addan 2 ilan var; diğeri ₺5.30M'lik dönüşümlü bir 2009 araç. Bu ilan ise aynı yılın 730d'leriyle (15 ilan, medyan ₺1.18M) uyumlu ve metni bakımlı, masrafsız diyor. İlan piyasaya uygun, yanılan model: emsali olmadığı için muhtemelen adın diğer, pahalı ilanından etkileniyor.
+
+Tahminler OOF; ilan kimliği (`ad_id`) bilerek yazılmadı.
 
 ![Artık% vs Tahmin](figures/tr-09-residual.png)
 
@@ -425,72 +329,50 @@ Her nokta bir model; y ekseni o modelin ilanlarındaki medyan hata. Kova medyan�
 
 - **Dağılım varsayımı yapmaz:** Hataların bir formüle (çan eğrisi vb.) uyduğu varsayılmaz. Modelin daha önce hiç görmediği araçlardaki gerçek hataları sıralanır, en kötü %10'u dışarıda bırakılır ve pay doğrudan veriden okunur. Tek varsayım, yeni ilanların eskilere benzemesidir — piyasa kaydıkça (§9) bu varsayım zayıflar.
 - **Oransaldır:** Hata payı lira değil yüzde olarak uygulanır (tahminin yaklaşık %13 altı ile %15 üstü). Bu yüzden pahalı araçta lira bandı geniş, ucuz araçta dar çıkar.
-- **Kısıtı:** Tüm piyasaya tek bir yüzde uygulandığı için, modelin oransal olarak daha çok yanıldığı ucuz araçlarda bant fazla dar kalıyor (aşağıdaki kapsama grafiği). Çözüm, hata payını tek bir sayı yerine fiyat bandına göre ayrı ayrı hesaplamaktır; bu raporda yapılmadı.
+- **Kalibrasyonu başka ilanlardan:** Kapsama çapraz ölçülür: her katın aralığı yalnız öteki katların hatalarından kurulur, hiçbir ilanın kendi hatası kendi aralığını ayarlamaz. Katlar rastgele olduğu için genel kapsama (%89.99) yine de hedefe neredeyse kendiliğinden oturur; asıl sınav, sonraki taramanın yeni ilanlarındaki ileri kapsama (aşağıda).
 
-**Zayıflık fiyata bağlı:** medyan hata en ucuz çeyrekte %6.96, en pahalıda %3.59. Conformal %90 aralık her yerde tutmuyor; örneğin Q1 kapsaması %81.6.
+**Zayıflık fiyata bağlı:** medyan hata tahmini en ucuz çeyrekte %6.95, en pahalıda %3.55. Tüm piyasaya tek bir yüzde uygulanınca, modelin oransal olarak daha çok yanıldığı ucuz bantta aralık dar kalıyor: Q1 kapsaması %81.0.
 
-![Fiyat çeyreğine göre medyan hata (%)](figures/tr-10-quartile-error.png)
+![Tahmin edilen fiyat çeyreğine göre medyan hata (%)](figures/tr-10-quartile-error.png)
 
-Liraya çevrilince tablo değişiyor: toplam lira hatasının %39.7 kadarı en pahalı çeyrekte, %17.5 kadarı en ucuzda; ortalama mutlak hata ₺176K ile ₺77K. Gerçek fiyata göre gruplanınca ortalama sapma (tahmin − gerçek) en ucuz çeyrekte +₺25K, en pahalıda −₺38K; bu, gürültülü her tahminde gerçek değere göre gruplamanın ürettiği ortalamaya dönüş. Tahmin edilen fiyata göre gruplanınca (bir fiyatlama aracının bildiği tek şey) ortalama sapma −₺12K ile −₺3K arasında (sağdaki panel).
+Liraya çevrilince tablo değişiyor: toplam lira hatasının %38.9 kadarı tahmini en pahalı çeyrekte, %17.6 kadarı en ucuzda; ortalama mutlak hata ₺171K ile ₺77K.
 
-![Fiyat çeyreğine göre lira hatası](figures/tr-27-quartile-lira.png)
+**Hata payı banda göre (Mondrian).** Hata payı tahmin edilen fiyatın dört çeyreğinde ayrı ayrı hesaplanınca kapsama her bantta %89.96–%90.04. Rastgele katlarda bu neredeyse tanım gereği: ilk ön kayıttaki ölçüt (her bantta %88–%92) kodu sınadı, yöntemi değil; asıl sınav aşağıdaki ileri kapsama. Bedeli genişlik: en ucuz bantta aralık tahminin %28.3 kadarından %37.1 kadarına genişliyor, en pahalıda %28.3 kadarından %21.4 kadarına daralıyor.
 
 ![%90 aralık kaç ilanda tuttu (hedef %90)](figures/tr-12-coverage.png)
 
-| çeyrek | fiyat aralığı | kapsama |
-|---|---|---:|
-| Q1 | ₺1.15M altı | %81.6 |
-| Q2 | ₺1.15M – ₺1.55M | %91.8 |
-| Q3 | ₺1.55M – ₺2.28M | %92.7 |
-| Q4 | ₺2.28M üstü | %94.0 |
+| bant | tahmin edilen fiyat | kapsama: tek oran | kapsama: banda göre | genişlik: banda göre |
+|---|---|---:|---:|---:|
+| Q1 | ₺1.15M altı | %81.0 | %90.0 | tahminin %37.1 kadarı |
+| Q2 | ₺1.15M – ₺1.53M | %91.0 | %90.0 | tahminin %27.2 kadarı |
+| Q3 | ₺1.53M – ₺2.26M | %93.2 | %90.0 | tahminin %24.4 kadarı |
+| Q4 | ₺2.26M üstü | %94.7 | %90.0 | tahminin %21.4 kadarı |
 
-**Not:** Fiyat çeyrekleri gerçek değerler üzerinden dilimlenmiştir. Genel kapsama tanım gereği %90.0 seviyesindedir; yalnız Q1 hedefin altında kalmaktadır. Çeyrekler tahmin edilen fiyata göre kesilince de en ucuz çeyrekte kapsama %81.0 — bulgu gruplamaya bağlı değil.
+**Not:** Bantlar tahmin edilen fiyattan kesildi: bir fiyatlama aracının bildiği tek şey o. Gerçek fiyata göre gruplamak ortalamaya dönüş üretir. Genişlik, aralığın alt ve üst ucu arasındaki farkın o banttaki medyanı.
 
-### En iyi 5 tahmin
+**İleri kapsama (ön kayıt `plans/09-forward-coverage`).** Servis edilen tarif ileriye uygulandı: q eğitim taramasının kendi OOF hatalarından, test sonraki taramanın yeni ilanlarında (§9'daki dokuz ileri kurulum). Tek payla genel kapsama %87.3–%92.4, en ucuz bantta %77.1–%85.3. Banda göre pay en ucuz bandı her kurulumda düzeltiyor (%88.8–%92.5) ama her bantta %88'i tutmuyor: en düşük %84.9. Aynı model ve yılı eğitimde hiç olmayan ilanlarda kapsama iki kolda da düşük (tek pay %64.3–%76.2, banda göre %63.0–%73.0); banda göre pay orada her kurulumda kapsamayı daha da düşürüyor.
 
-| model | yaş | km | gerçek | OOF tahmin | hata |
-|---|---:|---:|---:|---:|---:|
-| 520d Premium | 14 | 300.000 | ₺1.480.000 | ₺1.480.003 | %0.0 |
-| 520i Luxury Line | 4 | 96.000 | ₺3.680.000 | ₺3.680.013 | %0.0 |
-| 520i Premium | 11 | 200.000 | ₺1.595.000 | ₺1.594.991 | %0.0 |
-| A4 Sedan 40 TDI Advanced | 6 | 149.000 | ₺2.680.000 | ₺2.680.017 | %0.0 |
-| 116i Comfort | 17 | 174.000 | ₺718.000 | ₺717.993 | %0.0 |
+| bant | tek pay | banda göre |
+|---|---:|---:|
+| Q1 | %77.1–%85.3 | %88.8–%92.5 |
+| Q2 | %88.6–%92.1 | %87.3–%91.0 |
+| Q3 | %89.8–%94.5 | %84.9–%91.6 |
+| Q4 | %92.9–%96.2 | %88.0–%92.5 |
+| emsalsiz (model+yıl eğitimde yok) | %64.3–%76.2 | %63.0–%73.0 |
 
-29.988 ilanda birkaç tahminin gerçeğe liralar düzeyinde denk gelmesi şans eseri de beklenir; bu tablo modelin tipik kalitesini değil, hata dağılımının sıfır ucunu gösterir.
+Hücreler dokuz ileri kurulumdaki kapsamanın en düşüğü–en yükseği.
 
-### Yüzde hatası en büyük 6 ilan
+### En büyük hatalar
 
-| model | yaş | km | gerçek | OOF tahmin | hata |
-|---|---:|---:|---:|---:|---:|
-| A4 Sedan 2.0 TDI | 20 | 355.000 | ₺644.000 | ₺1.790.840 | %178.1 |
-| 750i Long | 19 | 271.000 | ₺1.190.000 | ₺2.831.842 | %138.0 |
-| 745i Long | 21 | 280.000 | ₺885.000 | ₺1.921.635 | %117.1 |
-| 1.8 1.8 T | 20 | 96.000 | ₺950.000 | ₺1.836.127 | %93.3 |
-| M2 | 10 | 153.000 | ₺1.650.000 | ₺3.130.227 | %89.7 |
-| 316Ci | 21 | 234.500 | ₺345.000 | ₺621.147 | %80.0 |
+**Motor değeri tutarsız ilanlar.** Motor gücü ya da hacmi kendi modelinin medyanından 1.5 kattan fazla sapan 15 ilan var (%0.05): katalog eşleşmesi çökmüş, model aracın sahip olmadığı bir motoru fiyatlıyor; medyan hataları %12.8, geri kalanınki %4.7. Bu kontrol yalnız en az 5 ilanı olan modellerde çalışıyor: daha az ilanlı 307 modelin 632 ilanı (%2.11) onun kör noktası — emsalsizliğin en yoğun olduğu yer.
 
-En kötü altı ilanın hepsinde model gerçek fiyatın **üstünü** söylüyor; medyan yaş 20. Bu yön büyük ölçüde sıralamanın kendisinden geliyor: model düşük söylediğinde yüzde hata %100'ü geçemez (bu veride en yüksek %56.5), bu listenin ilk 10'una girmek için ise %72.7 gerekiyor. Lira ölçeğindeki sıralama aşağıda.
-
-**Bir ilanda sebep veri:** motor gücü ya da hacmi kendi emsal grubunun medyanından 1.5 kattan fazla sapıyor — katalog eşleşmesi çökmüş, model olmayan bir motoru fiyatlıyor. Veride böyle 15 ilan var (%0.05) ve pahalıya mal oluyorlar: medyan hataları %12.8, geri kalanınki %4.7. Bu kontrol yalnız en az 5 ilanı olan modellerde çalışıyor: daha az ilanlı 307 modelin 632 ilanı (%2.11) onun kör noktası — emsalsizliğin en yoğun olduğu yer. **Dört ilanda sebep emsalsizlik:** aynı modelden veride en fazla iki ilan var. Kalan bir ilan iki açıklamaya da girmiyor. Tüm tahminler OOF; ilan kimliği (`ad_id`) bilerek yazılmadı.
-
-### Lira hatası en büyük 6 ilan
-
-| model | yaş | km | gerçek | OOF tahmin | tahmin − gerçek |
-|---|---:|---:|---:|---:|---:|
-| M3 | 17 | 182.980 | ₺5.850.000 | ₺2.547.649 | −₺3.30M |
-| M4 | 12 | 65.000 | ₺6.500.000 | ₺3.285.609 | −₺3.21M |
-| M3 | 12 | 50.000 | ₺5.999.000 | ₺2.785.950 | −₺3.21M |
-| 520d xDrive M Sport | 8 | 88.200 | ₺6.050.000 | ₺3.203.694 | −₺2.85M |
-| M5 | 20 | 97.172 | ₺5.669.000 | ₺3.069.790 | −₺2.60M |
-| M6 | 19 | 169.000 | ₺5.750.000 | ₺3.246.669 | −₺2.50M |
-
-Lira ölçeğinde liste tersine dönüyor: ilk altının altı tanesinde model **düşük** söylüyor. İlk 100 lira hatasından 73 tanesi düşük, 27 tanesi fazla tahmin; 91 tanesi en pahalı çeyrekte. Segmentini model adından alan seriler (M Serisi, RS, S, i Serisi) verinin %0.52 kadarı ama ilk 100 içinde 23 ilan — verideki paylarının 44 katı. Fiyat tavanı (₺6.50M) bu uçta modelin öğrendiği aralığı da kesiyor; en pahalı ilanlardaki düşük tahmin bu sınırla birlikte okunmalı.
+**Lira ölçeğinde en büyük hatalar.** İlk 100 lira hatasından 73 tanesi düşük, 27 tanesi fazla tahmin. Bu yön bir model eğilimi sayılmaz: gerçek fiyat tahminin etrafında log ölçekte simetrik dağılsaydı da ilk 100'ün ortalama 67.8'i (%95: 60–77) düşük tahmin olurdu; aynı yüzde hata, fiyat tahminin üstündeyken liraca daha büyük. 84 tanesi tahmini en pahalı çeyrekte. Segmentini model adından alan seriler (M Serisi, RS, S, i Serisi) verinin %0.52 kadarı ama ilk 100 içinde 23 ilan — verideki paylarının 44 katı. Fiyat tavanı (₺6.50M) bu uçta modelin öğrendiği aralığı da kesiyor; en pahalı ilanlardaki düşük tahmin bu sınırla birlikte okunmalı.
 
 ![Lira ölçeğinde hata — tahmin − gerçek](figures/tr-28-residual-lira.png)
 
 ## 9. Zaman — dönem etkisi, dağılım kayması ve backtest
 
-İki ölçü var. **Dağılım kayması:** dönemler arası fiyat dağılımı az kayıyor (en yüksek PSI 0.005, "kayma yok" eşiği 0.10). **Zamansal backtest:** eski dönemde eğitip sonraki dönemin yalnızca yeni ilanlarında test edince hata ufuk uzadıkça büyüyor (%6.53 → %7.56). Aynı model ve yılın ilanlarında piyasa seviyesi +%2.0 kaydı ve model zamanı görmüyor → yeniden eğitim takvime değil **ölçülen kaymaya** bağlanmalı (bölümün sonu).
+İki ölçü var. **Dağılım kayması:** dönemler arası fiyat dağılımı az kayıyor (en yüksek PSI 0.005, "kayma yok" eşiği 0.10). **Zamansal backtest:** eski dönemde eğitip sonraki dönemin yalnızca yeni ilanlarında test edince hata ufuk uzadıkça büyüyor (%6.29 → %7.34). Aynı model ve yılın ilanlarında piyasa seviyesi +%2.0 kaydı ve model zamanı görmüyor → yeniden eğitim takvime değil **ölçülen hataya ve kaymaya** bağlanmalı (bölümün sonu).
 
 ### Dönem etkisi
 
@@ -505,64 +387,66 @@ Lira ölçeğinde liste tersine dönüyor: ilk altının altı tanesinde model *
 
 ### Zamansal backtest
 
-| tek dönem: eğitim → test | MAPE | n | kümülatif: eğitim → test | MAPE | n |
+| tek dönem: eğitim → test | MAPE [%95 GA] | n | kümülatif: eğitim → test | MAPE [%95 GA] | n |
 |---|---:|---:|---|---:|---:|
-| 01-18 → 01-27 | %6.53 | 2.960 | ≤01-18 → 01-27 | %6.53 | 2.960 |
-| 01-18 → 03-21 | %6.81 | 8.182 | ≤01-18 → 03-21 | %6.81 | 8.182 |
-| 01-18 → 06-27 | %7.56 | 10.529 | ≤01-18 → 06-27 | %7.56 | 10.529 |
-| 01-27 → 03-21 | %6.59 | 7.413 | ≤01-27 → 03-21 | %6.57 | 7.238 |
-| 01-27 → 06-27 | %7.30 | 10.313 | ≤01-27 → 06-27 | %7.36 | 10.257 |
-| 03-21 → 06-27 | %7.06 | 9.099 | ≤03-21 → 06-27 | %6.94 | 8.889 |
+| 01-18 → 01-27 | %6.29 [5.90, 6.73] | 2.960 | ≤01-18 → 01-27 | = tek dönem | = |
+| 01-18 → 03-21 | %6.59 [6.24, 6.96] | 8.182 | ≤01-18 → 03-21 | = tek dönem | = |
+| 01-18 → 06-27 | %7.34 [6.95, 7.73] | 10.529 | ≤01-18 → 06-27 | = tek dönem | = |
+| 01-27 → 03-21 | %6.54 [6.18, 6.91] | 7.413 | ≤01-27 → 03-21 | %6.47 [6.09, 6.83] | 7.238 |
+| 01-27 → 06-27 | %7.18 [6.82, 7.60] | 10.313 | ≤01-27 → 06-27 | %7.23 [6.85, 7.64] | 10.257 |
+| 03-21 → 06-27 | %6.90 [6.49, 7.33] | 9.099 | ≤03-21 → 06-27 | %6.78 [6.42, 7.17] | 8.889 |
 
-Tek dönem = yalnız bir taramada eğit, sonrakini tahmin et. Kümülatif = t'ye kadarki tüm taramalarda eğit. Test kümesi yalnız eğitimde hiç görülmemiş `ad_id`'ler (sızıntısız); **n** bu ilanların sayısı ve MAPE bu ilanlarda. Ör. 01-27 taramasındaki 11.254 ilanın 8.294 tanesi 01-18 taramasında da yayındaydı; test edilen kalan 2.960 ilan. Kümülatifte t'ye kadarki her taramada görülen ilan çıktığı için n tek dönemden küçük ya da eşit. Aynı eğitim döneminden test ufku uzadıkça hata büyüyor.
+Tek dönem = yalnız bir taramada eğit, sonrakini tahmin et. Kümülatif = t'ye kadarki tüm taramalarda eğit. Test kümesi yalnız eğitimde hiç görülmemiş `ad_id`'ler (sızıntısız); **n** bu ilanların sayısı ve MAPE bu ilanlarda. Ör. 01-27 taramasındaki 11.254 ilanın 8.294 tanesi 01-18 taramasında da yayındaydı; test edilen kalan 2.960 ilan. Kümülatifte t'ye kadarki her taramada görülen ilan çıktığı için n tek dönemden küçük ya da eşit. "=" işaretli kümülatif hücreler tek dönem koluyla aynı deneydir (ilk taramaya kadar birikim tek bir taramadır).
 
-Bu tablonun iki kolu da ana modelden hafif bir kurulumla ölçülür: model ve seri adı TF-IDF/SVD'den geçmeden ham kategorik girer, 800 ağaç, erken durdurma yok. Mutlak düzey manşet MAPE ile değil, satırlar birbiriyle karşılaştırılmalı. Kümülatif kolun ilk üç satırı tek dönem koluyla aynı deneydir (ilk taramaya kadar birikim tek bir taramadır); bağımsız ikinci bir ölçüm sayılmamalı.
+Kurulum manşet modelinki: model ve seri adı TF-IDF+SVD, aynı LightGBM ayarları. Ağaç sayısını, servis edilen modeldeki gibi, eğitim kümesinin kendi içindeki 5 katlı erken durdurma seçiyor (161–211 ağaç); test taraması durdurmak için hiç kullanılmıyor. Köşeli parantez %95 güven aralığı: test ilanları modele göre yeniden örneklenerek (bir modelin ilanları birbirinden bağımsız değil) 1.000 kez hesaplandı.
+
+Aynı eğitim taramasından (01-18) test ufku uzadıkça MAPE %6.29 → %7.34; güven aralıkları örtüşmüyor. Ama her ufkun test ilanları farklı: başka ilanlar, başka bileşim, başka test taraması. Bu fark yalnız zamana bağlanamaz.
+
+**Sabit test kümesinde ufuk.** Bu çekince aynı ilanlarda kalkıyor: 06-27 taramasına yeni gelen 8.889 ilan (önceki hiçbir taramada görülmemiş) önceki her tek taramayla eğitilen modelle fiyatlandı. MAPE eğitim taramasına göre 01-18 %7.29, 01-27 %7.13, 03-21 %6.89; en yeni eğitime göre fark 01-18 +0.40 [+0.27, +0.52], 01-27 +0.24 [+0.13, +0.34] (eşli, modele göre kümeli). Aynı ilanlarda eğitim taraması eskidikçe hata artıyor.
+
+| test | tek dönem eğitimi | kümülatif eğitimi | ortak ilan | tek dönem | kümülatif | fark [%95 GA] |
+|---|---|---|---:|---:|---:|---:|
+| 03-21 | 01-27 | ≤01-27 | 7.238 | %6.52 | %6.47 | -0.04 [-0.12, +0.03] |
+| 06-27 | 01-27 | ≤01-27 | 10.257 | %7.17 | %7.23 | +0.06 [-0.01, +0.12] |
+| 06-27 | 03-21 | ≤03-21 | 8.889 | %6.89 | %6.78 | -0.11 [-0.20, -0.02] |
+
+Tek dönem ile kümülatif, aynı test taramasında ikisinin de test ettiği aynı ilanlarda eşli karşılaştırıldı (aynı yeniden örneklemeler). Üç karşılaştırmanın bir tanesinde birikim hatayı güven aralığı sıfırın altında kalacak kadar düşürüyor; kalan iki tanesinde fark örnekleme hatası içinde.
 
 ### Dönem başına OOF
 
 | dönem (bağımsız) | MAPE | n | kümülatif | MAPE | n |
 |---|---:|---:|---|---:|---:|
-| 01-18 | %7.07 | 10.901 | ≤01-18 | %7.07 | 10.901 |
-| 01-27 | %6.99 | 11.254 | ≤01-27 | %6.77 | 13.861 |
-| 03-21 | %7.02 | 11.478 | ≤03-21 | %6.53 | 21.099 |
-| 06-27 | %7.25 | 11.526 | ≤06-27 | %6.53 | 29.988 |
+| 01-18 | %6.91 | 10.901 | ≤01-18 | %6.91 | 10.901 |
+| 01-27 | %6.92 | 11.254 | ≤01-27 | %6.67 | 13.861 |
+| 03-21 | %6.93 | 11.478 | ≤03-21 | %6.45 | 21.099 |
+| 06-27 | %7.09 | 11.526 | ≤06-27 | %6.49 | 29.988 |
 
-Bu tablo zamansal değil: her satır düz 5-fold OOF, yalnız yeni ilan kuralı yok. Kurulum yine hafif (TF-IDF/SVD yok, 500 ağaç, erken durdurma yok). Son kümülatif satır manşet modelle aynı ilanları kapsıyor ve %6.53 veriyor, manşet MAPE %6.49; kurulumlar birden fazla noktada ayrıldığı için fark tek bir değişikliğe atfedilemez.
+Bu tablo zamansal değil: her satır düz 5-fold OOF, yeni ilan kuralı yok. Son kümülatif satır manşet modelin OOF'unun kendisi (%6.49, 29.988 ilan). İlk ileri test (01-18 → 01-27, %6.29) aynı taramanın kendi içindeki OOF'undan (%6.91) düşük. Bu bir çelişki değil, iki ayrı ölçüm: ileri model taramanın tamamıyla eğitiliyor (OOF'ta her kat beşte dördüyle), test ise yalnız sonraki taramaya yeni gelen ilanlar — başka bir ilan kümesi.
 
-![Daha çok veri, daha az hata — tek dönem vs biriken dönemler](figures/tr-15-backtest.png)
+![Tek dönem ve biriken dönemler — ortalama yüzde hata](figures/tr-15-backtest.png)
 
 ### Dağılım kayması
 
-| dönem çifti | KS | KS p | PSI | EMD (₺) |
+| dönem çifti | ortak ilan (ilk taramanın payı) | KS | PSI | EMD (₺) |
 |---|---:|---:|---:|---:|
-| 01-18→01-27 | 0.0055 | 0.996 | 0.0004 | ₺10.109 |
-| 01-18→03-21 | 0.0173 | 0.070 | 0.0015 | ₺20.560 |
-| 01-18→06-27 | 0.0309 | <0.001 | 0.0049 | ₺48.059 |
-| 01-27→03-21 | 0.0161 | 0.104 | 0.0011 | ₺15.717 |
-| 01-27→06-27 | 0.0301 | <0.001 | 0.0038 | ₺39.115 |
-| 03-21→06-27 | 0.0157 | 0.118 | 0.0017 | ₺28.620 |
+| 01-18→01-27 | %76.1 | 0.0055 | 0.0004 | ₺10.109 |
+| 01-18→03-21 | %30.2 | 0.0173 | 0.0015 | ₺20.560 |
+| 01-18→06-27 | %9.1 | 0.0309 | 0.0049 | ₺48.059 |
+| 01-27→03-21 | %36.1 | 0.0161 | 0.0011 | ₺15.717 |
+| 01-27→06-27 | %10.8 | 0.0301 | 0.0038 | ₺39.115 |
+| 03-21→06-27 | %21.1 | 0.0157 | 0.0017 | ₺28.620 |
 
-**Sütunlar ne ölçüyor.** Dördü de iki dönemin **ilan fiyatı dağılımını** karşılaştırır (ham fiyat, ₺; her dönemin o gün ilanda olan tüm ilanları, dönem başına ~11 bin).
+**Sütunlar ne ölçüyor.** Üç ölçü de iki dönemin **ilan fiyatı dağılımını** karşılaştırır (ham fiyat, ₺; her dönemin o gün ilanda olan tüm ilanları, dönem başına ~11 bin).
 
 | ölçü | ne ölçer, nasıl okunur |
 |---|---|
 | **KS** | İki dağılımın en çok ayrıldığı nokta; 0–1 arası. "Şu fiyatın altında kalan ilan payı" iki dönemde en fazla ne kadar farklı? 0.031 = en ayrık noktada 3.1 puan fark. |
-| **KS p** | Bu fark şans eseri olabilir mi? 0.05'in altı → fark gerçek. Ama **büyüklüğünü söylemez**: ~11 bin ilanlık örneklemlerde çok küçük bir fark bile anlamlı çıkar. |
 | **PSI** | Fark pratikte büyük mü? İlk dönemin fiyatları 10 dilime bölünür; ikinci dönemde bu dilimlerin payı ne kadar kaymış? < 0.10 kayma yok · 0.10–0.25 orta · > 0.25 büyük. |
 | **EMD (₺)** | Fark kaç lira? Bir dönemin fiyat dağılımını ötekine çevirmek için fiyatların ortalama kaç lira kaydırılması gerektiği. Lira cinsinden tek ölçü olduğu için en doğrudan okunanı bu. |
 
-**Taramalar bağımsız örneklem değil.** Aynı ilan birkaç taramada birden görülüyor: ilk taramadaki ilanların %76.1 kadarı (01-18→01-27) ikinci taramada da var. KS iki örneklemin bağımsız olduğunu varsayar, bu yüzden yukarıdaki p-değerleri geçerli değil. Aşağıda her çift için iki taramada da görülen ilanlar çıkarılıp KS yeniden hesaplandı. Bu ayrık karşılaştırma bağımsızlığı sağlar ama başka bir şeyi ölçer: ilk taramadan sonra kalkan ilanlarla sonradan gelen ilanları.
+**Taramalar bağımsız örneklem değil.** Aynı ilan birkaç taramada birden görülüyor: ilk taramadaki ilanların %76.1 kadarı (01-18→01-27) ikinci taramada da var. Anlamlılık testleri (ör. KS p-değeri) iki örneklemin bağımsız olduğunu varsayar; bu yüzden p-değeri verilmiyor, tablo farkın büyüklüğünü gösteriyor.
 
-| dönem çifti | ortak ilan (ilk taramanın payı) | KS (ayrık) | KS p (ayrık) | EMD (ayrık, ₺) |
-|---|---:|---:|---:|---:|
-| 01-18→01-27 | %76.1 | 0.0161 | 0.860 | ₺35.324 |
-| 01-18→03-21 | %30.2 | 0.0229 | 0.031 | ₺26.389 |
-| 01-18→06-27 | %9.1 | 0.0334 | <0.001 | ₺51.115 |
-| 01-27→03-21 | %36.1 | 0.0247 | 0.022 | ₺24.206 |
-| 01-27→06-27 | %10.8 | 0.0331 | <0.001 | ₺42.804 |
-| 03-21→06-27 | %21.1 | 0.0210 | 0.036 | ₺37.666 |
-
-**Kayma tablosunun söylediği.** Beş çiftte ayrık KS p 0.05'in altında (altı test için Holm düzeltmesiyle iki: 01-18→06-27, 01-27→06-27) — bu çiftlerde taramalar arasında kalkan ilanlarla sonradan gelen ilanların fiyat dağılımı farklı. Tam taramalar arasındaki fark ise küçük: en yüksek PSI 0.0049, "kayma yok" eşiğinin (0.10) yirmide biri. EMD bunu liraya çeviriyor (tam taramalar, ortak ilanlar dahil): dokuz günde ~₺10 bin, beş ayda ~₺48 bin — medyan ilan fiyatının (₺1.55M) yaklaşık %3 kadarı. En yakın iki taramada ilkindeki ilanların %76.1 kadarı ikincisinde de var, bu yüzden aralarındaki mesafe küçük çıkıyor. Ayrık alt kümelerde EMD aralıkla düzenli büyümüyor.
+**Kayma tablosunun söylediği.** Tam taramalar arasındaki fark küçük: en yüksek PSI 0.0049, "kayma yok" eşiğinin (0.10) yirmide biri. EMD bunu liraya çeviriyor: dokuz günde ~₺10 bin, beş ayda ~₺48 bin — medyan ilan fiyatının (₺1.55M) yaklaşık %3 kadarı. En yakın iki taramada ilkindeki ilanların %76.1 kadarı ikincisinde de var, bu yüzden aralarındaki mesafe küçük çıkıyor.
 
 ![Fiyat dağılımı — dönemlere göre](figures/tr-13-drift-hist.png)
 
@@ -570,18 +454,15 @@ Bu tablo zamansal değil: her satır düz 5-fold OOF, yalnız yeni ilan kuralı 
 
 ### Yeniden eğitim ne zaman
 
-- **Kaymayı izle, modeli yeniden eğit.** Canlıda bir **kayma servisi** PSI · KS · EMD'yi izlesin ve model yeni taramalarla yeniden eğitilsin. Sabit bir PSI eşiği yetmez: bugünkü en yüksek PSI 0.0049, ama yukarıdaki backtest'te aynı eğitim döneminden test ufku uzadıkça MAPE %6.53 → %7.56 artıyor. Dönem başına bağımsız OOF sabit kaldığına göre bu saf zaman etkisi: dağılım neredeyse kıpırdamazken bile model eskiyor.
+- **Hatayı doğrudan izle, modeli yeni taramalarla yeniden eğit.** Fiyat her taramada geldiği için modelin yeni ilanlardaki hatası doğrudan ölçülebilir; yukarıdaki backtest tam bunu yapıyor. Aynı yeni ilanlarda en eski taramayla (01-18) eğitilen model en yenisinden +0.40 puan [+0.27, +0.52] daha çok yanılıyor.
+- **Kaymayı tanı için izle.** PSI · KS · EMD neyin değiştiğini gösterir ama yeniden eğitimi tek başına tetiklemez: bugünkü en yüksek PSI 0.0049, dağılım neredeyse kıpırdamazken model eskiyor. Sabit bir PSI eşiği yok.
 - **Fiyat rejimini değiştiren gelişmeler.** Vergi/ÖTV düzenlemesi, teşvik, ithalat kuralı, kur hareketi ya da ani piyasa anomalisi gibi dışsal olaylar kaymayı bir ölçüm penceresi dolmadan yaratabilir; bunlar ayrıca **tetikleyici** sayılmalı ve eğitim planı bunlara göre yapılmalı.
-- **Veri biriktikçe kazanç.** Dönem başına bağımsız OOF %6.99–%7.25 bandında sabit kalırken kümülatif %7.07 → %6.53 (n 10.901 → 29.988). Yeniden eğitim eski dönemleri atarak değil, **üstüne ekleyerek** yapılmalı.
+- **Eski dönemleri atma.** Aynı test ilanlarındaki eşli karşılaştırmada birikimli eğitim üç karşılaştırmanın bir tanesinde hatayı anlamlı düşürüyor, hiçbirinde anlamlı artırmıyor (aralıklar test ilanlarının örneklemesini taşır, eğitimin değişkenliğini değil). Yeniden eğitim eski dönemleri atarak değil, **üstüne ekleyerek** yapılmalı.
 
 ## 10. Serbest metin: ölçüldü, dahil edilmedi
 
-Satıcı açıklaması modele **girmiyor**. Bu bir ihmal değil, ölçüm sonucu: yapısal model R² **0.9645**, üstüne metin öznitelikleri eklenince **0.9660** — ΔR² **0.0015**: yapısal modelin açıklayamadığı log varyansın %4.2 kadarı.
+Satıcı açıklaması modele **girmiyor**. Bu bir ihmal değil, ölçüm sonucu: §7'deki model log fiyatta R² **0.9699**; aynı fold'larda açıklama metni eklenince **0.9707** — ΔR² **0.0008**, modelin açıklayamadığı log varyansın %2.6 kadarı. MAPE %6.49 → %6.41, ortalama mutlak hata ₺109.776 → ₺108.770.
 
-Bu iki sayı ayrı bir koşumdan geliyor ve kurulumu bu raporunkinden farklı: taban modelde model ve seri adı yok, 300 ağaç, 6 kategorik ve 8 sayısal öznitelik; o yüzden taban R², §7'deki 0.9745 ile karşılaştırılmamalı. Anlamlı olan mutlak seviye değil, **iki kol arasındaki fark**.
+Metin kolu modelle aynı öznitelikleri, fold'ları ve LightGBM ayarlarını kullanıyor; açıklama kelime TF-IDF'i (1–2 gram) ve 50 SVD bileşeni olarak ekleniyor, ikisi de her fold'un yalnız eğitim kısmında kuruluyor. Fark ön kayıtlı eşiğin altında (ΔR² < 0.005 ve MAPE iyileşmesi < 0,2 puan), bu yüzden metin modele eklenmedi. Ölçüm her koşuda yeniden yapılıyor; eşik aşılırsa bu bölüm üretilmez.
 
-Metinden yapılandırılmış bilgi çıkarmak ayrıca denendi: **LangExtract** kütüphanesi ve **gemini-3.1-flash-lite** ile 13.904 ilan metnindeki hasar, bakım, modifiye ifadeleri parça ve durum niteliğiyle çıkarıldı; bu metinlerin 13.867 tanesi modeldeki ilanlara denk geliyor (ilanların %46.2 kadarı).
-
-Bu çıkarımların kendisi ne modele ne rapora girdi, çünkü **doğrulukları ölçülemedi**. Tek dolaylı bağ: §7'deki metin bayrağının ve §8'deki örnek gerekçelerinin modifiye kelime listesi (dönüşüm kalıbı değil) bu çıkarımların sözcük dağarcığından damıtıldı; bayrak ilan metnine uygulanan düz bir kelime kuralı. Ölçmek için zor/orta/kolay ilanlardan dengeli bir doğrulama kümesi kurup elle etiketlemek gerekiyor; o emek harcanmadan modelin ne zaman yanıldığı bilinmiyor. Ölçemediğimiz bir sinyalin üstüne karar kurulmadı.
-
-Yapılması gereken belli: çıkarımlar önce doğrulanmalı, sonra modele **temiz sinyal** olarak verilip katkısı aynı protokolle test edilmeli. Önündeki engel **örneklem**: metninde dönüşüm ya da modifiye ifadesi geçen ilan 3.107 (%10.4) ve bunların ne kadarının gerçekten modifiye olduğu bilinmiyor; yeterli doğrulanmış örnek yoksa model bu sinyali öğrenemez, gürültüye karışır. Bir de alternatif yol var: sinyali modele hiç vermeden bu ilanları **veriden çıkarmak** ve hata payının ne kadar düştüğünü ölçmek. Hangisi seçilirse seçilsin, sonuç **canlı ilanlarda** da sınanmadan kabul edilmemeli.
+Metinde dönüşüm, motor değişimi ya da modifiye ifadesi geçen ilanlar ayrıca işaretleniyor: 3.107 ilan (%10.4), §7'deki metin bayrağı. Bayrak düz bir kelime kuralı; kelime listesi arşivlenmiş bir LLM çıkarım denemesinin sözcük dağarcığından damıtıldı ve her koşuda bugünkü metne uygulanıyor.

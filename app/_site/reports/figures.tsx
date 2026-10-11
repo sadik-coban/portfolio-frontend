@@ -8,7 +8,7 @@
 import { useMemo } from 'react';
 import PlotlyChart from '@/components/charts/PlotlyChart';
 import { makeHybridTheme, CATEGORICAL_LIST, GREEN_RAMP } from '../../_charts/types';
-import { sampleRepresentative, sampleByCluster } from '../../_charts/sample';
+import { sampleRepresentative } from '../../_charts/sample';
 import * as LBL from '@/lib/labels';
 
 // Native Plotly for the figures the analysis pipeline ships as PNGs.
@@ -97,12 +97,38 @@ export function buildReportFigures(d: any, lang: Lang): Record<string, Fig> {
         base({ margin: { t: 24, r: 16, b: 28, l: 8 } }), 300);
 
     // ---------- hedonic drivers ----------
-    const hedoTerm = (t: string) => LBL.label(LBL.hedonicTerm, t, lang);
-    // The bootstrap fit lives under hedonic_reliability, not hedonic — same source the
-    // report page uses ("single hedonic source of truth: prefer the detailed bootstrap-fit").
-    const boot = dom.hedonic_reliability?.bootstrap || [];
-    put('03-bootstrap-ci', boot.length ? [{ type: 'scatter', mode: 'markers', y: boot.map((b: any) => hedoTerm(b.term)), x: boot.map((b: any) => b.point), error_x: { type: 'data', symmetric: false, array: boot.map((b: any) => b.ci_hi - b.point), arrayminus: boot.map((b: any) => b.point - b.ci_lo), color: '#b8b6ae', thickness: 1.5, width: 5 }, marker: { size: 9, color: boot.map((b: any) => (b.point >= 0 ? theme.accent : '#ef4444')) }, hovertemplate: '%{y}: β=%{x:.3f}<extra></extra>' }] : null,
-        base({ margin: { t: 8, r: 16, b: 32, l: 8 }, xaxis: { zeroline: true, zerolinecolor: theme.muted, title: { text: L('katsayı (log-fiyat)', 'coefficient (log-price)'), font: { size: 10 } } } }), 320);
+    // The same regression under two controls, side by side on each term's row, as the generator draws
+    // figure 03: segment control, and model control — effects within one model name, the column the
+    // decision note prints. Effects in % (exp(β)−1) with 95% intervals clustered by model. Rows follow
+    // the segment column's term order; the model column is matched to it by term id.
+    const hcols = dom.hedonic_reliability?.columns;
+    const hterms: string[] = (hcols?.segment?.coefficients || []).map((r: any) => r.term);
+    const hRow = (col: string) => {
+        const by = new Map((hcols?.[col]?.coefficients || []).map((r: any) => [r.term, r]));
+        return hterms.map((t) => by.get(t) as any);
+    };
+    const pctS = (v: number) => (v < 0 ? '−' : '+') + (lang === 'tr' ? `%${Math.abs(v).toFixed(2)}` : `${Math.abs(v).toFixed(2)}%`);
+    const hedTrace = (col: string, name: string, colour: string, off: number) => {
+        const rows = hRow(col);
+        if (!rows.length || rows.some((r) => !r)) return null;
+        return {
+            type: 'scatter', mode: 'markers', name, x: rows.map((r) => r.pct_effect), y: hterms.map((_, i) => i + off),
+            error_x: { type: 'data', symmetric: false, array: rows.map((r) => r.pct_hi - r.pct_effect), arrayminus: rows.map((r) => r.pct_effect - r.pct_lo), color: colour, thickness: 1.4, width: 3 },
+            marker: { size: 7, color: colour },
+            customdata: rows.map((r, i) => [LBL.label(LBL.hedonicTermId, hterms[i], lang), pctS(r.pct_effect), pctS(r.pct_lo), pctS(r.pct_hi)]),
+            hovertemplate: `%{customdata[0]} · ${name}: %{customdata[1]} [%{customdata[2]}, %{customdata[3]}]<extra></extra>`,
+        };
+    };
+    put('03-hedonic-ci', hterms.length ? [
+        hedTrace('segment', L('segment kontrolü', 'segment control'), '#86857e', -0.16),
+        hedTrace('model', L('model kontrolü', 'model control'), green, 0.16),
+    ] : null,
+        base({
+            showlegend: true, legend: { font: { size: 9 }, orientation: 'h', y: -0.16 }, margin: { t: 8, r: 16, b: 44, l: 8 },
+            xaxis: { ticksuffix: '%', title: { text: L('fiyata etki %', 'effect on price %'), font: { size: 10 } } },
+            yaxis: { tickmode: 'array', tickvals: hterms.map((_, i) => i), ticktext: hterms.map((t) => LBL.label(LBL.hedonicTermId, t, lang)), autorange: 'reversed', showgrid: false },
+            shapes: [{ type: 'line', xref: 'x', x0: 0, x1: 0, yref: 'paper', y0: 0, y1: 1, line: { dash: 'dash', color: '#86857e', width: 1 } }],
+        }), 400);
 
     // methodology.lofo holds 22 rows: 19 single-feature removals AND 3 group removals. Drawing all
     // of them on one axis double-counts — DAMAGE_COLS competes with its own 13 members — which is
@@ -229,9 +255,10 @@ export function buildReportFigures(d: any, lang: Lang): Record<string, Fig> {
     const pctTxt = (v: number) => (lang === 'tr' ? `%${v.toFixed(1)}` : `${v.toFixed(1)}%`);
     const grey = '#86857e', red = '#b91c1c';
 
-    // 27 · where the lira error adds up (by actual price), and the bias once listings are grouped by
-    // what the model predicted. The bias axis is fixed at ±MAE/2, as the generator draws it, so a
-    // small bar reads as small instead of filling the panel.
+    // 27 · where the lira error adds up, and the bias — both with listings grouped by what the model
+    // predicted (since the generator's 2026-09-28 run; the left panel used to group by actual price).
+    // The bias axis is fixed at ±MAE/2, as the generator draws it, so a small bar reads as small
+    // instead of filling the panel.
     const lq: any[] = ed.lira_quartile || [], pq: any[] = ed.pred_quartile || [];
     const halfMae = (dom.model_compare?.lightgbm?.MAE ?? 0) / 2 / 1e3;
     put('27-quartile-lira', (lq.length && pq.length && halfMae) ? [
@@ -243,7 +270,7 @@ export function buildReportFigures(d: any, lang: Lang): Record<string, Fig> {
         // Inside the bias panel's top-right: the axis runs to ±MAE/2 and the bars stay near zero, so
         // that corner is empty — above the panel it collided with the panel title on a phone.
         legend: { font: { size: 9 }, orientation: 'h', x: 1, xanchor: 'right', y: BOTTOM[1], yanchor: 'top', bgcolor: 'rgba(0,0,0,0)' },
-        xaxis: { anchor: 'y', title: axTitle(L('gerçek fiyat çeyreği', 'actual-price quartile')) },
+        xaxis: { anchor: 'y', title: axTitle(L('tahmin edilen fiyat çeyreği', 'predicted-price quartile')) },
         yaxis: { domain: TOP, range: [0, Math.max(...lq.map((r) => r[2]), 0) * 1.18], title: axTitle(L('toplam lira hatasındaki pay %', 'share of total lira error %')) },
         xaxis2: ax({ anchor: 'y2', title: axTitle(L('tahmin edilen fiyat çeyreği', 'predicted-price quartile')) }),
         yaxis2: ax({ domain: BOTTOM, range: [-halfMae, halfMae], zeroline: true, zerolinecolor: grey, title: axTitle(L('sapma: tahmin − gerçek (₺bin; eksen ±MAE/2)', 'bias: predicted − actual (₺k; axis ±MAE/2)')) }),
@@ -352,10 +379,28 @@ export function buildReportFigures(d: any, lang: Lang): Record<string, Fig> {
         }, 720);
     }
 
+    // Two arms per predicted-price band, as the generator draws figure 12: one margin for every listing,
+    // and a margin set per band (Mondrian), both cross-calibrated. The axis starts 5 points below the
+    // lowest bar, the generator's floor, so the gap to the target line stays readable.
     const cf = dom.conformal;
     const cfHedef = cf?.coverage_target ?? 90;
-    put('12-coverage', cf ? [{ type: 'bar', x: cf.by_quantile.map((r: any) => r[0]), y: cf.by_quantile.map((r: any) => r[1]), marker: { color: cf.by_quantile.map((r: any) => (r[1] >= cfHedef ? green : '#e08a1e')) }, text: cf.by_quantile.map((r: any) => r[1].toFixed(1) + '%'), textposition: 'outside', hovertemplate: '%{x}: %{y:.1f}% ' + L('kapsama', 'coverage') + '<extra></extra>' }] : null,
-        base({ margin: { t: 24, r: 16, b: 24, l: 8 }, yaxis: { ticksuffix: '%' }, shapes: [{ type: 'line', xref: 'paper', x0: 0, x1: 1, yref: 'y', y0: cfHedef, y1: cfHedef, line: { dash: 'dash', color: '#86857e', width: 1 } }] }), 260);
+    const cfOne: any[] = cf?.by_quantile || [], cfBand: any[] = cf?.mondrian_by_quantile || [];
+    const cfArm = (rows: any[], name: string, colour: string) => ({
+        type: 'bar', name, x: rows.map((r) => r[0]), y: rows.map((r) => r[1]), marker: { color: colour },
+        // Bare numbers over the bars, as in figure 10 — the axis carries the %, and with "%" two
+        // neighbouring labels touch on a phone.
+        text: rows.map((r) => r[1].toFixed(1)), textposition: 'outside', cliponaxis: false, textfont: { size: 10 },
+        hovertemplate: '%{x} · ' + name + ': %{y:.1f}% ' + L('kapsama', 'coverage') + '<extra></extra>',
+    });
+    put('12-coverage', cfOne.length ? [
+        cfArm(cfOne, L('tek oran', 'one margin'), '#b8b6ae'),
+        cfBand.length && cfArm(cfBand, L('banda göre', 'per band'), green),
+    ] : null, base({
+        barmode: 'group', showlegend: true, legend: { font: { size: 9 }, orientation: 'h', y: -0.3 }, margin: { t: 24, r: 16, b: 44, l: 8 },
+        xaxis: { title: { text: L('tahmin edilen fiyat çeyreği', 'predicted-price quartile'), font: { size: 10 } } },
+        yaxis: { ticksuffix: '%', range: [Math.min(...[...cfOne, ...cfBand].map((r) => r[1])) - 5, 100] },
+        shapes: [{ type: 'line', xref: 'paper', x0: 0, x1: 1, yref: 'y', y0: cfHedef, y1: cfHedef, line: { dash: 'dash', color: '#86857e', width: 1 } }],
+    }), 300);
 
     // ---------- drift ----------
     const dhist = dom.drift?.hist;
@@ -387,7 +432,11 @@ export function buildReportFigures(d: any, lang: Lang): Record<string, Fig> {
     const btN = btPer ? btPer.map((r: any) => r[2]) : [];
     put('15-backtest', (btIns || btPer) ? [
         btPer && { type: 'scatter', mode: 'lines+markers', name: L(`yalnız o dönemin ilanları (${fmtN(Math.min(...btN))}–${fmtN(Math.max(...btN))} ilan)`, `that period's listings only (${fmtN(Math.min(...btN))}–${fmtN(Math.max(...btN))})`), x: btLabels, y: btPer.map((r: any) => r[1]), line: { color: '#e08a1e', width: 2 }, marker: { size: 6 }, text: btPer.map((r: any) => fmtN(r[2])), hovertemplate: L('dönem', 'period') + ' %{x}: %{y:.2f}% · %{text} ' + L('ilan', 'listings') + '<extra></extra>' },
-        btIns && { type: 'scatter', mode: 'lines+markers+text', name: L('o tarihe kadarki tüm dönemler birlikte', 'all periods up to that date, pooled'), x: btLabels, y: btIns.map((r: any) => r[1]), line: { color: deep, width: 2 }, marker: { size: 7, color: green }, text: btIns.map((r: any) => `${fmtN(r[2])} ${L('ilan', 'listings')}`), textposition: 'bottom center', textfont: { size: 9, color: theme.muted }, hovertemplate: L('birikmiş →', 'pooled →') + '%{x}: %{y:.2f}%<extra></extra>' },
+        btIns && { type: 'scatter', mode: 'lines+markers+text', name: L('o tarihe kadarki tüm dönemler birlikte', 'all periods up to that date, pooled'), x: btLabels, y: btIns.map((r: any) => r[1]), line: { color: deep, width: 2 }, marker: { size: 7, color: green }, text: btIns.map((r: any) => `${fmtN(r[2])} ${L('ilan', 'listings')}`),
+            // The end labels lean inward: centred, a phone's plot edge cut "10,901" and "29,988 listings" in
+            // half. The last one goes above its point, into the empty band between the two lines — below
+            // it, on a phone, it ran into the line coming up from the third point.
+            textposition: btIns.map((_: any, i: number) => (i === 0 ? 'bottom right' : i === btIns.length - 1 ? 'top left' : 'bottom center')), textfont: { size: 9, color: theme.muted }, hovertemplate: L('birikmiş →', 'pooled →') + '%{x}: %{y:.2f}%<extra></extra>' },
     ] : null,
         base({ margin: { t: 12, r: 16, b: 46, l: 34 }, yaxis: { ticksuffix: '%', title: { text: 'MAPE', font: { size: 10 } } }, xaxis: { title: { text: L('dönem', 'period'), font: { size: 10 } } }, showlegend: true, legend: { font: { size: 9 }, orientation: 'h', y: -0.3 } }), 280);
 
@@ -406,17 +455,8 @@ export function buildReportFigures(d: any, lang: Lang): Record<string, Fig> {
     put('16-missing', smAll.length ? [{ type: 'bar', orientation: 'h', y: smAll.map((r: any) => clabTab(r[0])), x: smAll.map((r: any) => r[1]), marker: { color: smAll.map((r: any) => smPctColor.get(r[1]) || '#e08a1e') }, hovertemplate: '%{y}: %{x:.1f}%<extra></extra>' }] : null,
         base({ margin: { t: 8, r: 16, b: 24, l: 8 } }), 520);
 
-    const HEAT_ORDER = ['brand', 'series', 'model', 'segment', 'kb_body_type', 'kb_drivetrain', 'kb_transmission', 'kb_fuel'];
-    const heatMatrix = (mm: any, hover: string) => {
-        if (!mm?.labels || !mm.matrix) return null;
-        const labels: string[] = [...HEAT_ORDER.filter((l) => mm.labels.includes(l)), ...mm.labels.filter((l: string) => !HEAT_ORDER.includes(l))];
-        const idx = labels.map((l) => mm.labels.indexOf(l));
-        const z = idx.map((ri) => idx.map((ci) => mm.matrix[ri][ci]));
-        return [{ type: 'heatmap', z, x: labels, y: labels, zmin: 0, zmax: 1, colorscale: ramp, showscale: false, xgap: 1, ygap: 1, hovertemplate: hover }];
-    };
-    const heatLayout = base({ margin: { t: 8, r: 8, b: 12, l: 12 }, xaxis: { tickangle: -40 } });
-    put('17-theils-u', heatMatrix(met.theils_matrix, '%{y} | %{x}: %{z:.2f}<extra></extra>'), heatLayout, 360);
-    put('18-cramers-v', heatMatrix(met.cramers_matrix, '%{y} · %{x}: %{z:.2f}<extra></extra>'), heatLayout, 360);
+    // 17 (Theil's U), 18 (Cramér's V), 20 (Pearson), 22/23 (PCA) and 24 (k selection) left the
+    // technical report in the generator's 2026-09-28/29 simplification, their numbers kept empty.
 
     const ssm = dom.series_segment_matrix || [];
     if (ssm.length) {
@@ -436,21 +476,7 @@ export function buildReportFigures(d: any, lang: Lang): Record<string, Fig> {
     const DIVERGE: [number, string][] = [[0, '#ef4444'], [0.5, '#fdfcf9'], [1, '#059669']];
     const numHeat = (m: number[][]) => ((nc && m) ? [{ type: 'heatmap', z: m, x: nc.labels.map(numLabel), y: nc.labels.map(numLabel), zmin: -1, zmax: 1, colorscale: DIVERGE, showscale: false, xgap: 1, ygap: 1, hovertemplate: '%{y} · %{x}: %{z:.2f}<extra></extra>' }] : null);
     const corrLayout = base({ margin: { t: 8, r: 8, b: 12, l: 12 }, xaxis: { tickangle: -40 } });
-    put('20-pearson', numHeat(nc?.pearson), corrLayout, 340);
     put('21-spearman', numHeat(nc?.spearman), corrLayout, 340);
-
-    // ---------- clusters ----------
-    const pcaTrace = (pts: number[][] | null) => (pts ? [{ type: 'scatter', mode: 'markers', x: pts.map((r) => r[0]), y: pts.map((r) => r[1]), marker: { size: 4, opacity: 0.5, color: pts.map((r) => CATEGORICAL_LIST[r[2] % CATEGORICAL_LIST.length]) }, hoverinfo: 'skip' }] : null);
-    const pcaLayout = base({ xaxis: { showgrid: false, zeroline: true, zerolinecolor: theme.grid }, yaxis: { showgrid: false, zeroline: true, zerolinecolor: theme.grid } });
-    put('22-pca-scatter', pcaTrace(dom.pca_scatter ? sampleByCluster(dom.pca_scatter) : null), pcaLayout, 300);
-    put('23-pca-scatter-13', pcaTrace(dom.pca_scatter_13 ? sampleByCluster(dom.pca_scatter_13) : null), pcaLayout, 300);
-
-    const ksel = met.kmeans_selection;
-    put('24-k-selection', ksel ? [
-        { type: 'scatter', mode: 'lines+markers', name: L('İnertia (elbow)', 'Inertia (elbow)'), x: ksel.elbow.map((r: any) => r[0]), y: ksel.elbow.map((r: any) => r[1]), line: { color: deep, width: 2 }, marker: { size: 5 }, hovertemplate: 'k=%{x}: inertia %{y:.4s}<extra></extra>' },
-        { type: 'scatter', mode: 'lines+markers', name: 'Silhouette', yaxis: 'y2', x: ksel.silhouette.map((r: any) => r[0]), y: ksel.silhouette.map((r: any) => r[1]), line: { color: '#e08a1e', width: 2 }, marker: { size: 7, color: ksel.silhouette.map((r: any) => (r[0] === ksel.chosen_k ? deep : '#e08a1e')) }, hovertemplate: 'k=%{x}: silhouette %{y:.3f}<extra></extra>' },
-    ] : null,
-        base({ showlegend: true, legend: { font: { size: 9 }, orientation: 'h', y: -0.24 }, margin: { t: 12, r: 40, b: 40, l: 8 }, xaxis: { title: { text: 'k', font: { size: 10 } }, dtick: 1 }, yaxis: { tickformat: '~s', tickfont: { size: 10, color: '#047857' } }, yaxis2: { fixedrange: true, overlaying: 'y', side: 'right', gridcolor: 'transparent', zeroline: false, tickfont: { size: 10, color: '#e08a1e' } } }), 300);
 
     const ph = dom.price_histogram ? [...dom.price_histogram].filter((r: any) => r[1] > 0) : [];
     put('25-price-hist', ph.length ? [{ type: 'bar', x: ph.map((r: any) => r[0]), y: ph.map((r: any) => r[1]), marker: { color: green }, customdata: ph.map((r: any) => fmtM(r[0])), hovertemplate: '%{customdata}: %{y:,} ' + L('ilan', 'listings') + '<extra></extra>' }] : null,

@@ -1,6 +1,6 @@
 # İkinci El Araç Piyasası Analizi — Karar Notu
 
-**Kime:** fiyatlama ekibi ve galeri. **Karar:** model, fiyat önerisi aracında birincil referans olarak kullanılabilir; ucuz (₺1.15M altı), emsalsiz ve yaşlı (kabaca 18 yaş ve üstü) araçlarda tek başına kullanılmamalı. **Kazanç:** araç başına ~₺81K daha az fiyatlama hatası. **Sınır:** ilan fiyatını tahmin eder, satış fiyatını değil.
+**Kime:** fiyatlama ekibi ve galeri. **Karar:** model, fiyat önerisi aracında birincil referans olarak kullanılabilir; ucuz (tahmini ₺1.15M altı), emsalsiz ve yaşlı (kabaca 18 yaş ve üstü) araçlarda tek başına kullanılmamalı. **Kazanç:** araç başına ~₺81K daha az fiyatlama hatası. **Sınır:** ilan fiyatını tahmin eder, satış fiyatını değil.
 
 ## Ne kadar değerinde?
 
@@ -20,16 +20,18 @@ Farkı kapatan, model ve yılın ötesi en çok kilometre ve hasar: modelden ç�
 
 ## Piyasa fiyatı nasıl kuruyor
 
-Her kalemin fiyatı ne kadar oynattığı — **diğer her şey sabitken**:
+Her kalemin fiyatı ne kadar oynattığı — **aynı model adı içinde, diğer her şey sabitken**:
 
 | kalem | fiyat |
 |---|---:|
-| yaş (yıl başına, tipik araçta) | -%6.6 |
-| kilometre (100 bin km başına, tipik araçta) | -%15.1 |
-| ağır hasar kaydı | -%11.6 |
+| yaş (yıl başına, tipik araçta) | -%5.8 |
+| kilometre (100 bin km başına, tipik araçta) | -%14.8 |
+| ağır hasar kaydı | -%12.5 |
 | değişen panel (her biri) | -%3.1 |
-| boyalı panel (her biri) | -%1.1 |
-| +100 hp motor gücü | +%19.9 |
+| boyalı panel (her biri) | -%1.0 |
+| +100 hp motor gücü | +%19.3 |
+
+En belirsiz kalem +100 hp motor gücü: %95 güven aralığı +%6.9 ile +%33.1 arasında.
 
 Yaş ve kilometre birbirine bağlı iki eksen; tablodaki yaş ve km satırları biri sabitken ötekinin etkisi, tipik araçta (11 yaş, 181.000 km) ölçüldü.
 
@@ -43,13 +45,13 @@ Yaş ve kilometre birbirine bağlı iki eksen; tablodaki yaş ve km satırları 
 
 ## Sayıya nerede güvenme
 
-Model ucuz araçlarda **yüzde olarak** zorlanıyor — hata fiyat çeyreğine göre belirgin değişiyor.
+Model ucuz araçlarda **yüzde olarak** zorlanıyor — hata tahmin edilen fiyatın çeyreğine göre belirgin değişiyor.
 
-![Fiyat çeyreğine göre medyan hata (%)](figures/tr-10-quartile-error.png)
+![Tahmin edilen fiyat çeyreğine göre medyan hata (%)](figures/tr-10-quartile-error.png)
 
-**Liraya çevrilince tablo tersine dönüyor.** Toplam lira hatasının en büyük payı (%39.7) Q4'te; ortalama mutlak hata en pahalı çeyrekte ₺176K, en ucuzda ₺77K. Tahmin edilen fiyata göre bakınca (fiyatlama aracının bildiği tek şey) model hiçbir çeyrekte belirgin yanlı değil: gerçek fiyat ile tahmin arasındaki eğim 1.003.
+**Liraya çevrilince tablo tersine dönüyor.** Toplam lira hatasının en büyük payı (%38.9) Q4'te; ortalama mutlak hata en pahalı çeyrekte ₺171K, en ucuzda ₺77K. Model hiçbir tahmin çeyreğinde belirgin yanlı değil: gerçek fiyat ile tahmin arasındaki eğim 1.003.
 
-![Fiyat çeyreğine göre lira hatası](figures/tr-27-quartile-lira.png)
+![Tahmin edilen fiyat çeyreğine göre lira hatası](figures/tr-27-quartile-lira.png)
 
 **Emsal azaldıkça büyük sapma (±%20 üstü) oranı artıyor.** Aynı model ve yıldan başka ilan yoksa bu oran %19.0, 100+ emsal varsa %2.9. Üst/spor segment (%19.1) ve 18 yaş ve üstü araçlar (%12.0) da riskli; genel oran %4.0.
 
@@ -57,19 +59,20 @@ Model ucuz araçlarda **yüzde olarak** zorlanıyor — hata fiyat çeyreğine g
 
 İlan fiyatında iki yönlü hata da para kaybettirir: **fazla tahmin alıcıya patlar** — pahalıya alınmış araç; **düşük tahmin satıcıya** — ucuza gitmiş araç. Tek sayı ne kadar emin olunduğunu saklar; aralık bunu söyler ve kullanıcıyı belirsizliğin büyük olduğu yerde uyarır.
 
-Bu yüzden çıktı tek sayı değil, **%90 aralık**. Ama aralık ucuz araçlarda tutmuyor: en ucuz çeyrekte gerçek kapsama **%81.6**, hedefin altında.
+Bu yüzden çıktı tek sayı değil, **%90 aralık**. Tek bir hata payıyla aralık ucuz araçlarda tutmuyor: tahmini en ucuz çeyrekte kapsama **%81.0**, hedefin altında. Hata payı fiyat bandına göre ayrı hesaplanınca, eğitimden sonraki taramanın yeni ilanlarında en ucuz bantta kapsama %77.1–%85.3 yerine %88.8–%92.5 oluyor. Emsalsiz araçta ise aralık iki yolla da tutmuyor (%64.3–%76.2); banda göre payla kapsama orada daha da düşüyor.
 
 ![%90 aralık kaç ilanda tuttu (hedef %90)](figures/tr-12-coverage.png)
 
 **Ne yapmalı**
 
-- Ucuz araçlarda aralığı genişlet — tek sayıya güvenme.
+- Aralığın hata payını fiyat bandına göre ayrı hesapla: ucuz araçta daha geniş, pahalıda daha dar — tek sayıya güvenme. Emsalsiz araçta aralığa da güvenme.
 - Nadir ve uç araçları elle fiyatla; model orada saçılıyor.
 - Metninde dönüşüm, motor değişimi ya da modifiye geçen ilanı yayına almadan önce gözden geçir: bu bilgi formda yok. Araç özellikleri sabitken bu ilanlarda hata oranında anlamlı bir fark ölçülmedi; gözden geçirme model hatasına değil, formun göremediği bilgiye karşı.
-- **Kaymayı izle ve modeli yeniden eğit:** canlıda fiyat dağılımını izleyen bir servis kur, model yeni verilerle yeniden eğitilsin. Fiyat dağılımı bugün az kayıyor (en yüksek PSI 0.005), ama piyasa seviyesi 4 dönemde +%2.0 kaydı ve model zamanı görmüyor.
-- **Fiyat rejimini değiştiren gelişmeleri takip et** (vergi/ÖTV düzenlemesi, teşvik, ani piyasa hareketi gibi) — eğitim planı bunlara göre yapılmalı. Eski dönemleri atma: veri biriktikçe hata düşüyor.
+- **Hatayı doğrudan izle, modeli yeni taramalarla yeniden eğit:** fiyat her taramada geldiği için modelin yeni ilanlardaki hatası doğrudan ölçülebilir. Aynı yeni ilanlarda en eski taramayla eğitilen model en yenisinden 0.40 puan daha çok yanılıyor; piyasa seviyesi 4 dönemde +%2.0 kaydı ve model zamanı görmüyor.
+- **Fiyat dağılımını tanı için izle:** dağılım bugün az kayıyor (en yüksek PSI 0.005); yeniden eğitimi tek başına tetiklemez.
+- **Fiyat rejimini değiştiren gelişmeleri takip et** (vergi/ÖTV düzenlemesi, teşvik, ani piyasa hareketi gibi) — eğitim planı bunlara göre yapılmalı. Eski dönemleri atma: aynı ilanlarda birikimli eğitim hatayı hiçbir karşılaştırmada anlamlı artırmadı, bir kısmında düşürdü.
 
-![Daha çok veri, daha az hata — tek dönem vs biriken dönemler](figures/tr-15-backtest.png)
+![Tek dönem ve biriken dönemler — ortalama yüzde hata](figures/tr-15-backtest.png)
 
 ## Bu model neyi vermez
 

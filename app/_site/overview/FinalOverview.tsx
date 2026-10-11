@@ -288,7 +288,13 @@ export default function FinalOverview({ initialData }: Props) {
                                 { l: L('km · 100k başına', 'km · per 100k'), w: 100, c: '#e08a1e', v: sPct(hed.km100k_pct) },
                                 { l: L('yaş · yıl başına', 'age · per year'), w: (Math.abs(hed.age_pct) / Math.abs(hed.km100k_pct)) * 100, c: '#e08a1e', v: sPct(hed.age_pct) },
                             ],
-                            s: L(`hedonik R² ${hed.r2.toFixed(3)} · her %95 GA sıfırı dışlıyor`, `hedonic R² ${hed.r2.toFixed(3)} · every 95% CI excludes zero`),
+                            // `hedonic` is the model-control column since the generator's 2026-09-28 run —
+                            // effects within one model name, as the decision note prints them. "Every 95%
+                            // CI excludes zero" was the old bootstrap's claim; in this column age² and
+                            // +1 litre do not.
+                            s: hed.control === 'model'
+                                ? L(`hedonik R² ${hed.r2.toFixed(3)} · aynı model adı içinde`, `hedonic R² ${hed.r2.toFixed(3)} · within one model name`)
+                                : L(`hedonik R² ${hed.r2.toFixed(3)}`, `hedonic R² ${hed.r2.toFixed(3)}`),
                         },
                         tiers.length >= 3 && {
                             n: '03', t: L('Taban nadir araçlarda çöküyor', 'The baseline collapses on rare cars'),

@@ -1,6 +1,6 @@
 # Used Car Market Analysis — Decision Note
 
-**For:** the pricing team and the dealership. **Decision:** the model can serve as the primary reference in a price-suggestion tool, but not on its own for cheap (below ₺1.15M), comparable-less or old (roughly 18+) cars. **Gain:** about ₺81K less pricing error per car. **Limit:** it predicts the asking price, not the sale price.
+**For:** the pricing team and the dealership. **Decision:** the model can serve as the primary reference in a price-suggestion tool, but not on its own for cheap (estimated below ₺1.15M), comparable-less or old (roughly 18+) cars. **Gain:** about ₺81K less pricing error per car. **Limit:** it predicts the asking price, not the sale price.
 
 ## What's it worth?
 
@@ -20,16 +20,18 @@ Beyond model and year the gap is closed mostly by mileage and damage: removing t
 
 ## How this market builds a price
 
-How much each driver moves the price — **with everything else held fixed**:
+How much each driver moves the price — **within one model name, with everything else held fixed**:
 
 | driver | price |
 |---|---:|
-| age (per year, at a typical car) | -6.6% |
-| mileage (per 100k km, at a typical car) | -15.1% |
-| heavy-damage record | -11.6% |
+| age (per year, at a typical car) | -5.8% |
+| mileage (per 100k km, at a typical car) | -14.8% |
+| heavy-damage record | -12.5% |
 | changed panel (each) | -3.1% |
-| painted panel (each) | -1.1% |
-| +100 hp of engine power | +19.9% |
+| painted panel (each) | -1.0% |
+| +100 hp of engine power | +19.3% |
+
+The least certain driver is +100 hp of engine power: its 95% confidence interval runs from +6.9% to +33.1%.
 
 Age and mileage are linked axes; the age and km rows above are each measured with the other held fixed, at a typical car (11 years, 181,000 km).
 
@@ -43,13 +45,13 @@ Age and mileage are linked axes; the age and km rows above are each measured wit
 
 ## Where not to trust the number
 
-In **percentage** terms the model struggles on cheap cars — error varies sharply by price quartile.
+In **percentage** terms the model struggles on cheap cars — error varies sharply by predicted-price quartile.
 
-![Median error by price quartile (%)](figures/en-10-quartile-error.png)
+![Median error by predicted-price quartile (%)](figures/en-10-quartile-error.png)
 
-**In lira the picture flips.** The largest share of total lira error (39.7%) sits in Q4; mean absolute error is ₺176K in the most expensive quartile and ₺77K in the cheapest. Grouped by the predicted price (the only thing the tool knows) the model is not noticeably biased in any quartile: the slope of actual on predicted price is 1.003.
+**In lira the picture flips.** The largest share of total lira error (38.9%) sits in Q4; mean absolute error is ₺171K in the most expensive quartile and ₺77K in the cheapest. The model is not noticeably biased in any predicted quartile: the slope of actual on predicted price is 1.003.
 
-![Lira error by price quartile](figures/en-27-quartile-lira.png)
+![Lira error by predicted-price quartile](figures/en-27-quartile-lira.png)
 
 **The fewer the comparables, the higher the large-miss rate (beyond ±20%).** With no other listing of the same model and year the rate is 19.0%; with 100+ comparables 2.9%. Top/sport segments (19.1%) and cars aged 18 or older (12.0%) are risky too; overall 4.0%.
 
@@ -57,19 +59,20 @@ In **percentage** terms the model struggles on cheap cars — error varies sharp
 
 An asking-price error costs money in both directions: **over-estimating hits the buyer** — they overpay; **under-estimating hits the seller** — the car goes too cheap. A single number hides how sure the estimate is; a range states it and warns the user exactly where uncertainty is large.
 
-That is why the output is a **90% range**, not one number. But the range does not hold on cheap cars: actual coverage in the cheapest quartile is **81.6%**, below target.
+That is why the output is a **90% range**, not one number. With one margin the range does not hold on cheap cars: coverage in the cheapest predicted quartile is **81.0%**, below target. With the margin computed per price band, on the new listings of the snapshot after training the cheapest band covers 88.8%–92.5% instead of 77.1%–85.3%. On cars without a comparable the range fails either way (64.3%–76.2%); with the per-band margin coverage drops further there.
 
 ![How often the 90% range held (target 90%)](figures/en-12-coverage.png)
 
 **What to do**
 
-- Widen the range on cheap cars — don't trust a point estimate.
+- Compute the range's margin per price band: wider on cheap cars, narrower on expensive ones — don't trust a point estimate. On cars without a comparable, don't trust the range either.
 - Price rare and edge cars by hand; the model scatters there.
 - Review a listing whose text mentions a conversion, an engine swap or modifications before it goes live: that information is not in the form. With vehicle attributes held fixed no significant difference in its error rate was measured; the review guards against what the form cannot see, not against model error.
-- **Watch drift and retrain the model:** run a service that tracks the price distribution, and retrain the model on new data. The price distribution moves little today (highest PSI 0.005), but the market level moved +2.0% over four snapshots and the model is time-blind.
-- **Watch for events that reset the pricing regime** (a tax or excise change, an incentive, a sudden market move) — plan retraining around them. Do not discard old snapshots: more data means less error.
+- **Watch the error directly, retrain on new snapshots:** the price arrives with every snapshot, so the model's error on new listings can be measured directly. On the same new listings the model trained on the oldest snapshot errs 0.40 points more than the latest one; the market level moved +2.0% over four snapshots and the model is time-blind.
+- **Watch the price distribution as a diagnostic:** it moves little today (highest PSI 0.005); it does not trigger retraining on its own.
+- **Watch for events that reset the pricing regime** (a tax or excise change, an incentive, a sudden market move) — plan retraining around them. Do not discard old snapshots: on the same listings, accumulating never raised the error significantly and lowered it in some comparisons.
 
-![More data, less error — single period vs pooled periods](figures/en-15-backtest.png)
+![Single period and pooled periods — mean percentage error](figures/en-15-backtest.png)
 
 ## What this model does not give you
 
