@@ -55,11 +55,15 @@ export default function NotebookShell({
     // a short final section's heading up to the top, so the position alone would name the
     // section above it — a click has to be honoured explicitly.
     const pinRef = useRef<{ id: string; t: number } | null>(null);
+    // The reader's place while the page is still settling after a load: a heading and an offset
+    // from it (see the effect below). Null once the reader takes over.
+    const holdRef = useRef<{ id: string; d: number } | null>(null);
 
     const goTo = (id: string) => {
         setDrawer(false);
         const el = document.getElementById(id);
         if (!el) return;
+        holdRef.current = null;
         pinRef.current = { id, t: performance.now() };
         setActiveId(id);
         const smooth = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -94,6 +98,48 @@ export default function NotebookShell({
         const LINE = 96;
         let current = '';
         let hashTimer: ReturnType<typeof setTimeout> | null = null;
+        let saveTimer: ReturnType<typeof setTimeout> | null = null;
+
+        // A reload used to land the reader in the wrong section — on #s-4 it ended up in §3.2. The
+        // page is still short when the browser lands: the figures above are PNGs that have not
+        // loaded yet, and the Plotly charts that replace them arrive with report-data.json, each a
+        // different height. Every change above the reader moved the text under them, and the spy
+        // then wrote the section they had been pushed into into the URL, so the next reload started
+        // from there. So the place is held as a heading plus an offset from it, not as a pixel:
+        // the section in the URL, the offset in sessionStorage (only a reload or back/forward uses
+        // it; a shared #s-n link lands on the heading). It is re-applied whenever the document
+        // changes height, until the reader scrolls, clicks or types; meanwhile the URL stays put.
+        // The browser's own pixel restore is off on this page — it would fight the hold.
+        const KEY = 'report-place:' + window.location.pathname;
+        const topOf = (id: string) => {
+            const el = id ? document.getElementById(id) : null;
+            if (!el) return 0;
+            return el.getBoundingClientRect().top + window.scrollY - (parseFloat(getComputedStyle(el).scrollMarginTop) || 0);
+        };
+        const savePlace = (id: string) => {
+            try { sessionStorage.setItem(KEY, JSON.stringify({ id, d: Math.round(window.scrollY - topOf(id)) })); } catch { /* storage off: a reload lands on the heading */ }
+        };
+        const hashId = decodeURIComponent(window.location.hash.slice(1));
+        holdRef.current = null;
+        if (hashId && document.getElementById(hashId)) {
+            let d = 0;
+            const nav = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined;
+            if (nav?.type === 'reload' || nav?.type === 'back_forward') {
+                try {
+                    const s = JSON.parse(sessionStorage.getItem(KEY) || 'null');
+                    if (s?.id === hashId && typeof s.d === 'number') d = s.d;
+                } catch { /* no saved offset: land on the heading */ }
+            }
+            holdRef.current = { id: hashId, d };
+        }
+        const hold = () => {
+            const h = holdRef.current;
+            if (h) window.scrollTo(0, topOf(h.id) + h.d);
+        };
+        const release = () => { holdRef.current = null; };
+        const INPUT = ['wheel', 'touchstart', 'keydown', 'mousedown'] as const;
+        const prevRestoration = history.scrollRestoration;
+        history.scrollRestoration = 'manual';
 
         let raf = 0;
         const paint = () => {
@@ -122,10 +168,19 @@ export default function NotebookShell({
             // for as long as the reader stays parked at the bottom on the section they chose.
             // Scrolling away releases it and position takes over again.
             const pin = pinRef.current;
-            if (pin) {
-                const moving = performance.now() - pin.t < 1200;
-                if (moving || (atBottom && pin.id === heads[heads.length - 1].id)) id = pin.id;
-                else pinRef.current = null;
+            if (holdRef.current) {
+                // still settling after a load: the section is the one being held, whatever the
+                // layout shift of this frame says, and the place is not saved mid-shift
+                id = holdRef.current.id;
+            } else {
+                if (pin) {
+                    const moving = performance.now() - pin.t < 1200;
+                    if (moving || (atBottom && pin.id === heads[heads.length - 1].id)) id = pin.id;
+                    else pinRef.current = null;
+                }
+                if (saveTimer) clearTimeout(saveTimer);
+                const placeId = id;
+                saveTimer = setTimeout(() => savePlace(placeId), 150);
             }
 
             // setState only on a change: scrolling must not re-render the charts every frame.
@@ -139,22 +194,29 @@ export default function NotebookShell({
             }, 120);
         };
         const onScroll = () => { if (!raf) raf = requestAnimationFrame(paint); };
+        // Arriving with a #s-n in the URL: land on it (plus the saved offset on a reload) once the
+        // contents exist, before the first paint names a section.
+        hold();
         paint();
         window.addEventListener('scroll', onScroll, { passive: true });
         // Figures mount after the data arrives and push every heading down; recompute when they do.
         window.addEventListener('resize', onScroll);
-
-        // Arriving with a #s-n in the URL: land on it once the contents exist.
-        if (window.location.hash) {
-            const target = document.getElementById(window.location.hash.slice(1));
-            if (target) target.scrollIntoView({ block: 'start' });
-        }
+        // Any change in the document's height (a PNG loading, a chart replacing it) re-applies the
+        // held place. A ResizeObserver runs after layout and before paint, so the correction never
+        // shows as a jump.
+        const ro = new ResizeObserver(() => { hold(); onScroll(); });
+        ro.observe(root);
+        INPUT.forEach((t) => window.addEventListener(t, release, { passive: true }));
 
         return () => {
             window.removeEventListener('scroll', onScroll);
             window.removeEventListener('resize', onScroll);
+            INPUT.forEach((t) => window.removeEventListener(t, release));
+            ro.disconnect();
+            history.scrollRestoration = prevRestoration;
             if (raf) cancelAnimationFrame(raf);
             if (hashTimer) clearTimeout(hashTimer);
+            if (saveTimer) clearTimeout(saveTimer);
         };
     }, [contentKey]);
 
