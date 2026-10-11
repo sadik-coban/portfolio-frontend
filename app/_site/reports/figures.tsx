@@ -41,8 +41,6 @@ export function buildReportFigures(d: any, lang: Lang): Record<string, Fig> {
     const meta = d.meta, dom = d.domain, met = d.methodology ?? {};
     const CL: any = d.column_labels ?? {};
     const clab = (raw: string) => { const e = CL[raw]; return e && (e.tr || e.en) ? L(e.tr, e.en) : raw; };
-    const TABNAME: any = { overview: L('Genel', 'Overview'), quickinfo: L('Hızlı', 'Quick') };
-    const clabTab = (raw: string) => { const e = CL[raw]; if (!e) return raw; const bl = L(e.tr, e.en); return e.tab ? `${bl} (${TABNAME[e.tab] || e.tab})` : bl; };
 
     const snaps: string[] = meta?.snapshots || [];
     const MONTHS = lang === 'tr'
@@ -83,10 +81,12 @@ export function buildReportFigures(d: any, lang: Lang): Record<string, Fig> {
     }] : null, base({ margin: { t: 24, r: 16, b: 28, l: 8 }, yaxis: { tickformat: '~s', title: { text: L('ortalama mutlak hata (₺)', 'mean absolute error (₺)'), font: { size: 10 } } } }), 260);
 
     // ---------- market shape ----------
-    const body =[...(dom.body_median || [])].filter((r: any) => r[0] && r[0] !== 'missing').sort((a: any, b: any) => a[1] - b[1]);
+    // As the generator draws figure 01: each bar's label carries its listing count, the export's order
+    // (cheapest first) runs top to bottom, the axis is in ₺M.
+    const body = (dom.body_median || []).filter((r: any) => r[0] && r[0] !== 'missing');
     put('01-body-median',
-        [{ type: 'bar', orientation: 'h', y: body.map((r: any) => r[0]), x: body.map((r: any) => r[1]), marker: { color: green }, hovertemplate: '%{y}: %{customdata}<extra></extra>', customdata: body.map((r: any) => fmtM(r[1])) }],
-        base({ margin: { t: 8, r: 16, b: 24, l: 8 } }), 300);
+        [{ type: 'bar', orientation: 'h', y: body.map((r: any) => `${r[0]} · ${fmtN(r[2])}`), x: body.map((r: any) => r[1] / 1e6), marker: { color: green }, hovertemplate: '%{y}: %{customdata}<extra></extra>', customdata: body.map((r: any) => fmtM(r[1])) }],
+        base({ margin: { t: 8, r: 16, b: 34, l: 8 }, yaxis: { autorange: 'reversed' }, xaxis: { title: { text: L('medyan fiyat (₺M)', 'median price (₺M)'), font: { size: 10 } } } }), 300);
 
     // No document asks for this slug right now: the generator dropped the cluster section
     // from the decision note on 2026-09-22 and took the figure with it. Kept because a figure
@@ -134,27 +134,34 @@ export function buildReportFigures(d: any, lang: Lang): Record<string, Fig> {
     // of them on one axis double-counts — DAMAGE_COLS competes with its own 13 members — which is
     // exactly what the note under this figure says the chart must not do. So the same five
     // non-overlapping keys the generator picks (build_report.py, `flat_keys`), in its order, on its
-    // ₺-thousand axis.
+    // ₺-thousand axis, named as the generator names them (report_common.py lofo_name: a group key gets
+    // its own label, a single feature its column label).
     const LOFO_FLAT = ['gb_mileage', 'vehicle_age', 'DAMAGE_COLS', 'MODEL_SERIES', 'ENGINE'];
+    const LOFO_GROUP: Record<string, string> = { DAMAGE_COLS: L('hasar grubu', 'damage group'), MODEL_SERIES: L('model/seri adı', 'model/series name'), ENGINE: L('motor (hp + cc)', 'engine (hp + cc)') };
     const lofoBy: Record<string, number> = Object.fromEntries((met.lofo || []).map((r: any) => [r[0], r[1]]));
-    // reversed: Plotly draws the first horizontal bar at the bottom, the generator's first at the top
-    const lofo = LOFO_FLAT.filter((k) => lofoBy[k] != null).reverse();
-    put('04-lofo-flat', lofo.length ? [{ type: 'bar', orientation: 'h', y: lofo, x: lofo.map((k) => lofoBy[k] / 1000), marker: { color: lofo.map((k) => (lofoBy[k] >= 0 ? green : '#ef4444')) }, hovertemplate: '%{y}: %{x:+,.1f}<extra></extra>' }] : null,
-        base({ margin: { t: 8, r: 16, b: 34, l: 8 }, xaxis: { zeroline: true, zerolinecolor: theme.muted, title: { text: L('ΔRMSE (₺bin)', 'ΔRMSE (₺k)'), font: { size: 10 } } } }), 300);
+    const lofo = LOFO_FLAT.filter((k) => lofoBy[k] != null);
+    put('04-lofo-flat', lofo.length ? [{ type: 'bar', orientation: 'h', y: lofo.map((k) => LOFO_GROUP[k] ?? clab(k)), x: lofo.map((k) => lofoBy[k] / 1000), marker: { color: lofo.map((k) => (lofoBy[k] >= 0 ? green : '#ef4444')) }, hovertemplate: '%{y}: %{x:+,.1f}<extra></extra>' }] : null,
+        base({ margin: { t: 8, r: 16, b: 34, l: 8 }, yaxis: { autorange: 'reversed' }, xaxis: { zeroline: true, zerolinecolor: theme.muted, title: { text: L('ΔRMSE (₺bin)', 'ΔRMSE (₺k)'), font: { size: 10 } } } }), 300);
 
     // ---------- depreciation curves (median, plus mean when the export carries it) ----------
-    const curve = (rows: any[], xUnit: 'age' | 'km', colour: string) => {
+    // Axes as the generator labels them, price in ₺M. Mileage rows are 25k-km buckets keyed by their
+    // lower edge; the generator plots each at the bucket's middle, in thousands of km.
+    const curve = (rows: any[], xs: number[], hov: string, colour: string) => {
         if (!rows?.length) return null;
         const hasMean = rows.some((r: any) => r[3] != null);
-        const hov = xUnit === 'age' ? L('%{x} yaş', 'age %{x}') : '%{x} km';
         return [
-            { type: 'scatter', mode: 'lines+markers', name: L('medyan', 'median'), x: rows.map((r: any) => r[0]), y: rows.map((r: any) => r[1]), line: { color: colour, width: 2 }, marker: { size: 4 }, hovertemplate: hov + ' · ' + L('medyan', 'median') + ' %{customdata}<extra></extra>', customdata: rows.map((r: any) => fmtM(r[1])) },
-            ...(hasMean ? [{ type: 'scatter', mode: 'lines+markers', name: L('ortalama', 'mean'), x: rows.map((r: any) => r[0]), y: rows.map((r: any) => r[3]), line: { color: '#e08a1e', width: 2, dash: 'dot' as const }, marker: { size: 4 }, hovertemplate: hov + ' · ' + L('ort', 'mean') + ' %{customdata}<extra></extra>', customdata: rows.map((r: any) => fmtM(r[3])) }] : []),
+            { type: 'scatter', mode: 'lines+markers', name: L('medyan', 'median'), x: xs, y: rows.map((r: any) => r[1] / 1e6), line: { color: colour, width: 2 }, marker: { size: 4 }, hovertemplate: hov + ' · ' + L('medyan', 'median') + ' %{customdata}<extra></extra>', customdata: rows.map((r: any) => fmtM(r[1])) },
+            ...(hasMean ? [{ type: 'scatter', mode: 'lines+markers', name: L('ortalama', 'mean'), x: xs, y: rows.map((r: any) => r[3] / 1e6), line: { color: '#e08a1e', width: 2, dash: 'dot' as const }, marker: { size: 4 }, hovertemplate: hov + ' · ' + L('ort', 'mean') + ' %{customdata}<extra></extra>', customdata: rows.map((r: any) => fmtM(r[3])) }] : []),
         ];
     };
-    const curveLayout = base({ showlegend: true, legend: { font: { size: 9 }, orientation: 'h', y: -0.22 }, margin: { t: 8, r: 16, b: 40, l: 8 } });
-    put('05-age-price', curve(dom.age_depreciation, 'age', deep), curveLayout, 260);
-    put('06-km-price', curve(dom.km_price, 'km', green), curveLayout, 260);
+    const curveLayout = (xTitle: string) => base({
+        showlegend: true, legend: { font: { size: 9 }, orientation: 'h', y: -0.3 }, margin: { t: 8, r: 16, b: 48, l: 8 },
+        xaxis: { title: { text: xTitle, font: { size: 10 } } }, yaxis: { title: { text: L('fiyat (₺M)', 'price (₺M)'), font: { size: 10 } } },
+    });
+    const ad = dom.age_depreciation || [], kp = dom.km_price || [];
+    const kmW = kp.length > 1 ? kp[1][0] - kp[0][0] : 0;
+    put('05-age-price', curve(ad, ad.map((r: any) => r[0]), L('%{x} yaş', 'age %{x}'), deep), curveLayout(L('yaş (yıl)', 'age (years)')), 280);
+    put('06-km-price', curve(kp, kp.map((r: any) => (r[0] + kmW / 2) / 1000), L('%{x} bin km', '%{x}k km'), green), curveLayout(L('kilometre (bin km)', 'mileage (k km)')), 280);
 
     const bc = dom.brand_compare;
     put('07-brand', bc ? [{ type: 'bar', x: ['BMW', 'Audi'], y: [bc.bmw_median, bc.audi_median], marker: { color: [green, '#0d9aba'] }, text: [bc.bmw_median, bc.audi_median].map(fmtM), textposition: 'outside', hovertemplate: '%{x}: %{text}<extra></extra>' }] : null,
@@ -403,25 +410,31 @@ export function buildReportFigures(d: any, lang: Lang): Record<string, Fig> {
     }), 300);
 
     // ---------- drift ----------
+    // 13 as the generator draws it: each snapshot's histogram as a step line over the export's bin
+    // edges, density per ₺M (the export's per-₺ density × 1e6), price in ₺M.
+    const driftLayout = (xTitle: string, yTitle: string) => base({
+        showlegend: true, legend: { font: { size: 9 }, orientation: 'h', y: -0.3 }, margin: { t: 12, r: 12, b: 48, l: 8 },
+        xaxis: { title: { text: xTitle, font: { size: 10 } } }, yaxis: { title: { text: yTitle, font: { size: 10 } } },
+    });
     const dhist = dom.drift?.hist;
-    const dsnapKeys = dhist ? snaps.filter((s) => Array.isArray(dhist[s])) : [];
-    const dnbins = dsnapKeys.length ? dhist[dsnapKeys[0]].length : 0;
-    const dkx = dom.drift?.kde_raw?.x;
-    const dedges: number[] | null = dhist?.edges
-        ? dhist.edges
-        : (dkx && dnbins ? Array.from({ length: dnbins + 1 }, (_, i) => dkx[0] + (dkx[dkx.length - 1] - dkx[0]) * i / dnbins) : null);
-    const dbinW = dedges ? dedges[1] - dedges[0] : 0;
-    const dhistCenters = dedges ? dedges.slice(0, -1).map((e: number, i: number) => (e + dedges[i + 1]) / 2) : [];
-    put('13-drift-hist', (dhist && dedges) ? dsnapKeys.map((s, i) => ({
-        type: 'scatter', mode: 'lines', x: dhistCenters, y: dhist[s].map((v: number) => v * dbinW * 100), name: shortDate(s),
-        line: { color: CATEGORICAL_LIST[i % CATEGORICAL_LIST.length], width: 2, shape: 'linear' as const },
-        hovertemplate: shortDate(s) + ' · %{x:,.0f} ₺ · ' + L('frekans', 'freq') + ' %{y:.1f}%<extra></extra>',
-    })) : null,
-        base({ showlegend: true, legend: { font: { size: 9 }, orientation: 'h', y: -0.22 }, yaxis: { ticksuffix: '%' }, xaxis: { tickformat: '~s' }, margin: { t: 12, r: 12, b: 36, l: 34 } }), 280);
+    const dedges: number[] = dhist?.edges || [];
+    const dsnapKeys = dhist ? snaps.filter((s) => Array.isArray(dhist[s]) && dhist[s].length + 1 === dedges.length) : [];
+    put('13-drift-hist', dsnapKeys.length ? dsnapKeys.map((s, i) => ({
+        type: 'scatter', mode: 'lines', name: shortDate(s),
+        // 'hv' holds each bin's height across it; the last height is repeated to close the final bin
+        x: dedges.map((e) => e / 1e6), y: [...dhist[s], dhist[s][dhist[s].length - 1]].map((v: number) => v * 1e6),
+        line: { color: CATEGORICAL_LIST[i % CATEGORICAL_LIST.length], width: 1.6, shape: 'hv' as const },
+        hovertemplate: shortDate(s) + ' · %{x:.2f} ₺M · ' + L('yoğunluk', 'density') + ' %{y:.2f}<extra></extra>',
+    })) : null, driftLayout(L('fiyat (₺M)', 'price (₺M)'), L('yoğunluk (₺M başına)', 'density (per ₺M)')), 300);
 
-    const kraw = dom.drift?.kde_raw;
-    put('14-drift-kde', kraw ? snaps.filter((s) => kraw[s]).map((s, i) => ({ type: 'scatter', mode: 'lines', x: kraw.x, y: kraw[s], name: shortDate(s), line: { color: CATEGORICAL_LIST[i % CATEGORICAL_LIST.length], width: 2, shape: 'spline' as const }, hovertemplate: shortDate(s) + ' · %{x:,.0f} ₺<extra></extra>' })) : null,
-        base({ showlegend: true, legend: { font: { size: 9 }, orientation: 'h', y: -0.22 }, yaxis: { showticklabels: false }, xaxis: { tickformat: '~s' }, margin: { t: 12, r: 12, b: 36, l: 8 } }), 280);
+    // 14 is the density of LOG price (the export's kde_log), as its caption says — not of raw price.
+    const klog = dom.drift?.kde_log;
+    put('14-drift-kde', klog?.x ? snaps.filter((s) => klog[s]).map((s, i) => ({
+        type: 'scatter', mode: 'lines', x: klog.x, y: klog[s], name: shortDate(s),
+        line: { color: CATEGORICAL_LIST[i % CATEGORICAL_LIST.length], width: 2, shape: 'spline' as const },
+        customdata: klog.x.map((x: number) => fmtM(Math.exp(x))),
+        hovertemplate: shortDate(s) + ' · log %{x:.2f} (%{customdata}) · ' + L('yoğunluk', 'density') + ' %{y:.2f}<extra></extra>',
+    })) : null, driftLayout(L('log fiyat', 'log price'), L('yoğunluk', 'density')), 300);
 
     const btIns = met.backtest?.insample, btPer = met.backtest?.per_snapshot;
     const btLabels = btPer ? btPer.map((r: any) => r[0]) : (btIns ? btIns.map((r: any) => String(r[0]).replace('→', '')) : []);
@@ -441,46 +454,83 @@ export function buildReportFigures(d: any, lang: Lang): Record<string, Fig> {
         base({ margin: { t: 12, r: 16, b: 46, l: 34 }, yaxis: { ticksuffix: '%', title: { text: 'MAPE', font: { size: 10 } } }, xaxis: { title: { text: L('dönem', 'period'), font: { size: 10 } } }, showlegend: true, legend: { font: { size: 9 }, orientation: 'h', y: -0.3 } }), 280);
 
     // ---------- data quality ----------
-    // Columns that share an identical missing rate are empty in the SAME rows — a co-missing
-    // block. Each shared rate gets its own colour so the blocks are visible at a glance.
+    // Colour = membership of a co-missing block (systematic_groups, the table under the figure), grey =
+    // outside any block — as the caption says and the generator draws it. Colouring by an identical
+    // missing rate was wrong: transmission_brand (74.1%) and gb_drivetrain (74.0%) are close in rate but
+    // only 48% co-missing, while the 16-column catalogue block spans 27.5–27.7%.
     const sm = met.systematic_missing;
-    const smAll = sm?.column_missing_all ? [...sm.column_missing_all].sort((a: any, b: any) => a[1] - b[1]) : [];
-    const SHARED_PALETTE = ['#7c5cff', '#0d9aba', '#0891b2', '#c026d3', '#059669', '#ef4444'];
-    const smPctColor = new Map<number, string>();
-    {
-        const counts = new Map<number, number>();
-        smAll.forEach((r: any) => counts.set(r[1], (counts.get(r[1]) || 0) + 1));
-        [...counts.entries()].filter(([, c]) => c > 1).sort((a, b) => b[1] - a[1]).forEach(([p], i) => smPctColor.set(p, SHARED_PALETTE[i % SHARED_PALETTE.length]));
-    }
-    put('16-missing', smAll.length ? [{ type: 'bar', orientation: 'h', y: smAll.map((r: any) => clabTab(r[0])), x: smAll.map((r: any) => r[1]), marker: { color: smAll.map((r: any) => smPctColor.get(r[1]) || '#e08a1e') }, hovertemplate: '%{y}: %{x:.1f}%<extra></extra>' }] : null,
-        base({ margin: { t: 8, r: 16, b: 24, l: 8 } }), 520);
+    const smAll: any[] = sm?.column_missing_all || [];
+    const BLOCK_PALETTE = ['#059669', '#7c3aed', '#0891b2', '#d97706', '#2563eb', '#db2777'];
+    const smBlock = new Map<string, string>();
+    (sm?.systematic_groups || []).forEach((g: any, gi: number) => (g.columns || []).forEach((c: string) => smBlock.set(c, BLOCK_PALETTE[gi % BLOCK_PALETTE.length])));
+    // The generator's label: the column label, plus the tab's name only where a gb_/kb_ twin carries the
+    // same label (Drivetrain (Overview) vs the model's kb_drivetrain).
+    const col16 = (k: string) => {
+        const t = clab(k);
+        const twin = k.startsWith('gb_') ? 'kb_' + k.slice(3) : k.startsWith('kb_') ? 'gb_' + k.slice(3) : null;
+        if (twin && CL[twin] && clab(twin) === t) return t + (k.startsWith('gb_') ? L(' (Genel Bakış)', ' (Overview)') : L(' (KısaBilgi)', ' (Quick info)'));
+        return t;
+    };
+    put('16-missing', smAll.length ? [{ type: 'bar', orientation: 'h', y: smAll.map((r) => col16(r[0])), x: smAll.map((r) => r[1]), marker: { color: smAll.map((r) => smBlock.get(r[0]) || '#b8b6ae') }, hovertemplate: '%{y}: %{x:.1f}%<extra></extra>' }] : null,
+        base({ margin: { t: 8, r: 16, b: 34, l: 8 }, yaxis: { autorange: 'reversed' }, xaxis: { title: { text: L('eksik %', 'missing %'), font: { size: 10 } } } }), 560);
 
     // 17 (Theil's U), 18 (Cramér's V), 20 (Pearson), 22/23 (PCA) and 24 (k selection) left the
     // technical report in the generator's 2026-09-28/29 simplification, their numbers kept empty.
 
-    const ssm = dom.series_segment_matrix || [];
+    // ---------- the two matrices (19, 21), in the generator's full form ----------
+    // Rows top to bottom in the generator's order, its labels, and a colour scale. Cells sit on index
+    // axes (ticks carry the names) so the single-listing dots of 19 can be placed inside a cell.
+    const colorbar = (title: string) => ({ thickness: 10, len: 0.9, outlinewidth: 0, tickfont: { size: 9, color: theme.muted }, title: { text: title, font: { size: 9, color: theme.muted } } });
+    const idxAxis = (labels: string[], o: any = {}) => ({ tickmode: 'array', tickvals: labels.map((_, i) => i), ticktext: labels, showgrid: false, zeroline: false, ...o });
+
+    // 19 · series × segment, median price in ₺M. Both axes sorted as the generator sorts them (code-point
+    // order: digits, then capitals, then "i Serisi"); a black dot marks a cell that is a single listing,
+    // as the caption says. The ramp starts at a pale green, not at the paper colour, so the cheapest cell
+    // (A1 × B) is still visible.
+    const ssm: any[] = dom.series_segment_matrix || [];
     if (ssm.length) {
-        const segOrder = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'J', 'M', 'S'];
-        const segCols = [...new Set(ssm.map((r: any) => r[1]))].sort((a: any, b: any) => {
-            const ia = segOrder.indexOf(a), ib = segOrder.indexOf(b);
-            return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
-        }) as string[];
-        const serRows = [...new Set(ssm.map((r: any) => r[0]))] as string[];
-        const z = serRows.map((sr) => segCols.map((sc) => { const hit = ssm.find((r: any) => r[0] === sr && r[1] === sc); return hit ? hit[2] : null; }));
-        put('19-series-segment', [{ type: 'heatmap', z, x: segCols, y: serRows, colorscale: ramp, showscale: false, hoverongaps: false, xgap: 1, ygap: 1, hovertemplate: '%{y} · %{x}: %{customdata}<extra></extra>', customdata: z.map((row) => row.map((v) => (v == null ? '—' : fmtM(v as number)))) }],
-            base({ margin: { t: 8, r: 8, b: 24, l: 8 } }), 420);
+        const serRows = [...new Set(ssm.map((r) => r[0] as string))].sort();
+        const segCols = [...new Set(ssm.map((r) => r[1] as string))].sort();
+        const cell = (sr: string, sc: string) => ssm.find((r) => r[0] === sr && r[1] === sc);
+        const z = serRows.map((sr) => segCols.map((sc) => { const h = cell(sr, sc); return h ? h[2] / 1e6 : null; }));
+        const cd = serRows.map((sr) => segCols.map((sc) => { const h = cell(sr, sc); return h ? `${fmtM(h[2])} · ${fmtN(h[3])} ${L('ilan', 'listings')}` : ''; }));
+        const singles = ssm.filter((r) => r[3] === 1);
+        const ramp19 = GREEN_RAMP.slice(1).map((c, i, a) => [i / (a.length - 1), c] as [number, string]);
+        put('19-series-segment', [
+            { type: 'heatmap', z, x: segCols.map((_, i) => i), y: serRows.map((_, i) => i), colorscale: ramp19, showscale: true, colorbar: colorbar('₺M'), hoverongaps: false, xgap: 1, ygap: 1, customdata: cd, hovertemplate: '%{customdata}<extra></extra>' },
+            singles.length && { type: 'scatter', mode: 'markers', x: singles.map((r) => segCols.indexOf(r[1]) + 0.32), y: singles.map((r) => serRows.indexOf(r[0]) - 0.3), marker: { size: 6, color: '#111', line: { width: 1, color: '#fff' } }, hovertemplate: L('tek ilan', 'single listing') + '<extra></extra>' },
+        ], base({
+            margin: { t: 8, r: 8, b: 28, l: 8 },
+            xaxis: idxAxis(segCols, { range: [-0.5, segCols.length - 0.5] }),
+            yaxis: idxAxis(serRows, { range: [serRows.length - 0.5, -0.5] }),
+        }), 560);
     }
 
+    // 21 · Spearman, named with the column labels the report's text uses ("Power (hp)–Engine (cc) 0.61").
     const nc = dom.numeric_correlation;
-    const numLabel = (raw: string) => (LBL.shortColumn[raw] ? LBL.label(LBL.shortColumn, raw, lang) : clab(raw));
     const DIVERGE: [number, string][] = [[0, '#ef4444'], [0.5, '#fdfcf9'], [1, '#059669']];
-    const numHeat = (m: number[][]) => ((nc && m) ? [{ type: 'heatmap', z: m, x: nc.labels.map(numLabel), y: nc.labels.map(numLabel), zmin: -1, zmax: 1, colorscale: DIVERGE, showscale: false, xgap: 1, ygap: 1, hovertemplate: '%{y} · %{x}: %{z:.2f}<extra></extra>' }] : null);
-    const corrLayout = base({ margin: { t: 8, r: 8, b: 12, l: 12 }, xaxis: { tickangle: -40 } });
-    put('21-spearman', numHeat(nc?.spearman), corrLayout, 340);
+    if (nc?.spearman && nc.labels) {
+        const nl: string[] = nc.labels.map(clab);
+        put('21-spearman', [{ type: 'heatmap', z: nc.spearman, x: nl.map((_, i) => i), y: nl.map((_, i) => i), zmin: -1, zmax: 1, colorscale: DIVERGE, showscale: true, colorbar: colorbar('ρ'), xgap: 1, ygap: 1, customdata: nl.map((ry) => nl.map((cx) => `${ry} · ${cx}`)), hovertemplate: '%{customdata}: %{z:.2f}<extra></extra>' }],
+            base({
+                margin: { t: 8, r: 8, b: 12, l: 12 },
+                // upright, not the generator's 45°: at 45° fourteen labels overlap on a phone
+                xaxis: idxAxis(nl, { tickangle: -90, tickfont: { size: 9, color: theme.muted }, range: [-0.5, nl.length - 0.5] }),
+                yaxis: idxAxis(nl, { range: [nl.length - 0.5, -0.5] }),
+            }), 480);
+    }
 
-    const ph = dom.price_histogram ? [...dom.price_histogram].filter((r: any) => r[1] > 0) : [];
-    put('25-price-hist', ph.length ? [{ type: 'bar', x: ph.map((r: any) => r[0]), y: ph.map((r: any) => r[1]), marker: { color: green }, customdata: ph.map((r: any) => fmtM(r[0])), hovertemplate: '%{customdata}: %{y:,} ' + L('ilan', 'listings') + '<extra></extra>' }] : null,
-        base({ margin: { t: 8, r: 16, b: 28, l: 8 }, xaxis: { tickformat: '~s' }, shapes: dom.price_dist?.median ? [{ type: 'line', yref: 'paper', y0: 0, y1: 1, xref: 'x', x0: dom.price_dist.median, x1: dom.price_dist.median, line: { dash: 'dash', color: '#86857e', width: 1 } }] : [] }), 260);
+    // Rows are [bin's lower edge, count]; each bar spans its bin (the generator draws them edge-aligned),
+    // so the dashed median lands in the bin it belongs to. Price in ₺M.
+    const phAll: any[] = dom.price_histogram || [];
+    const phW = phAll.length > 1 ? phAll[1][0] - phAll[0][0] : 0;
+    const ph = phAll.filter((r) => r[1] > 0);
+    put('25-price-hist', (ph.length && phW) ? [{ type: 'bar', x: ph.map((r) => (r[0] + phW / 2) / 1e6), y: ph.map((r) => r[1]), width: (phW * 0.9) / 1e6, marker: { color: green }, customdata: ph.map((r) => `${fmtM(r[0])} … ${fmtM(r[0] + phW)}`), hovertemplate: '%{customdata}: %{y:,} ' + L('ilan', 'listings') + '<extra></extra>' }] : null,
+        base({
+            margin: { t: 8, r: 16, b: 34, l: 8 },
+            xaxis: { title: { text: L('fiyat (₺M)', 'price (₺M)'), font: { size: 10 } } }, yaxis: { title: { text: L('ilan', 'listings'), font: { size: 10 } } },
+            shapes: dom.price_dist?.median ? [{ type: 'line', yref: 'paper', y0: 0, y1: 1, xref: 'x', x0: dom.price_dist.median / 1e6, x1: dom.price_dist.median / 1e6, line: { dash: 'dash', color: '#b91c1c', width: 1.2 } }] : [],
+        }), 280);
 
     return out;
 }
