@@ -21,14 +21,16 @@ export const isExternalHref = (href: string) => /^https?:\/\//.test(href);
 
 export interface HomeProject {
     domain: string;
-    kind: 'live' | 'case' | 'package';
+    kind: 'live' | 'case' | 'package' | 'site';
     title: string;
     /** Rendered by ProjectText: plain copy, except `[label](href)` becomes a link. */
     description: Bi;
     stack: string;
     /** The homepage card's cover: a figure drawn from the project's data, the (unused)
-     *  choropleth sketch, or a typographic cover for a package that has no dataset to draw. */
-    cover: 'chart' | 'choropleth' | 'package';
+     *  choropleth sketch, a typographic cover for a package that has no dataset to draw, or the
+     *  logo of a website the project is (`logo` is its path under public/). */
+    cover: 'chart' | 'choropleth' | 'package' | 'logo';
+    logo?: string;
     href: string;
     /** The one number the editorial work index carries on the right of each row. */
     metric: string;
@@ -98,6 +100,36 @@ export const HOME_PROJECTS: HomeProject[] = [
         surfaces: [
             { label: { en: 'CRAN page', tr: 'CRAN sayfası' }, href: 'https://cran.r-project.org/package=MFF' },
             { label: { en: 'Reference manual', tr: 'Referans kılavuzu' }, href: 'https://cran.r-project.org/web/packages/MFF/MFF.pdf' },
+        ],
+    },
+    // DSC Marmara — the club's website, also off-site: every link points at the live site or its
+    // public repo (github.com/dscmarmara/website, every commit Sadık's). The infrastructure line is
+    // what the domain itself answers: served by Vercel, nameservers on Cloudflare, MX on Zoho.
+    // "400+ members" and the Core AI Director role are the club site's own words.
+    {
+        domain: 'Web platform · Infrastructure',
+        kind: 'site',
+        title: 'DSC Marmara — Club Website & Infrastructure',
+        description: {
+            en: 'The website of Data Science Club · Marmara University, a student club of 400+ members, which I built and run as its Core AI Director: a bilingual (EN/TR) Next.js site with team profiles, an MDX blog and a contact form that delivers through the Zoho Mail API. I also run what it stands on — the domain and DNS on Cloudflare, hosting on Vercel, the club’s mail on Zoho, and its search presence (structured data, IndexNow).',
+            tr: 'Marmara Üniversitesi Veri Bilimi Kulübü’nün (400+ üye) sitesi; kulübün Core AI Direktörü olarak kurdum ve yönetiyorum: ekip profilleri, MDX blog ve Zoho Mail API üzerinden gönderen bir iletişim formu olan iki dilli (TR/EN) bir Next.js sitesi. Dayandığı altyapıyı da ben yönetiyorum — Cloudflare’de alan adı ve DNS, Vercel’de barındırma, kulübün Zoho e-postası ve arama görünürlüğü (yapılandırılmış veri, IndexNow).',
+        },
+        stack: 'Next.js · TypeScript · Vercel · Cloudflare',
+        cover: 'logo',
+        logo: '/projects/dsc-marmara-logo.svg',
+        href: 'https://www.dscmarmara.com.tr',
+        metric: '400+',
+        metricLabel: { en: 'club members', tr: 'kulüp üyesi' },
+        year: '2026',
+        tags: ['Next.js', 'TypeScript', 'next-intl', 'MDX', 'Tailwind', 'Vercel', 'Cloudflare', 'Zoho Mail'],
+        // Literal values: a website has no site_data.json metrics.
+        metrics: [
+            { value: '400+', label: { en: 'club members', tr: 'kulüp üyesi' }, accent: true },
+            { value: 'EN · TR', label: { en: 'languages', tr: 'dil' } },
+        ],
+        surfaces: [
+            { label: { en: 'Website', tr: 'Site' }, href: 'https://www.dscmarmara.com.tr' },
+            { label: { en: 'Source', tr: 'Kaynak kod' }, href: 'https://github.com/dscmarmara/website' },
         ],
     },
     // mRFEI case study — deactivated (hidden from listings; route 404s). Source kept

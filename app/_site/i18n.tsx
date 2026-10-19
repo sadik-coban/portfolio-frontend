@@ -118,6 +118,7 @@ const en: Dict = {
     'home.live': 'LIVE DEMO',
     'home.case': 'CASE STUDY',
     'home.package': 'CRAN PACKAGE',
+    'home.site': 'LIVE SITE',
     'home.viewProject': 'View project',
     'home.viewPackage': 'View on CRAN',
 
@@ -398,6 +399,7 @@ const tr: Dict = {
     'home.live': 'CANLI DEMO',
     'home.case': 'VAKA ÇALIŞMASI',
     'home.package': 'CRAN PAKETİ',
+    'home.site': 'CANLI SİTE',
     'home.viewProject': 'Projeyi gör',
     'home.viewPackage': 'CRAN’de gör',
 

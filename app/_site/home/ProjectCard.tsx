@@ -11,8 +11,8 @@ import ProjectLink, { ProjectText } from './ProjectLink';
  * description that credits someone (MFF's author) carries its own link, and anchors can't nest.
  *
  * The cover draws only what the project has data for: the car-price card gets the same age curve
- * as the hero, a package gets a typographic cover. A figure on a project with no dataset behind
- * it would be decoration posing as evidence.
+ * as the hero, a package gets a typographic cover, a website its own logo. A figure on a project
+ * with no dataset behind it would be decoration posing as evidence.
  */
 export function ProjectCard({ project, curve, xLabel }: {
     project: HomeProject;
@@ -20,9 +20,10 @@ export function ProjectCard({ project, curve, xLabel }: {
     xLabel: (x: number) => string;
 }) {
     const { t, lang } = useLang();
-    const live = project.kind === 'live';
-    const badge = t(live ? 'home.live' : project.kind === 'package' ? 'home.package' : 'home.case');
-    const coverLabel = project.cover === 'choropleth' ? 'choropleth' : project.cover === 'package' ? 'CRAN' : 'live API';
+    // A website is live too: it takes the green badge, with its own label.
+    const live = project.kind === 'live' || project.kind === 'site';
+    const badge = t(project.kind === 'live' ? 'home.live' : project.kind === 'site' ? 'home.site' : project.kind === 'package' ? 'home.package' : 'home.case');
+    const coverLabel = project.cover === 'choropleth' ? 'choropleth' : project.cover === 'package' ? 'CRAN' : project.cover === 'logo' ? 'live site' : 'live API';
 
     return (
         <article className="group relative grid grid-cols-1 items-center gap-6 border-t border-[#e9e7e2] py-7 sm:grid-cols-[248px_1fr] sm:gap-8">
@@ -34,6 +35,13 @@ export function ProjectCard({ project, curve, xLabel }: {
                     <div className="text-center" aria-hidden="true">
                         <div className="font-mono text-[44px] font-semibold leading-none tracking-[-0.04em] text-[#1a1a1a]">R</div>
                         <div className="mt-2 font-mono text-[11px] tracking-[0.06em] text-[#6b6a63]">{project.metric}</div>
+                    </div>
+                ) : project.cover === 'logo' && project.logo ? (
+                    <div className="flex flex-col items-center pt-2" aria-hidden="true">
+                        {/* eslint-disable-next-line @next/next/no-img-element -- a static SVG the
+                            site ships as is; next/image would add a loader for nothing to optimise */}
+                        <img src={project.logo} alt="" className="h-[76px] w-auto" />
+                        <div className="mt-2.5 font-mono text-[11px] tracking-[0.06em] text-[#6b6a63]">{new URL(project.href).hostname.replace(/^www\./, '')}</div>
                     </div>
                 ) : project.cover === 'choropleth' ? <Choropleth /> : null}
             </div>
