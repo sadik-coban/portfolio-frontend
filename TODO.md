@@ -1,6 +1,7 @@
 # Sonradan düzeltilecekler
 
 2026-11-01'deki performans çalışmasında bulunanlar. Her madde bağımsız, sırayla yapılması gerekmiyor.
+Satır numaraları o günkü koda göre.
 
 ## 1. Paylaşım etiketleri eksik (Open Graph)
 
@@ -27,35 +28,31 @@ sonuna `?v=2` ekle.
 ## 2. Lint: `FinalShell` içinde render sırasında tanımlanan bileşen
 
 **Durum.** `npx eslint app/_site/FinalShell.tsx` iki hata veriyor (`react-hooks/static-components`,
-satır 140 ve 172). Sebep: `NavList` (satır 68) `FinalShell`'in gövdesinde tanımlı. Her render'da yeni bir
+satır 141 ve 173). Sebep: `NavList` (satır 69) `FinalShell`'in gövdesinde tanımlı. Her render'da yeni bir
 bileşen tipi oluşuyor, React da altındaki ağacı her seferinde sıfırdan kuruyor; bu, içerideki state'in
 kaybolması ve gereksiz DOM yenilemesi demek.
 
 **Düzeltme.** `NavList`'i dosya düzeyine taşı; `nav`, `active` ve `lang`'ı prop olarak geçir.
 
-## 3. Bekleyen dal: `perf/static-pages` (henüz `main`'de değil)
+## 3. Statik sayfalar: kalan küçük farklar
 
-**Ne yapıyor.** Bugün bütün sayfalar her istekte sunucuda baştan çiziliyor (`Cache-Control: private,
-no-store`, `X-Vercel-Cache: MISS`, ilk bayt yaklaşık 0,3 sn); sayfalarda isteğe göre değişen veri
-olmadığı hâlde. Sebep üç okuma: kök layout `<html lang>` için ve `[lang]` layout'u hreflang için
-`x-pathname` başlığını, car-price layout'u da kenar çubuğu çerezini okuyor. Dal bu üçünü kaldırıyor ve
-sayfalar derlemede üretilip CDN'den sunuluyor. Ayrıntılar commit mesajında (`fa524d0`).
+**Arka plan.** 2026-11-01'e kadar bütün sayfalar her istekte sunucuda baştan çiziliyordu
+(`Cache-Control: private, no-store`, `X-Vercel-Cache: MISS`, ilk bayt yaklaşık 0,3 sn); sayfalarda
+isteğe göre değişen veri olmadığı hâlde. Sebep üç okumaydı: kök layout `<html lang>` için ve `[lang]`
+layout'u hreflang için `x-pathname` başlığını, car-price layout'u da kenar çubuğu çerezini okuyordu.
+`perf: serve every page prebuilt…` commit'i bu üçünü kaldırdı; sayfalar artık derlemede üretilip CDN'den
+sunuluyor. Canlıdaki 10 sayfanın meta etiketleri ve görünümü değişmedi.
 
-**Doğrulandı.** Canlıdaki 10 sayfanın başlık, meta, canonical, hreflang, ikon ve JSON-LD'si birebir aynı.
-Durum kodları, yönlendirmeler, sitemap, robots ve manifest de aynı. 22 ekran görüntüsü (masaüstü ve
-telefon) piksel piksel aynı. Kenar çubuğu daraltılmışken ilk kareden 72 px açılıyor, animasyon oynamıyor.
-
-**Bilinen farklar.**
+**Kalan farklar** (ikisi de 404 sayfalarında; acil değil):
 - Bilinmeyen adreslerin 404'ü Next'in `__next_error__` kabuğuyla geliyor: sunucu HTML'inde `lang` ve
   JSON-LD yok, sayfa tarayıcıda tamamlanıyor. Durum kodu 404, `noindex` var, ekranda aynı görünüyor.
-  Kök layout `[lang]` altındayken Next 16'nın davranışı bu.
+  Kök layout `[lang]` altındayken Next 16'nın davranışı bu. Sunucuda tam çizilmesi istenirse
+  `experimental.globalNotFound` ile `app/global-not-found.tsx` denenebilir.
 - Kapalı sayfalar (blog, günlük, mRFEI, metin analizi) 404 dönerken artık sayfanın başlığını ve
-  canonical'ını taşımıyor.
+  canonical'ını taşımıyor. 404 için bu daha doğru.
 
 **Dikkat.** Next 16.1.6'nın derleyicisi, `${…}` içeren iki template literal `+` ile birleşince metnin bir
 kısmını düşürüyor. `app/_site/sidebar-collapse-boot.ts`'teki betik bu yüzden tek parça; bölünmemeli.
-
-**Canlıya alınca.** Sayfalarda `X-Vercel-Cache: HIT` ve `X-Nextjs-Prerender: 1` görünmeli.
 
 ## 4. Dashboard için fikirler (isteğe bağlı)
 
