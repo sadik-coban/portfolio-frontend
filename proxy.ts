@@ -8,10 +8,6 @@ import { I18N_ENABLED } from '@/app/_site/i18n-config';
 export function proxy(req: NextRequest) {
     const { pathname } = req.nextUrl;
 
-    // Expose the original (browser) path so the [lang] layout can build hreflang alternates.
-    const headers = new Headers(req.headers);
-    headers.set('x-pathname', pathname);
-
     // Turkish: while enabled, matches the [lang]='tr' route as-is. While DEACTIVATED,
     // redirect any /tr URL to its unprefixed English equivalent — with a 307, not a 308:
     // the switch-off is temporary, and a permanent redirect is cached by browsers and search
@@ -22,7 +18,7 @@ export function proxy(req: NextRequest) {
             url.pathname = pathname.slice(3) || '/';
             return NextResponse.redirect(url, 307);
         }
-        return NextResponse.next({ request: { headers } });
+        return NextResponse.next();
     }
 
     // Explicit English prefix → redirect to the canonical unprefixed URL.
@@ -35,7 +31,7 @@ export function proxy(req: NextRequest) {
     // Default (unprefixed) → rewrite to the [lang]='en' route, keeping the URL clean.
     const url = req.nextUrl.clone();
     url.pathname = pathname === '/' ? '/en' : `/en${pathname}`;
-    return NextResponse.rewrite(url, { request: { headers } });
+    return NextResponse.rewrite(url);
 }
 
 // Run on everything except API routes, Next internals, and any file with an extension

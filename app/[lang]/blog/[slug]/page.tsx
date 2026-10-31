@@ -2,8 +2,9 @@ import { notFound } from 'next/navigation';
 import { getBlogPosts } from '@/lib/mdx';
 import ArticleShell from './ArticleShell';
 import { WRITING_ENABLED } from '@/app/_site/writing-config';
+import { pageSeo } from '@/app/_site/seo';
 
-type Props = { params: Promise<{ slug: string }> };
+type Props = { params: Promise<{ lang: string; slug: string }> };
 
 export async function generateStaticParams() {
     if (!WRITING_ENABLED) return [];
@@ -11,13 +12,14 @@ export async function generateStaticParams() {
 }
 
 export async function generateMetadata({ params }: Props) {
-    const { slug } = await params;
+    const { lang, slug } = await params;
     const cleanSlug = decodeURIComponent(slug);
+    const base = pageSeo(lang, `/blog/${slug}`);
     try {
         const { frontmatter } = await import(`@/content/${cleanSlug}.mdx`);
-        return { title: frontmatter?.title || 'Post', description: frontmatter?.description };
+        return { ...base, title: frontmatter?.title || 'Post', description: frontmatter?.description };
     } catch {
-        return { title: 'Post' };
+        return { ...base, title: 'Post' };
     }
 }
 

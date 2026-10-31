@@ -26,10 +26,11 @@ export default function FinalShell({
     const [open, setOpen] = useState(false);
 
     // Desktop-only icon-collapse for the sidebar — gated behind SIDEBAR_COLLAPSE_ENABLED
-    // (flip the flag off to ship without it). The preference is seeded from a cookie
-    // on the server (see car-price/layout.tsx) so the first paint already has the
-    // right width — no flash / replayed animation on refresh. Mobile always shows
-    // full labels.
+    // (flip the flag off to ship without it). Its look comes from the `cp-collapsed:`
+    // variant, which a script sets from a cookie before the first paint (see
+    // SidebarCollapse.tsx), so the first paint already has the right width — no flash /
+    // replayed animation on refresh. `collapsed` only drives titles and aria-labels.
+    // Mobile always shows full labels.
     const { collapsed, toggle: toggleCollapsed } = useSidebarCollapse();
 
     // Lock body scroll while the mobile drawer is open.
@@ -89,7 +90,7 @@ export default function FinalShell({
                         )}
                         {flat
                             ? n.label
-                            : <span className={`whitespace-nowrap transition-opacity duration-200 ${mini ? 'opacity-0' : 'opacity-100'}`}>{n.label}</span>}
+                            : <span className="whitespace-nowrap transition-opacity duration-200 opacity-100 cp-collapsed:opacity-0">{n.label}</span>}
                     </Link>
                 );
             })}
@@ -150,9 +151,9 @@ export default function FinalShell({
                     animates; the horizontal padding stays constant (px-[16px]) and every
                     icon lives in a fixed 40px slot, so nothing shifts horizontally while
                     the rail resizes. Labels just fade (and are clipped by overflow-hidden). */}
-                <aside className={`hidden md:flex flex-col shrink-0 fixed inset-y-0 overflow-hidden border-r border-[#e9e7e2] bg-[#fdfcf9] px-[16px] py-[26px] transition-[width] duration-200 ease-in-out ${collapsed ? 'w-[72px]' : 'w-[232px]'}`}>
+                <aside className="hidden md:flex flex-col shrink-0 fixed inset-y-0 overflow-hidden border-r border-[#e9e7e2] bg-[#fdfcf9] px-[16px] py-[26px] transition-[width] duration-200 ease-in-out w-[232px] cp-collapsed:w-[72px]">
                     {/* Brand mark in the same 40px slot → stays put as the rail animates. */}
-                    <div className={collapsed ? 'flex w-[40px] shrink-0 items-center justify-center' : 'pl-3'}><Monogram /></div>
+                    <div className="pl-3 cp-collapsed:flex cp-collapsed:w-[40px] cp-collapsed:shrink-0 cp-collapsed:items-center cp-collapsed:justify-center cp-collapsed:pl-0"><Monogram /></div>
 
                     {/* Up one level → the projects section on the homepage (there is no /projects index).
                         Same row shape as the nav, so it animates identically. */}
@@ -163,16 +164,16 @@ export default function FinalShell({
                         className="mt-3 flex items-center rounded-[8px] py-[9px] text-[13px] font-medium text-[#86857e] transition-colors hover:bg-[#f1efe9] hover:text-[#5f5f5a]"
                     >
                         <span className="flex w-[40px] shrink-0 items-center justify-center"><ArrowLeft size={16} /></span>
-                        <span className={`whitespace-nowrap transition-opacity duration-200 ${collapsed ? 'opacity-0' : 'opacity-100'}`}>{t('nav.projects')}</span>
+                        <span className="whitespace-nowrap transition-opacity duration-200 opacity-100 cp-collapsed:opacity-0">{t('nav.projects')}</span>
                     </Link>
 
                     {/* Hairline that frames the header zone — fades in only while collapsed. */}
-                    <div className={`mx-auto my-2 h-px w-8 bg-[#e9e7e2] transition-opacity duration-200 ${collapsed ? 'opacity-100' : 'opacity-0'}`} />
+                    <div className="mx-auto my-2 h-px w-8 bg-[#e9e7e2] transition-opacity duration-200 opacity-0 cp-collapsed:opacity-100" />
 
                     <NavList mini={collapsed} />
 
                     <div className="mt-auto flex flex-col gap-3">
-                        {!collapsed && <LangSwitch />}
+                        <LangSwitch className="cp-collapsed:hidden" />
                         {SIDEBAR_COLLAPSE_ENABLED && (
                             <button
                                 onClick={toggleCollapsed}
@@ -180,13 +181,14 @@ export default function FinalShell({
                                 title={collapsed ? L('Genişlet', 'Expand') : L('Daralt', 'Collapse')}
                                 className="flex h-9 w-[40px] items-center justify-center rounded-lg text-[#86857e] hover:bg-[#f1efe9] hover:text-[#5f5f5a] transition-colors"
                             >
-                                {collapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
+                                <PanelLeftOpen size={18} className="hidden cp-collapsed:block" />
+                                <PanelLeftClose size={18} className="cp-collapsed:hidden" />
                             </button>
                         )}
                     </div>
                 </aside>
 
-                <main className={`flex-1 min-w-0 px-5 md:px-12 py-8 md:pt-[42px] md:pb-16 max-w-[1180px] transition-[margin] duration-200 ${collapsed ? 'md:ml-[72px]' : 'md:ml-[232px]'}`}>
+                <main className="flex-1 min-w-0 px-5 md:px-12 py-8 md:pt-[42px] md:pb-16 max-w-[1180px] transition-[margin] duration-200 md:ml-[232px] md:cp-collapsed:ml-[72px]">
                     <AppPageHeader eyebrow={kicker} title={title} meta={meta} />
                     {children}
                 </main>

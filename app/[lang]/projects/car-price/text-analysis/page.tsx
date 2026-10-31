@@ -9,8 +9,9 @@ import { notFound } from 'next/navigation';
 // and the FinalShell sidebar entry back, and re-sync the reports from the pipeline.
 // import FinalTextAnalysis from '@/app/_site/text-analysis/FinalTextAnalysis';
 // import { getTextData } from '@/app/_site/text-analysis/text-data';
+import { pageMetadata } from '@/app/_site/seo';
 
-export const metadata = { title: 'Text Analysis' };
+export const generateMetadata = pageMetadata('/projects/car-price/text-analysis', { title: 'Text Analysis' });
 
 export default function Page() {
     notFound();

@@ -2,6 +2,18 @@ import { getBlogPosts } from '@/lib/mdx';
 import FinalHome from '@/app/_site/FinalHome';
 import { getReportData } from '@/app/_site/report/site-data';
 import { WRITING_ENABLED } from '@/app/_site/writing-config';
+import type { Metadata } from 'next';
+import { pageSeo, type LangParams } from '@/app/_site/seo';
+import { site } from '@/app/_site/site-config';
+
+// The homepage shares its segment with the root layout, and a layout's title.template only
+// reaches the segments below it, so the brand suffix is added here.
+export async function generateMetadata({ params }: LangParams): Promise<Metadata> {
+    const base = pageSeo((await params).lang, '');
+    return typeof base.title === 'string'
+        ? { ...base, title: { absolute: site.title.template.replace('%s', base.title) } }
+        : base;
+}
 
 // The homepage figure and metric strip come from public/report-data.json — the run the reports
 // and their charts are built on — read here, server-side, so only the few numbers the page
