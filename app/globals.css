@@ -3,6 +3,8 @@
 
 @plugin "@tailwindcss/typography";
 @custom-variant dark (&:is(.dark *));
+/* Collapsed car-price sidebar: <html data-cp-collapsed>, set before the first paint (app/_site/SidebarCollapse.tsx). */
+@custom-variant cp-collapsed (&:is([data-cp-collapsed] *));
 
 @theme inline {
   --color-background: var(--background);

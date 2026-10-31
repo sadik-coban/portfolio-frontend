@@ -1,5 +1,8 @@
 import FinalOverview from '@/app/_site/overview/FinalOverview';
 import { getReportData } from '@/app/_site/report/site-data';
+import { pageMetadata } from '@/app/_site/seo';
+
+export const generateMetadata = pageMetadata('/projects/car-price');
 
 // The overview is the project's landing page, so its numbers must be the same ones the
 // analysis reports — it reads report-data.json (metrics, baselines, ablation, hedonic effects;

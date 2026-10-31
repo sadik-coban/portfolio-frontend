@@ -30,3 +30,12 @@ export function pageSeo(lang: string, sub: string): Metadata {
 type Bi = { en: string; tr: string };
 
 export type LangParams = { params: Promise<{ lang: string }> };
+
+/**
+ * A page's generateMetadata: pageSeo for its locale-stripped path (`''` for the homepage), with
+ * the page's own fields on top, the way Next lays a page's metadata over its layout's.
+ * Every page sets it, since the layout cannot know the path without reading the request.
+ */
+export function pageMetadata(sub: string, own: Metadata = {}) {
+    return async ({ params }: LangParams): Promise<Metadata> => ({ ...pageSeo((await params).lang, sub), ...own });
+}
