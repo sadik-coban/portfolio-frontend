@@ -78,13 +78,13 @@ I left it in the feature set; it costs nothing and it makes the schema readable.
 
 ## The weakness I published
 
-The served prediction ships a fixed ±6.6% band, targeting 90% coverage. By price quartile, the coverage it actually achieves is:
+The served prediction ships a 90% conformal interval: one margin for the whole market, from about 13% below the estimate to 15% above it. By price quartile, the coverage it actually achieves is:
 
 | Q1 | Q2 | Q3 | Q4 |
 |---|---|---|---|
 | 81.7% | 91.6% | 92.9% | 93.9% |
 
-Averaged, that rounds to something respectable. Split, it says the band is too narrow on the cheapest quarter of the market and comfortably wide on the rest. The model is less certain about cheap cars, and a fixed band has no way to express that — which is what "fixed" means. The honest fix is a conditional interval, and until that ships the number stays on the report.
+Averaged, that rounds to something respectable. Split, it says the band is too narrow on the cheapest quarter of the market and comfortably wide on the rest. The model is less certain about cheap cars, and one margin for every price has no way to express that. The honest fix is a conditional interval, and until that ships the number stays on the report.
 
 It is the same failure mode as the baseline paragraph above: an aggregate that looks fine because a non-flat distribution got averaged. "90% coverage" and "42% better than baseline" hide the same kind of thing.
 

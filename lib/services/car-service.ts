@@ -60,7 +60,9 @@ export interface PredictionResult {
     price_range: {
         min: number;
         max: number;
-        margin_percent: number;
+        coverage_percent: number;
+        lower_percent: number;
+        upper_percent: number;
     };
     version: string;
     calculated_risk_score: number;

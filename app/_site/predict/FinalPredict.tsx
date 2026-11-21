@@ -93,8 +93,13 @@ export default function FinalPredict() {
     const L = (tr: string, en: string) => (lang === 'tr' ? tr : en);
     const loc = lang === 'tr' ? 'tr-TR' : 'en-US';
     const [loading, setLoading] = useState(false);
-    // /api/predict response (backend: LightGBM · TF-IDF+SVD)
-    const [result, setResult] = useState<{ price: number; price_range?: { min: number; max: number; margin_percent: number }; model?: string } | null>(null);
+    // /api/predict response (backend: LightGBM · TF-IDF+SVD). price_range is the model's 90%
+    // conformal interval: ± q in log space, so lower_percent (−13.2) and upper_percent (+15.2) differ.
+    const [result, setResult] = useState<{
+        price: number;
+        price_range?: { min: number; max: number; coverage_percent: number; lower_percent: number; upper_percent: number };
+        model?: string;
+    } | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [seriesDict, setSeriesDict] = useState<{ b: number; name: string }[]>([]);
 
@@ -344,7 +349,16 @@ export default function FinalPredict() {
                                         </div>
                                         <div className="bg-[#f1f8f4] border border-[#cfe8dc] p-3 rounded-[12px] text-left">
                                             <div className="font-mono text-[11px] text-[#047857] font-semibold">{result.model}</div>
-                                            <div className="font-mono text-[11px] text-[#5f5f5a] mt-0.5">±{result.price_range?.margin_percent}% · {L('OOF MAPE bandı', 'OOF MAPE band')}</div>
+                                            {/* guarded: during a deploy this page can briefly meet the old backend, whose price_range has no percent fields */}
+                                            {result.price_range?.lower_percent != null && result.price_range.upper_percent != null && (() => {
+                                                const r = result.price_range;
+                                                const lo = Math.abs(r.lower_percent).toFixed(1), hi = r.upper_percent.toFixed(1);
+                                                return (
+                                                    <div className="font-mono text-[11px] text-[#5f5f5a] mt-0.5">
+                                                        {L(`−%${lo} / +%${hi} · %${r.coverage_percent} conformal aralık`, `−${lo}% / +${hi}% · ${r.coverage_percent}% conformal interval`)}
+                                                    </div>
+                                                );
+                                            })()}
                                         </div>
                                         {activeEx && exDiff != null && (
                                             <div className="mt-3 rounded-[12px] border border-[#e4e2dd] bg-[#f7f6f3] p-3 text-left">
@@ -354,8 +368,8 @@ export default function FinalPredict() {
                                                 </div>
                                                 <div className="mt-1 flex items-baseline justify-between gap-3 font-mono text-[11px]">
                                                     <span className="text-[#86857e]">{L('Tahmin farkı', 'Prediction off by')}</span>
-                                                    {/* green when the listing sits inside the quoted band */}
-                                                    <span className={cn('font-semibold tabular-nums', Math.abs(exDiff) <= (result.price_range?.margin_percent ?? 0) ? 'text-[#047857]' : 'text-[#b45309]')}>
+                                                    {/* green when the listing price sits inside the quoted interval */}
+                                                    <span className={cn('font-semibold tabular-nums', result.price_range && activeEx.reference.listing_price >= result.price_range.min && activeEx.reference.listing_price <= result.price_range.max ? 'text-[#047857]' : 'text-[#b45309]')}>
                                                         {exDiff >= 0 ? '+' : ''}{exDiff.toFixed(1)}%
                                                     </span>
                                                 </div>

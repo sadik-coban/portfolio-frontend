@@ -188,7 +188,7 @@ export default function FinalOverview({ initialData }: Props) {
                             <Arrow />
                             <Node teal t="lgb_service" d={L('paket bellekte · thread-kilitli', 'bundle in memory · thread-locked')} tag={L('açılışta yüklenir', 'boot-loaded')} />
                             <Arrow />
-                            <Node teal t="predict" d={L('expm1(clip) · ±%6.6 bant', 'expm1(clip) · ±6.6% band')} tag="≤15M cap" />
+                            <Node teal t="predict" d={L('expm1(clip) · %90 conformal aralık', 'expm1(clip) · 90% conformal interval')} tag="≤15M cap" />
                         </div>
                     </div>
 
@@ -247,8 +247,9 @@ export default function FinalOverview({ initialData }: Props) {
                         <p className="m-0 px-4 pb-4 pt-3 text-[12.5px] text-[#5f5f5a]">
                             {starKey && L('★ yalnız MAPE’ye bakan kuralın kazananı; iki TF-IDF+SVD varyantı pratikte berabere, sitenin ve servisin modeli LightGBM. ',
                                 '★ wins the MAPE-only rule; the two TF-IDF+SVD variants are practically tied, and the site and the service use LightGBM. ')}
-                            {L('Metrikler out-of-fold (sızıntısız); final modeller tüm veriyle eğitildi. Servis, nokta fiyatın yanında sabit ', 'Metrics are out-of-fold (leak-free); final models train on all data. Serving returns a point price plus a fixed ')}
-                            <b className="font-mono text-[#065f46]">±6.6%</b>{L(' bant döndürür.', ' band.')}
+                            {L('Metrikler out-of-fold (sızıntısız); final modeller tüm veriyle eğitildi. Servis, nokta fiyatın yanında ', 'Metrics are out-of-fold (leak-free); final models train on all data. Serving returns a point price plus a ')}
+                            <b className="font-mono text-[#065f46]">{L('%90', '90%')}</b>
+                            {L(' conformal aralık döndürür: tahminin yaklaşık %13 altından %15 üstüne.', ' conformal interval: from about 13% below the estimate to 15% above it.')}
                         </p>
                     </div>
                 </section>
